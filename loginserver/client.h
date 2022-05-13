@@ -42,7 +42,15 @@ public:
 	 * @param data
 	 * @param size
 	 */
-	void Handle_SessionReady(const char *data, unsigned int size);
+	void Handle_SessionReady(const char* data, unsigned int size);
+
+	/**
+	 * Sends our reply to session ready packet
+	 *
+	 * @param data
+	 * @param size
+	 */
+	void SendExpansionPacketData();
 
 	/**
 	 * Verifies login and send a reply

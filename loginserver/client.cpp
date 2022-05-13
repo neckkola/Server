@@ -5,8 +5,11 @@
 #include "../common/string_util.h"
 #include "encryption.h"
 #include "account_management.h"
+#include "../common/rulesys.h"
+#include <bitset>
 
 extern LoginServer server;
+int32_t expansion = 0;		//read from the RuleSet
 
 /**
  * @param c
@@ -577,12 +580,85 @@ void Client::DoSuccessfulLogin(
 	if (server.options.IsDumpOutPacketsOn()) {
 		DumpPacket(outapp.get());
 	}
+	SendExpansionPacketData();
 
 	m_connection->QueuePacket(outapp.get());
 
 	m_client_status = cs_logged_in;
 }
 
+void Client::SendExpansionPacketData() 
+{
+	int default_ruleset = 0;
+	SerializeBuffer buf;
+	int ExpansionLookup[19] = { 0xbbf, 0xbc0, 0xbc1, 0xbc2,
+								0xbc4, 0xbc6, 0xbd7, 0xbd9,
+								0xbdc, 0xbe0, 0xbe5, 0xbe6,
+								0xbe7, 3514, 3516, 3518,
+								3520, 3522, 3524 };
+
+	
+	if (!expansion) {
+		std::string r_name = RuleManager::Instance()->GetRulesetName(server.db, 1);
+		if (r_name.size() > 0) {
+			RuleManager::Instance()->LoadRules(server.db, r_name.c_str(), false);
+			expansion = RuleManager::Instance()->GetIntRule(RuleManager::Int__CurrentExpansion);
+		}
+	}
+
+	if (expansion == -1 && m_client_version == cv_sod)
+	{
+		buf.WriteInt32(0x00);
+		buf.WriteInt32(0x01);
+		buf.WriteInt16(0x00);
+		buf.WriteInt32(19);		//number of expansions 19 for Rof
+
+		for (int i = 0; i < 19; i++)
+		{
+			buf.WriteInt32(i + 1);
+			buf.WriteInt32(0x01); //1 own 0 not own
+			buf.WriteInt8(0x00);
+			buf.WriteInt32(ExpansionLookup[i]);
+			buf.WriteInt32(0x179E);
+			buf.WriteInt32(0xFFFFFFFF);
+			buf.WriteInt8(0x1);
+			buf.WriteInt8(0x1);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0xFFFFFFFF);
+		}
+
+	}
+	else if (m_client_version == cv_sod) {
+		int count = 0;
+		buf.WriteInt32(0x00);
+		buf.WriteInt32(0x01);
+		buf.WriteInt16(0x00);
+		buf.WriteInt32(19);
+		//std::bitset<32> b1(expansion);
+		//buf.WriteInt32(b1.count() > 19 ? 19:b1.count());		//number of enable expansions
+
+		for (int i = 0; i < 19; i++)
+		{
+			buf.WriteInt32(i + 1);
+			buf.WriteInt32((expansion & (2^i)) == (2^i) ? 0x01 : 0x00); //1 own 0 not own
+			buf.WriteInt8(0x00);
+			buf.WriteInt32(ExpansionLookup[i]);
+			buf.WriteInt32(0x179E);
+			buf.WriteInt32(0xFFFFFFFF);
+			buf.WriteInt8(0x1);
+			buf.WriteInt8(0x1);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0xFFFFFFFF);
+		}
+
+	}
+
+	auto out = std::make_unique<EQApplicationPacket>(OP_LoginExpansionPacketData, buf);
+	m_connection->QueuePacket(out.get());
+
+}
 /**
  * @param username
  * @param password

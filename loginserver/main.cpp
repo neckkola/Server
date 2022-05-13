@@ -16,10 +16,13 @@
 #include <string>
 #include <sstream>
 #include <thread>
+#include "../common/rulesys.h"
 
 LoginServer server;
 EQEmuLogSys LogSys;
+
 bool        run_server = true;
+int default_ruleset = 0;
 
 void ResolveAddresses();
 void CatchSignal(int sig_num)
@@ -42,6 +45,7 @@ void LoadDatabaseConnection()
 
 void LoadServerConfig()
 {
+
 	server.config = EQ::JsonConfigFile::Load("login.json");
 	LogInfo("Config System Init");
 
