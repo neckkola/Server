@@ -565,6 +565,8 @@ void Client::DoSuccessfulLogin(
 	login_reply.web_offer_min_views        = -1;
 	login_reply.web_offer_cooldown_minutes = 0;
 	memcpy(login_reply.key, m_key.c_str(), m_key.size());
+	
+	SendExpansionPacketData(login_reply);
 
 	char encrypted_buffer[80] = {0};
 	auto rc = eqcrypt_block((const char*)&login_reply, sizeof(login_reply), encrypted_buffer, 1);
@@ -580,83 +582,74 @@ void Client::DoSuccessfulLogin(
 	if (server.options.IsDumpOutPacketsOn()) {
 		DumpPacket(outapp.get());
 	}
-	SendExpansionPacketData();
 
 	m_connection->QueuePacket(outapp.get());
 
 	m_client_status = cs_logged_in;
 }
 
-void Client::SendExpansionPacketData() 
+void Client::SendExpansionPacketData(PlayerLoginReply_Struct &plrs)
 {
-	int default_ruleset = 0;
+	int default_ruleset = 1;
 	SerializeBuffer buf;
-	int ExpansionLookup[19] = { 0xbbf, 0xbc0, 0xbc1, 0xbc2,
-								0xbc4, 0xbc6, 0xbd7, 0xbd9,
-								0xbdc, 0xbe0, 0xbe5, 0xbe6,
-								0xbe7, 3514, 3516, 3518,
-								3520, 3522, 3524 };
+	//from eqlsstr_us.txt id of each expansion, excluding 'Everquest'
+	int ExpansionLookup[20] = { 3007, 3008, 3009, 3010,	3012, 
+								3014, 3031, 3033, 3036, 3040, 
+								3045, 3046, 3047, 3514, 3516, 
+								3518, 3520, 3522, 3524 };
 
 	
+	//Get the active expansion from the database Rule:WorldExpansionSettings.  Do this only once.  Requires restart to effect change
 	if (!expansion) {
-		std::string r_name = RuleManager::Instance()->GetRulesetName(server.db, 1);
+		std::string r_name = RuleManager::Instance()->GetRulesetName(server.db, default_ruleset);
 		if (r_name.size() > 0) {
 			RuleManager::Instance()->LoadRules(server.db, r_name.c_str(), false);
-			expansion = RuleManager::Instance()->GetIntRule(RuleManager::Int__CurrentExpansion);
+			expansion = RuleManager::Instance()->GetIntRule(RuleManager::Int__ExpansionSettings);
 		}
 	}
 
-	if (expansion == -1 && m_client_version == cv_sod)
+	if (m_client_version == cv_sod) {
+
+		// header info of packet.  Requires OP_LoginExpansionPacketData=0x0031 to be in login_opcodes_sod.conf
+		buf.WriteInt32(0x00);
+		buf.WriteInt32(0x01);
+		buf.WriteInt16(0x00);
+		buf.WriteInt32(19); //number of expansions to include in packet
+
+		//generate expansion data
+		for (int i = 0; i < 19; i++)
+		{
+			buf.WriteInt32(i);													//sequenctial number
+			buf.WriteInt32((expansion & (1 << i)) == (1 << i) ? 0x01 : 0x00);	//1 own 0 not own
+			buf.WriteInt8(0x00);
+			buf.WriteInt32(ExpansionLookup[i]);									//from eqlsstr_us.txt
+			buf.WriteInt32(0x179E);												//from eqlsstr_us.txt for buttons/order
+			buf.WriteInt32(0xFFFFFFFF);											//end identification
+			buf.WriteInt8(0x0);													//force order window to appear 1 appear 0 not appear
+			buf.WriteInt8(0x0);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0x0000);
+			buf.WriteInt32(0xFFFFFFFF);
+		}
+
+		auto out = std::make_unique<EQApplicationPacket>(OP_LoginExpansionPacketData, buf);
+		m_connection->QueuePacket(out.get());
+
+	}
+	else if (m_client_version == cv_titanium) 
 	{
-		buf.WriteInt32(0x00);
-		buf.WriteInt32(0x01);
-		buf.WriteInt16(0x00);
-		buf.WriteInt32(19);		//number of expansions 19 for Rof
-
-		for (int i = 0; i < 19; i++)
+		expansion = (expansion << 1) | 1; 
+		plrs.offer_min_days = expansion;
+		if (expansion < 1023)
 		{
-			buf.WriteInt32(i + 1);
-			buf.WriteInt32(0x01); //1 own 0 not own
-			buf.WriteInt8(0x00);
-			buf.WriteInt32(ExpansionLookup[i]);
-			buf.WriteInt32(0x179E);
-			buf.WriteInt32(0xFFFFFFFF);
-			buf.WriteInt8(0x1);
-			buf.WriteInt8(0x1);
-			buf.WriteInt32(0x0000);
-			buf.WriteInt32(0x0000);
-			buf.WriteInt32(0xFFFFFFFF);
+			plrs.web_offer_min_views = (1023 << 1);
+		}
+		else
+		{
+			plrs.web_offer_min_views = expansion;
 		}
 
 	}
-	else if (m_client_version == cv_sod) {
-		int count = 0;
-		buf.WriteInt32(0x00);
-		buf.WriteInt32(0x01);
-		buf.WriteInt16(0x00);
-		buf.WriteInt32(19);
-		//std::bitset<32> b1(expansion);
-		//buf.WriteInt32(b1.count() > 19 ? 19:b1.count());		//number of enable expansions
-
-		for (int i = 0; i < 19; i++)
-		{
-			buf.WriteInt32(i + 1);
-			buf.WriteInt32((expansion & (2^i)) == (2^i) ? 0x01 : 0x00); //1 own 0 not own
-			buf.WriteInt8(0x00);
-			buf.WriteInt32(ExpansionLookup[i]);
-			buf.WriteInt32(0x179E);
-			buf.WriteInt32(0xFFFFFFFF);
-			buf.WriteInt8(0x1);
-			buf.WriteInt8(0x1);
-			buf.WriteInt32(0x0000);
-			buf.WriteInt32(0x0000);
-			buf.WriteInt32(0xFFFFFFFF);
-		}
-
-	}
-
-	auto out = std::make_unique<EQApplicationPacket>(OP_LoginExpansionPacketData, buf);
-	m_connection->QueuePacket(out.get());
 
 }
 /**

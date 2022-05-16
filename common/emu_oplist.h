@@ -581,5 +581,5 @@ N(OP_ZoneSpawns),
 N(OP_ZoneUnavail),
 N(OP_ResetAA),
 N(OP_UnderWorld),
-N(OP_LoginExpansionPacketData),
+N(OP_LoginExpansionPacketData), //added for Rof client and sending expansion data packet.  Requires login_opcodes_sod.conf to be updated.
 // mail and chat opcodes located in ../mail_oplist.h

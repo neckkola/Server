@@ -42,7 +42,7 @@ struct PlayerLoginReply_Struct {
 	char    key[11];                    // client reads until null (variable length)
 	int32_t failed_attempts;
 	bool    show_player_count;          // admin flag, enables admin button and shows server player counts (default: false)
-	int32_t offer_min_days;             // guess, needs more investigation, maybe expansion offers (default: 99)
+	int32_t offer_min_days;             // For Titanium Client bitmask of owned expansions and web_offer_min_views becomes max_expansion bitmask
 	int32_t offer_min_views;            // guess (default: -1)
 	int32_t offer_cooldown_minutes;     // guess (default: 0)
 	int32_t web_offer_number;           // web order view number, 0 nothing (default: 0)
