@@ -9,7 +9,8 @@
 #include <bitset>
 
 extern LoginServer server;
-int32_t expansion = 0;		//read from the RuleSet
+int32_t expansion = 0;
+int32_t owned_expansion = 0;
 
 /**
  * @param c
@@ -600,11 +601,12 @@ void Client::SendExpansionPacketData(PlayerLoginReply_Struct &plrs)
 
 	
 	//Get the active expansion from the database Rule:WorldExpansionSettings.  Do this only once.  Requires restart to effect change
-	if (!expansion) {
+	if (!owned_expansion) {
 		std::string r_name = RuleManager::Instance()->GetRulesetName(server.db, default_ruleset);
 		if (r_name.size() > 0) {
 			RuleManager::Instance()->LoadRules(server.db, r_name.c_str(), false);
 			expansion = RuleManager::Instance()->GetIntRule(RuleManager::Int__ExpansionSettings);
+			owned_expansion = (expansion << 1) | 1;
 		}
 	}
 
@@ -638,16 +640,17 @@ void Client::SendExpansionPacketData(PlayerLoginReply_Struct &plrs)
 	}
 	else if (m_client_version == cv_titanium) 
 	{
-		expansion = (expansion << 1) | 1; 
-		plrs.offer_min_days = expansion;
-		if (expansion < 1023)
+		if (expansion > 1023) 
 		{
-			plrs.web_offer_min_views = (1023 << 1);
+			// Titanium shipped with 10 expansions.  Set owned expansions to be max 10.
+			plrs.offer_min_days = (1023 << 1) | 1;
 		}
-		else
+		else 
 		{
-			plrs.web_offer_min_views = expansion;
+			plrs.offer_min_days = owned_expansion;
 		}
+		// Titanium shipped with 10 expansions so set max to 10.
+		plrs.web_offer_min_views = (1023 << 1);
 
 	}
 
