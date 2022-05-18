@@ -56,3 +56,6 @@ bin/
 /client_files/**/CMakeFiles/
 submodules/libuv
 .idea
+submodules/recastnavigation
+submodules/libuv
+submodules/fmt
