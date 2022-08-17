@@ -88,6 +88,9 @@ struct RaidMember{
 	bool IsGroupLeader;
 	bool IsRaidLeader;
 	bool IsLooter;
+#ifdef BOTS
+	bool IsBot;
+#endif
 };
 
 struct GroupMentor {
@@ -121,6 +124,11 @@ public:
 	bool	IsGroupLeader(const char *who);
 	bool	IsRaidMember(const char *name);
 	void	UpdateLevel(const char *name, int newLevel);
+
+	// BOT Functions
+#ifdef BOTS
+	void	AddBot(Bot* b, uint32 group = 0xFFFFFFFF, bool rleader = false, bool groupleader = false, bool looter = false);
+#endif
 
 	uint32	GetFreeGroup();
 	uint8	GroupCount(uint32 gid);

@@ -409,6 +409,10 @@ public:
 	static bool AddBotToGroup(Bot* bot, Group* group);
 	static bool RemoveBotFromGroup(Bot* bot, Group* group);
 	static void BotGroupSay(Mob *speaker, const char *msg, ...);
+	static void ProcessRaidInvite(Bot* invitee, Client* invitor);
+	static void ProcessRaidInvite(Client* invitee, Client* invitor);
+	uint8 GetNumberNeedingHealedInRaidGroup(uint8 hpr, bool includePets);
+	inline void SetDirtyAutoHaters() { m_dirtyautohaters = true; }
 
 	// "GET" Class Methods
 	uint32 GetBotID() const { return _botID; }
@@ -684,6 +688,7 @@ private:
 	bool m_pull_flag;
 	bool m_pulling_flag;
 	bool m_returning_flag;
+	bool m_dirtyautohaters;
 	eStandingPetOrder m_previous_pet_order;
 
 	BotCastingRoles m_CastingRoles;
