@@ -31,6 +31,12 @@
 
 bool Bot::AICastSpell(Mob* tar, uint8 iChance, uint32 iSpellTypes) {
 
+	// Transition directly to raid AI.  Implemented to allow for different response within raids.
+	Raid* raid = entity_list.GetRaidByBot(this);
+	if (raid) {
+		return AICastSpell_Raid(tar, iChance, iSpellTypes);
+	}
+
 	if (!tar) {
 		return false;
 	}
