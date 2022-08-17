@@ -409,6 +409,11 @@ public:
 	static bool AddBotToGroup(Bot* bot, Group* group);
 	static bool RemoveBotFromGroup(Bot* bot, Group* group);
 	static void BotGroupSay(Mob *speaker, const char *msg, ...);
+	
+	// Raid Methods
+	void PetAIProcess_Raid();
+	void AI_Process_Raid();
+	bool AICastSpell_Raid(Mob* tar, uint8 iChance, uint32 iSpellTypes);
 	static void ProcessRaidInvite(Bot* invitee, Client* invitor);
 	static void ProcessRaidInvite(Client* invitee, Client* invitor);
 	uint8 GetNumberNeedingHealedInRaidGroup(uint8 hpr, bool includePets);
@@ -616,6 +621,9 @@ public:
 	int32 GetBasePR() { return _basePR; }
 	int32 GetBaseDR() { return _baseDR; }
 	int32 GetBaseCorrup() { return _baseCorrup; }
+
+	//Raid additions
+	Raid* p_raid_instance;
 
 protected:
 	virtual void PetAIProcess();

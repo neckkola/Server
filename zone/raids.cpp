@@ -1159,11 +1159,11 @@ void Raid::SendRaidMoveAll(const char* who)
 
 void Raid::SendBulkRaid(Client *to)
 {
-	if(!to)
-		return
+	if (!to)
+		return;
 
 #ifdef BOTS
-	if (members[GetPlayerIndex(to)].IsBot)
+	if(members[GetPlayerIndex(to)].IsBot)
 		return;
 #endif
 
@@ -2000,3 +2000,19 @@ bool Raid::DoesAnyMemberHaveExpeditionLockout(
 		return Expedition::HasLockoutByCharacterName(raid_member.membername, expedition_name, event_name);
 	});
 }
+
+#ifdef BOTS
+Mob* Raid::GetRaidMainAssistOneByName(const char* name)
+{
+	Raid* raid = entity_list.GetRaidByBotName(name);
+	std::vector<RaidMember> raid_members = raid->GetMembers();
+
+	for (RaidMember iter : raid_members)
+	{
+		if (iter.IsRaidMainAssistOne)
+			return iter.member->CastToMob();
+	}
+	return nullptr;
+}
+#endif
+

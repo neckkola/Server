@@ -90,6 +90,7 @@ struct RaidMember{
 	bool IsLooter;
 #ifdef BOTS
 	bool IsBot;
+	bool IsRaidMainAssistOne = false;
 #endif
 };
 
@@ -128,6 +129,7 @@ public:
 	// BOT Functions
 #ifdef BOTS
 	void	AddBot(Bot* b, uint32 group = 0xFFFFFFFF, bool rleader = false, bool groupleader = false, bool looter = false);
+	Mob* Raid::GetRaidMainAssistOneByName(const char* name);
 #endif
 
 	uint32	GetFreeGroup();
@@ -249,6 +251,7 @@ public:
 	bool DoesAnyMemberHaveExpeditionLockout(const std::string& expedition_name, const std::string& event_name, int max_check_count = 0);
 
 	std::vector<RaidMember> GetMembers() const;
+	std::vector<RaidMember> GetRaidGroupMembers(uint32 gid);
 
 	RaidMember members[MAX_RAID_MEMBERS];
 	char leadername[64];
