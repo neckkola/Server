@@ -1793,7 +1793,7 @@ void Raid::SendEndurancePacketFrom(Mob *mob)
 	EQApplicationPacket outapp(OP_MobManaUpdate, sizeof(MobManaUpdate_Struct));
 
 	for (int x = 0; x < MAX_RAID_MEMBERS; x++) {
-#ifdef BTOS
+#ifdef BOTS
 		if (members[x].member && !members[x].IsBot) {
 #else
 		if (members[x].member) {
