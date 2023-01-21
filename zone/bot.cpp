@@ -8753,11 +8753,12 @@ void Bot::ProcessClientZoneChange(Client* botOwner) {
 	if(botOwner) {
 		std::list<Bot*> BotList = entity_list.GetBotsByBotOwnerCharacterID(botOwner->CharacterID());
 
-		for(std::list<Bot*>::iterator itr = BotList.begin(); itr != BotList.end(); ++itr) {
+		for (std::list<Bot*>::iterator itr = BotList.begin(); itr != BotList.end(); ++itr) {
 			Bot* tempBot = *itr;
 
-			if(tempBot) {
+			if (tempBot) {
 				Raid* raid = entity_list.GetRaidByBotName(tempBot->GetName());
+
 				if (raid) {
 					tempBot->Zone();
 				} else if(tempBot->HasGroup()) {
