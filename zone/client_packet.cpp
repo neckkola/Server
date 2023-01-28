@@ -11579,7 +11579,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 
 		if (g_invitor && g_invitor->IsLeader(invitor))
 		{
-			for (int x = 0; x < 6; x++)
+			for (int x = 0; x < MAX_GROUP_MEMBERS; x++)
 			{
 				if (RuleB(Bots, Enabled) && g_invitor->members[x] && g_invitor->members[x]->IsBot())
 				{
@@ -11590,7 +11590,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 		}
 		if (g_invitee && g_invitee->IsLeader(invitee))
 		{
-			for (int x = 0; x < 6; x++)
+			for (int x = 0; x < MAX_GROUP_MEMBERS; x++)
 			{
 				if (RuleB(Bots, Enabled) && g_invitee->members[x] && g_invitee->members[x]->IsBot())
 				{

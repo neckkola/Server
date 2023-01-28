@@ -9967,7 +9967,7 @@ void Bot::ProcessRaidInvite(Client* invitee, Client* invitor) {
 		if (g_invitee) 
 		{
 			//As there is already a raid, just add this group
-			raid->SendBulkRaid(invitee);
+			//raid->SendBulkRaid(invitee);
 			raid->SendMakeLeaderPacketTo(raid->leadername, invitee); //added to resolve Basic's raid window not showing a raid leader
 			uint32 raid_free_group_id = raid->GetFreeGroup();
 			for (int x = 0; x < MAX_GROUP_MEMBERS; x++) {
@@ -10013,6 +10013,8 @@ void Bot::ProcessRaidInvite(Client* invitee, Client* invitor) {
 			if (raid->IsLocked()) {
 				raid->SendRaidLockTo(invitor);
 			}
+			raid->SendBulkRaid(invitee);
+
 		}
 		else
 		{
@@ -10023,6 +10025,8 @@ void Bot::ProcessRaidInvite(Client* invitee, Client* invitor) {
 			if (raid->IsLocked()) {
 				raid->SendRaidLockTo(invitee);
 			}
+			raid->SendBulkRaid(invitee);
+
 		}
 	}
 	else
@@ -10057,7 +10061,7 @@ void Bot::ProcessRaidInvite(Client* invitee, Client* invitor) {
 					else if (g_invitor->members[x] && g_invitor->members[x]->IsClient()) {
 						c = g_invitor->members[x]->CastToClient();
 						if (x == 0) {
-							raid->SendRaidCreate(c);
+							//1raid->SendRaidCreate(c);
 							raid->SendMakeLeaderPacketTo(raid->leadername, c);
 							raid->AddMember(c, 0, false, true, false);
 							raid->SetGroupLeader(c->GetName());
@@ -10079,7 +10083,7 @@ void Bot::ProcessRaidInvite(Client* invitee, Client* invitor) {
 				}
 			}
 			raid->GroupUpdate(0);
-			raid->SendBulkRaid(invitee); //Send a raid updates to the invitor
+			raid->SendBulkRaid(invitee); //Send a raid updates to the invitee
 			g_invitor->JoinRaidXTarget(raid, true);
 			g_invitor->DisbandGroup(true);
 			if (raid->IsLocked()) {
