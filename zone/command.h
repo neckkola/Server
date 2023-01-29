@@ -187,6 +187,7 @@ void command_opcode(Client *c, const Seperator *sep);
 void command_packetprofile(Client *c, const Seperator *sep);
 #endif
 
+void command_packet(Client* c, const Seperator* sep);
 void command_path(Client *c, const Seperator *sep);
 void command_peekinv(Client *c, const Seperator *sep);
 void command_peqzone(Client *c, const Seperator *sep);

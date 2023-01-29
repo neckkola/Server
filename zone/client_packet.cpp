@@ -11874,6 +11874,7 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 					}
 				}
 			}
+			
 		}
 		break;
 	}
