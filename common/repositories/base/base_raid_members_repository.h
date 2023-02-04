@@ -20,8 +20,10 @@
 class BaseRaidMembersRepository {
 public:
 	struct RaidMembers {
+		uint64_t    id;
 		int32_t     raidid;
 		int32_t     charid;
+		int32_t     botid;
 		uint32_t    groupid;
 		int8_t      _class;
 		int8_t      level;
@@ -29,19 +31,20 @@ public:
 		int8_t      isgroupleader;
 		int8_t      israidleader;
 		int8_t      islooter;
-		int8_t      isbot;
 	};
 
 	static std::string PrimaryKey()
 	{
-		return std::string("charid");
+		return std::string("id");
 	}
 
 	static std::vector<std::string> Columns()
 	{
 		return {
+			"id",
 			"raidid",
 			"charid",
+			"botid",
 			"groupid",
 			"_class",
 			"level",
@@ -49,15 +52,16 @@ public:
 			"isgroupleader",
 			"israidleader",
 			"islooter",
-			"isbot",
 		};
 	}
 
 	static std::vector<std::string> SelectColumns()
 	{
 		return {
+			"id",
 			"raidid",
 			"charid",
+			"botid",
 			"groupid",
 			"_class",
 			"level",
@@ -65,7 +69,6 @@ public:
 			"isgroupleader",
 			"israidleader",
 			"islooter",
-			"isbot",
 		};
 	}
 
@@ -106,8 +109,10 @@ public:
 	{
 		RaidMembers e{};
 
+		e.id            = 0;
 		e.raidid        = 0;
 		e.charid        = 0;
+		e.botid         = 0;
 		e.groupid       = 0;
 		e._class        = 0;
 		e.level         = 0;
@@ -115,7 +120,6 @@ public:
 		e.isgroupleader = 0;
 		e.israidleader  = 0;
 		e.islooter      = 0;
-		e.isbot         = 0;
 
 		return e;
 	}
@@ -126,7 +130,7 @@ public:
 	)
 	{
 		for (auto &raid_members : raid_memberss) {
-			if (raid_members.charid == raid_members_id) {
+			if (raid_members.id == raid_members_id) {
 				return raid_members;
 			}
 		}
@@ -152,16 +156,17 @@ public:
 		if (results.RowCount() == 1) {
 			RaidMembers e{};
 
-			e.raidid        = static_cast<int32_t>(atoi(row[0]));
-			e.charid        = static_cast<int32_t>(atoi(row[1]));
-			e.groupid       = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e._class        = static_cast<int8_t>(atoi(row[3]));
-			e.level         = static_cast<int8_t>(atoi(row[4]));
-			e.name          = row[5] ? row[5] : "";
-			e.isgroupleader = static_cast<int8_t>(atoi(row[6]));
-			e.israidleader  = static_cast<int8_t>(atoi(row[7]));
-			e.islooter      = static_cast<int8_t>(atoi(row[8]));
-			e.isbot         = static_cast<int8_t>(atoi(row[9]));
+			e.id            = strtoull(row[0], nullptr, 10);
+			e.raidid        = static_cast<int32_t>(atoi(row[1]));
+			e.charid        = static_cast<int32_t>(atoi(row[2]));
+			e.botid         = static_cast<int32_t>(atoi(row[3]));
+			e.groupid       = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e._class        = static_cast<int8_t>(atoi(row[5]));
+			e.level         = static_cast<int8_t>(atoi(row[6]));
+			e.name          = row[7] ? row[7] : "";
+			e.isgroupleader = static_cast<int8_t>(atoi(row[8]));
+			e.israidleader  = static_cast<int8_t>(atoi(row[9]));
+			e.islooter      = static_cast<int8_t>(atoi(row[10]));
 
 			return e;
 		}
@@ -195,16 +200,16 @@ public:
 
 		auto columns = Columns();
 
-		v.push_back(columns[0] + " = " + std::to_string(e.raidid));
-		v.push_back(columns[1] + " = " + std::to_string(e.charid));
-		v.push_back(columns[2] + " = " + std::to_string(e.groupid));
-		v.push_back(columns[3] + " = " + std::to_string(e._class));
-		v.push_back(columns[4] + " = " + std::to_string(e.level));
-		v.push_back(columns[5] + " = '" + Strings::Escape(e.name) + "'");
-		v.push_back(columns[6] + " = " + std::to_string(e.isgroupleader));
-		v.push_back(columns[7] + " = " + std::to_string(e.israidleader));
-		v.push_back(columns[8] + " = " + std::to_string(e.islooter));
-		v.push_back(columns[9] + " = " + std::to_string(e.isbot));
+		v.push_back(columns[1] + " = " + std::to_string(e.raidid));
+		v.push_back(columns[2] + " = " + std::to_string(e.charid));
+		v.push_back(columns[3] + " = " + std::to_string(e.botid));
+		v.push_back(columns[4] + " = " + std::to_string(e.groupid));
+		v.push_back(columns[5] + " = " + std::to_string(e._class));
+		v.push_back(columns[6] + " = " + std::to_string(e.level));
+		v.push_back(columns[7] + " = '" + Strings::Escape(e.name) + "'");
+		v.push_back(columns[8] + " = " + std::to_string(e.isgroupleader));
+		v.push_back(columns[9] + " = " + std::to_string(e.israidleader));
+		v.push_back(columns[10] + " = " + std::to_string(e.islooter));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -212,7 +217,7 @@ public:
 				TableName(),
 				Strings::Implode(", ", v),
 				PrimaryKey(),
-				e.charid
+				e.id
 			)
 		);
 
@@ -226,8 +231,10 @@ public:
 	{
 		std::vector<std::string> v;
 
+		v.push_back(std::to_string(e.id));
 		v.push_back(std::to_string(e.raidid));
 		v.push_back(std::to_string(e.charid));
+		v.push_back(std::to_string(e.botid));
 		v.push_back(std::to_string(e.groupid));
 		v.push_back(std::to_string(e._class));
 		v.push_back(std::to_string(e.level));
@@ -235,7 +242,6 @@ public:
 		v.push_back(std::to_string(e.isgroupleader));
 		v.push_back(std::to_string(e.israidleader));
 		v.push_back(std::to_string(e.islooter));
-		v.push_back(std::to_string(e.isbot));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -246,7 +252,7 @@ public:
 		);
 
 		if (results.Success()) {
-			e.charid = results.LastInsertedID();
+			e.id = results.LastInsertedID();
 			return e;
 		}
 
@@ -265,8 +271,10 @@ public:
 		for (auto &e: entries) {
 			std::vector<std::string> v;
 
+			v.push_back(std::to_string(e.id));
 			v.push_back(std::to_string(e.raidid));
 			v.push_back(std::to_string(e.charid));
+			v.push_back(std::to_string(e.botid));
 			v.push_back(std::to_string(e.groupid));
 			v.push_back(std::to_string(e._class));
 			v.push_back(std::to_string(e.level));
@@ -274,7 +282,6 @@ public:
 			v.push_back(std::to_string(e.isgroupleader));
 			v.push_back(std::to_string(e.israidleader));
 			v.push_back(std::to_string(e.islooter));
-			v.push_back(std::to_string(e.isbot));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -308,16 +315,17 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			RaidMembers e{};
 
-			e.raidid        = static_cast<int32_t>(atoi(row[0]));
-			e.charid        = static_cast<int32_t>(atoi(row[1]));
-			e.groupid       = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e._class        = static_cast<int8_t>(atoi(row[3]));
-			e.level         = static_cast<int8_t>(atoi(row[4]));
-			e.name          = row[5] ? row[5] : "";
-			e.isgroupleader = static_cast<int8_t>(atoi(row[6]));
-			e.israidleader  = static_cast<int8_t>(atoi(row[7]));
-			e.islooter      = static_cast<int8_t>(atoi(row[8]));
-			e.isbot         = static_cast<int8_t>(atoi(row[9]));
+			e.id            = strtoull(row[0], nullptr, 10);
+			e.raidid        = static_cast<int32_t>(atoi(row[1]));
+			e.charid        = static_cast<int32_t>(atoi(row[2]));
+			e.botid         = static_cast<int32_t>(atoi(row[3]));
+			e.groupid       = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e._class        = static_cast<int8_t>(atoi(row[5]));
+			e.level         = static_cast<int8_t>(atoi(row[6]));
+			e.name          = row[7] ? row[7] : "";
+			e.isgroupleader = static_cast<int8_t>(atoi(row[8]));
+			e.israidleader  = static_cast<int8_t>(atoi(row[9]));
+			e.islooter      = static_cast<int8_t>(atoi(row[10]));
 
 			all_entries.push_back(e);
 		}
@@ -342,16 +350,17 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			RaidMembers e{};
 
-			e.raidid        = static_cast<int32_t>(atoi(row[0]));
-			e.charid        = static_cast<int32_t>(atoi(row[1]));
-			e.groupid       = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
-			e._class        = static_cast<int8_t>(atoi(row[3]));
-			e.level         = static_cast<int8_t>(atoi(row[4]));
-			e.name          = row[5] ? row[5] : "";
-			e.isgroupleader = static_cast<int8_t>(atoi(row[6]));
-			e.israidleader  = static_cast<int8_t>(atoi(row[7]));
-			e.islooter      = static_cast<int8_t>(atoi(row[8]));
-			e.isbot         = static_cast<int8_t>(atoi(row[9]));
+			e.id            = strtoull(row[0], nullptr, 10);
+			e.raidid        = static_cast<int32_t>(atoi(row[1]));
+			e.charid        = static_cast<int32_t>(atoi(row[2]));
+			e.botid         = static_cast<int32_t>(atoi(row[3]));
+			e.groupid       = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e._class        = static_cast<int8_t>(atoi(row[5]));
+			e.level         = static_cast<int8_t>(atoi(row[6]));
+			e.name          = row[7] ? row[7] : "";
+			e.isgroupleader = static_cast<int8_t>(atoi(row[8]));
+			e.israidleader  = static_cast<int8_t>(atoi(row[9]));
+			e.islooter      = static_cast<int8_t>(atoi(row[10]));
 
 			all_entries.push_back(e);
 		}

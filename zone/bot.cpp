@@ -2640,6 +2640,7 @@ void Bot::AI_Process()
 				InterruptSpell();
 				WipeHateList();
 				AddToHateList(attack_target, 1);
+//				GetBotOwner()->AddToHateList(attack_target, 1);
 				SetTarget(attack_target);
 				SetAttackingFlag();
 				if (HasPet() && (GetClass() != ENCHANTER || GetPet()->GetPetType() != petAnimation || GetAA(aaAnimationEmpathy) >= 2)) {
@@ -5091,6 +5092,13 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 
 			BotRemoveEquipItem(return_iterator.from_bot_slot);
 
+			const auto export_string = fmt::format(
+				"{} {}",
+				return_iterator.return_item_instance->IsStackable() ? return_iterator.return_item_instance->GetCharges() : 1,
+				return_iterator.from_bot_slot
+			);
+
+			parse->EventBot(EVENT_UNEQUIP_ITEM_BOT, this, nullptr, export_string , return_iterator.return_item_instance->GetID());
 			if (return_instance) {
 				EQ::SayLinkEngine linker;
 				linker.SetLinkType(EQ::saylink::SayLinkItemInst);
@@ -5139,6 +5147,15 @@ void Bot::PerformTradeWithClient(int16 begin_slot_id, int16 end_slot_id, Client*
 
 		m_inv.PutItem(trade_iterator.to_bot_slot, *trade_iterator.trade_item_instance);
 		BotAddEquipItem(trade_iterator.to_bot_slot, (trade_iterator.trade_item_instance ? trade_iterator.trade_item_instance->GetID() : 0));
+
+		const auto export_string = fmt::format(
+			"{} {}",
+			trade_iterator.trade_item_instance->IsStackable() ? trade_iterator.trade_item_instance->GetCharges() : 1,
+			trade_iterator.to_bot_slot
+		);
+
+		parse->EventBot(EVENT_EQUIP_ITEM_BOT, this, nullptr, export_string , trade_iterator.trade_item_instance->GetID());
+
 		trade_iterator.trade_item_instance = nullptr; // actual deletion occurs in client delete below
 
 		client->DeleteItemInInventory(trade_iterator.from_client_slot, 0, (trade_iterator.from_client_slot == EQ::invslot::slotCursor));
@@ -7293,21 +7310,25 @@ void Bot::DoEnduranceUpkeep() {
 }
 
 void Bot::Camp(bool save_to_database) {
+	
+	Raid* bot_raid = entity_list.GetRaidByBotName(GetName());
+	if (bot_raid && bot_raid->IsEngaged()) {
+		GetBotOwner()->CastToClient()->Message(Chat::White, "You cannot camp bots while your raid is engaged.");
+		return;
+	} else if (bot_raid) {
+		uint32 gid = bot_raid->GetGroup(GetName());
+		bot_raid->SendRaidGroupRemove(GetName(), bot_raid->GetGroup(GetName()));
+		bot_raid->RemoveMember(GetName());
+		bot_raid->GroupUpdate(gid);
+	}
+		
 	Sit();
 
 	if (GetGroup()) {
 		RemoveBotFromGroup(this, GetGroup());
 	}
-	
-	Raid* bot_raid = entity_list.GetRaidByBotName(this->GetName());
-	if (bot_raid) {
-		uint32 gid = bot_raid->GetGroup(this->GetName());
-		bot_raid->SendRaidGroupRemove(this->GetName(), bot_raid->GetGroup(this->GetName()));
-		bot_raid->RemoveMember(this->GetName());
-		bot_raid->GroupUpdate(gid);
-	}
 
-  LeaveHealRotationMemberPool();
+	LeaveHealRotationMemberPool();
 
 	if (save_to_database) {
 		Save();
@@ -10423,6 +10444,7 @@ void Bot::ProcessRaidInvite(Bot* invitee, Client* invitor) {
 			//Second, add the single invitor
 			raid->SendRaidCreate(invitor);
 			raid->AddMember(invitor, 0xFFFFFFFF, true, false, true);
+//			raid->SendRaidAdd(invitor->GetName(), invitor);
 			raid->SendMakeLeaderPacketTo(invitor->GetName(), invitor);  //Mitch Jan 18
 			if (raid->IsLocked()) {
 				raid->SendRaidLockTo(invitor);

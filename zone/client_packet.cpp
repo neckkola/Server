@@ -4193,8 +4193,26 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 					{
 						if (GetLevel() >= item->Click.Level2)
 						{
-							EQ::ItemInstance* p_inst = (EQ::ItemInstance*)inst;
-							int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, p_inst, nullptr, "", castspell->inventoryslot);
+							auto* p_inst = (EQ::ItemInstance*) inst;
+							int i = 0;
+
+							if (parse->ItemHasQuestSub(p_inst, EVENT_ITEM_CLICK_CAST)) {
+								i = parse->EventItem(
+									EVENT_ITEM_CLICK_CAST,
+									this,
+									p_inst,
+									nullptr,
+									"",
+									castspell->inventoryslot
+								);
+							}
+
+							if (parse->PlayerHasQuestSub(EVENT_ITEM_CLICK_CAST_CLIENT)) {
+								std::vector<std::any> args;
+								args.emplace_back(p_inst);
+								i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(castspell->inventoryslot), 0, &args);
+							}
+
 							if (i == 0) {
 								CastSpell(item->Click.Effect, castspell->target_id, slot, item->CastTime, 0, 0, castspell->inventoryslot);
 							}
@@ -4212,8 +4230,26 @@ void Client::Handle_OP_CastSpell(const EQApplicationPacket *app)
 					}
 					else
 					{
-						EQ::ItemInstance* p_inst = (EQ::ItemInstance*)inst;
-						int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, p_inst, nullptr, "", castspell->inventoryslot);
+						auto* p_inst = (EQ::ItemInstance*) inst;
+
+						int i = 0;
+
+						if (parse->ItemHasQuestSub(p_inst, EVENT_ITEM_CLICK_CAST)) {
+							i = parse->EventItem(
+								EVENT_ITEM_CLICK_CAST,
+								this,
+								p_inst,
+								nullptr,
+								"",
+								castspell->inventoryslot
+							);
+						}
+
+						if (parse->PlayerHasQuestSub(EVENT_ITEM_CLICK_CAST_CLIENT)) {
+							std::vector<std::any> args;
+							args.emplace_back(p_inst);
+							i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(castspell->inventoryslot), 0, &args);
+						}
 
 						if (i == 0) {
 							CastSpell(item->Click.Effect, castspell->target_id, slot, item->CastTime, 0, 0, castspell->inventoryslot);
@@ -8866,9 +8902,18 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 
 	if (m_inv.SupportsClickCasting(slot_id) || ((item->ItemType == EQ::item::ItemTypePotion || item->PotionBelt) && m_inv.SupportsPotionBeltCasting(slot_id))) // sanity check
 	{
-		EQ::ItemInstance* p_inst = (EQ::ItemInstance*)inst;
+		auto* p_inst = (EQ::ItemInstance*) inst;
 
-		parse->EventItem(EVENT_ITEM_CLICK, this, p_inst, nullptr, "", slot_id);
+		if (parse->ItemHasQuestSub(p_inst, EVENT_ITEM_CLICK)) {
+			parse->EventItem(EVENT_ITEM_CLICK, this, p_inst, nullptr, "", slot_id);
+		}
+
+		if (parse->PlayerHasQuestSub(EVENT_ITEM_CLICK_CLIENT)) {
+			std::vector<std::any> args;
+			args.emplace_back(p_inst);
+			parse->EventPlayer(EVENT_ITEM_CLICK_CLIENT, this, std::to_string(slot_id), 0, &args);
+		}
+
 		inst = m_inv[slot_id];
 		if (!inst)
 		{
@@ -8958,18 +9003,37 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 					if (item->RecastDelay > 0)
 					{
 						if (item->RecastType != RECAST_TYPE_UNLINKED_ITEM && !GetPTimers().Expired(&database, (pTimerItemStart + item->RecastType), false)) {
-							SendItemRecastTimer(item->RecastType); //Problem: When you loot corpse, recast display is not present. This causes it to display again. Could not get to display when sending from looting.
+							SetItemCooldown(item->ID, true);
 							SendSpellBarEnable(item->Click.Effect);
 							LogSpells("Casting of [{}] canceled: item spell reuse timer not expired", spell_id);
 							return;
 						} else if (item->RecastType == RECAST_TYPE_UNLINKED_ITEM  && !GetPTimers().Expired(&database, (pTimerNegativeItemReuse * item->ID), false)) {
+							SetItemCooldown(item->ID, true);
 							SendSpellBarEnable(item->Click.Effect);
 							LogSpells("Casting of [{}] canceled: item spell reuse timer not expired", spell_id);
 							return;
 						}
 					}
 
-					int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, p_inst, nullptr, "", slot_id);
+					int i = 0;
+
+					if (parse->ItemHasQuestSub(p_inst, EVENT_ITEM_CLICK_CAST)) {
+						i = parse->EventItem(
+							EVENT_ITEM_CLICK_CAST,
+							this,
+							p_inst,
+							nullptr,
+							"",
+							slot_id
+						);
+					}
+
+					if (parse->PlayerHasQuestSub(EVENT_ITEM_CLICK_CAST_CLIENT)) {
+						std::vector<std::any> args;
+						args.emplace_back(p_inst);
+						i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(slot_id), 0, &args);
+					}
+
 					inst = m_inv[slot_id];
 					if (!inst)
 					{
@@ -9018,7 +9082,25 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 						}
 					}
 
-					int i = parse->EventItem(EVENT_ITEM_CLICK_CAST, this, clickaug, nullptr, "", slot_id);
+					int i = 0;
+
+					if (parse->ItemHasQuestSub(p_inst, EVENT_ITEM_CLICK_CAST)) {
+						i = parse->EventItem(
+							EVENT_ITEM_CLICK_CAST,
+							this,
+							clickaug,
+							nullptr,
+							"",
+							slot_id
+						);
+					}
+
+					if (parse->PlayerHasQuestSub(EVENT_ITEM_CLICK_CAST_CLIENT)) {
+						std::vector<std::any> args;
+						args.emplace_back(clickaug);
+						i = parse->EventPlayer(EVENT_ITEM_CLICK_CAST_CLIENT, this, std::to_string(slot_id), 0, &args);
+					}
+
 					inst = m_inv[slot_id];
 					if (!inst)
 					{
@@ -11649,12 +11731,12 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 							}
 
 							raid->SendRaidCreate(c);
-							raid->SendMakeLeaderPacketTo(raid->leadername, c);
 							if (group->IsLeader(group->members[x]))
 								raid->AddMember(c, free_group_id, false, true);
 							else
 								raid->AddMember(c, free_group_id);
 							raid->SendBulkRaid(c);
+							raid->SendMakeLeaderPacketTo(raid->leadername, c);
 							if (raid->IsLocked()) {
 								raid->SendRaidLockTo(c);
 							}
@@ -11666,9 +11748,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 				}
 				else {
 					raid->SendRaidCreate(this);
-					raid->SendMakeLeaderPacketTo(raid->leadername, this);
 					raid->AddMember(this);
 					raid->SendBulkRaid(this);
+					raid->SendMakeLeaderPacketTo(raid->leadername, this);
 					if (raid->IsLocked()) {
 						raid->SendRaidLockTo(this);
 					}
@@ -11706,10 +11788,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									raid->AddMember(c, raid_free_group_id, true, true, true);
 									raid->SendBulkRaid(c);
-
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
@@ -11723,10 +11804,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									raid->AddMember(c, raid_free_group_id);
 									raid->SendBulkRaid(c);
-
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
@@ -11762,9 +11842,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									continue;
 
 								raid->SendRaidCreate(c);
-								raid->SendMakeLeaderPacketTo(raid->leadername, c);
 								raid->AddMember(c, raid_free_group_id, false, true);
 								raid->SendBulkRaid(c);
+								raid->SendMakeLeaderPacketTo(raid->leadername, c);
 
 								if (raid->IsLocked()) {
 									raid->SendRaidLockTo(c);
@@ -11780,10 +11860,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 									continue;
 
 								raid->SendRaidCreate(c);
-								raid->SendMakeLeaderPacketTo(raid->leadername, c);
 								raid->AddMember(c, raid_free_group_id);
 								raid->SendBulkRaid(c);
-
+								raid->SendMakeLeaderPacketTo(raid->leadername, c);
 								if (raid->IsLocked()) {
 									raid->SendRaidLockTo(c);
 								}
@@ -11821,10 +11900,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									raid->AddMember(c, 0, true, true, true);
 									raid->SendBulkRaid(c);
-
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
@@ -11838,9 +11916,9 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 										continue;
 
 									raid->SendRaidCreate(c);
-									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									raid->AddMember(c, 0);
 									raid->SendBulkRaid(c);
+									raid->SendMakeLeaderPacketTo(raid->leadername, c);
 									if (raid->IsLocked()) {
 										raid->SendRaidLockTo(c);
 									}
@@ -11848,12 +11926,12 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 							}
 						}
 						raid->SendRaidCreate(this);
-						raid->SendMakeLeaderPacketTo(raid->leadername, this);
 						raid->SendBulkRaid(this);
 						player_invited_group->JoinRaidXTarget(raid, true);
 						raid->AddMember(this);
 						player_invited_group->DisbandGroup(true);
 						raid->GroupUpdate(0);
+						raid->SendMakeLeaderPacketTo(raid->leadername, this);
 						if (raid->IsLocked()) {
 							raid->SendRaidLockTo(this);
 						}
@@ -11864,10 +11942,10 @@ void Client::Handle_OP_RaidCommand(const EQApplicationPacket* app)
 						raid->SetRaidDetails();
 						raid->SendRaidCreate(player_accepting_invite);
 						raid->SendRaidCreate(this);
-						raid->SendMakeLeaderPacketTo(raid->leadername, this);
 						raid->AddMember(player_accepting_invite, 0xFFFFFFFF, true, false, true);
 						raid->SendBulkRaid(this);
 						raid->AddMember(this);
+						raid->SendMakeLeaderPacketTo(raid->leadername, this);
 						if (raid->IsLocked()) {
 							raid->SendRaidLockTo(this);
 						}
