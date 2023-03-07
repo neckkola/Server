@@ -321,6 +321,7 @@ void command_zsave(Client *c, const Seperator *sep);
 void command_zsky(Client *c, const Seperator *sep);
 void command_zstats(Client *c, const Seperator *sep);
 void command_zunderworld(Client *c, const Seperator *sep);
+void command_test(Client* c, const Seperator* sep);
 
 #include "bot.h"
 void command_bot(Client*c, const Seperator *sep);

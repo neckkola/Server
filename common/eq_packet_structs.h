@@ -4154,7 +4154,15 @@ struct RaidMOTD_Struct {
 /*000*/ RaidGeneral_Struct general; // leader_name and action only used
 /*136*/ char motd[0]; // max size is 1024, but reply is variable
 };
+struct RaidNotes_Struct
+{
+	uint32	action;				//000
+	char	LeaderName[64];		//004 - Rola
+	char	PlayerName[64];		//072 - Rola
+	uint32	unk1;
+	char	Notes[64];			//140 - Notes
 
+};
 struct RaidLeadershipUpdate_Struct {
 /*000*/	uint32 action;
 /*004*/	char player_name[64];

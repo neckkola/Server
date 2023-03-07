@@ -1437,6 +1437,7 @@ int bot_command_init(void)
 		bot_command_add("suspend", "Suspends a bot's AI processing until released", AccountStatus::Player, bot_command_suspend) ||
 		bot_command_add("taunt", "Toggles taunt use by a bot", AccountStatus::Player, bot_command_taunt) ||
 		bot_command_add("track", "Orders a capable bot to track enemies", AccountStatus::Player, bot_command_track) ||
+		bot_command_add("test", "test", AccountStatus::Player, bot_command_test) ||
 		bot_command_add("viewcombos", "Views bot race class combinations", AccountStatus::Player, bot_command_view_combos) ||
 		bot_command_add("waterbreathing", "Orders a bot to cast a water breathing spell", AccountStatus::Player, bot_command_water_breathing)
 	) {
@@ -10927,4 +10928,83 @@ void bot_command_enforce_spell_list(Client* c, const Seperator *sep)
 			my_bot->GetBotEnforceSpellSetting() ? "enforced" : "optional"
 		).c_str()
 	);
+}
+
+void bot_command_test(Client* c, const Seperator* sep)
+{
+	//if (helper_command_alias_fail(c, "bot_command_test", sep->arg[0], "track"))
+	//	return;
+	//if (helper_is_help_or_usage(sep->arg[1])) {
+	//	c->Message(Chat::White, "usage: %s (Ranger: [option=all: all | rare | local])", sep->arg[0]);
+	//	c->Message(Chat::White, "requires one of the following bot classes:");
+	//	c->Message(Chat::White, "Ranger(1), Druid(20) or Bard(35)");
+	//	return;
+	//}
+
+	Bot* b = entity_list.GetBotByBotName(sep->arg[1]);
+	uint32 spell_id = atoi(sep->arg[2]);
+	uint32 target_id = c->GetTarget()->GetID();
+
+	b->CastSpell(spell_id, target_id, EQ::spells::CastingSlot::AltAbility);
+//	b->DoCastSpell(2755, c->GetTarget()->GetID());
+
+	//std::string tracking_scope = sep->arg[1];
+
+	//std::list<Bot*> sbl;
+	//MyBots::PopulateSBL_BySpawnedBots(c, sbl);
+
+	//uint16 class_mask = (PLAYER_CLASS_RANGER_BIT | PLAYER_CLASS_DRUID_BIT | PLAYER_CLASS_BARD_BIT);
+	//ActionableBots::Filter_ByClasses(c, sbl, class_mask);
+
+	//Bot* my_bot = ActionableBots::AsSpawned_ByMinLevelAndClass(c, sbl, 1, RANGER);
+	//if (tracking_scope.empty()) {
+	//	if (!my_bot)
+	//		my_bot = ActionableBots::AsSpawned_ByMinLevelAndClass(c, sbl, 20, DRUID);
+	//	if (!my_bot)
+	//		my_bot = ActionableBots::AsSpawned_ByMinLevelAndClass(c, sbl, 35, BARD);
+	//}
+	//if (!my_bot) {
+	//	c->Message(Chat::White, "No bots are capable of performing this action");
+	//	return;
+	//}
+
+	//
+	//int base_distance = 0;
+	//bool track_named = false;
+	//std::string tracking_msg;
+	//switch (my_bot->GetClass()) {
+	//case RANGER:
+	//	if (!tracking_scope.compare("local")) {
+	//		base_distance = 30;
+	//		tracking_msg = "Local tracking...";
+	//	}
+	//	else if (!tracking_scope.compare("rare")) {
+	//		base_distance = 80;
+	//		bool track_named = true;
+	//		tracking_msg = "Master tracking...";
+	//	}
+	//	else { // default to 'all'
+	//		base_distance = 80;
+	//		tracking_msg = "Advanced tracking...";
+	//	}
+	//	break;
+	//case DRUID:
+	//	base_distance = 30;
+	//	tracking_msg = "Local tracking...";
+	//	break;
+	//case BARD:
+	//	base_distance = 20;
+	//	tracking_msg = "Near tracking...";
+	//	break;
+	//default:
+	//	return;
+	//}
+	//if (!base_distance) {
+	//	c->Message(Chat::White, "An unknown codition has occurred");
+	//	return;
+	//}
+
+	//my_bot->InterruptSpell();
+	//Bot::BotGroupSay(my_bot, tracking_msg.c_str());
+	//entity_list.ShowSpawnWindow(c, (c->GetLevel() * base_distance), track_named);
 }

@@ -67,3 +67,82 @@ void command_raidloot(Client *c, const Seperator *sep)
 		).c_str()
 	);
 }
+void command_test(Client* c, const Seperator* sep)
+{
+
+
+	int arguments = sep->argnum;
+	if (!arguments) {
+		c->Message(Chat::White, "Usage: #test 1 LeaderName Notes");
+		return;
+	}
+
+	auto raid = c->GetRaid();
+	if (!raid) {
+		c->Message(Chat::White, "You must be in a Raid to use this command.");
+		return;
+	}
+
+	uint32 item = atoi(sep->arg[1]);
+
+	switch (item) {
+	case 1: {
+		char LeaderName[64];
+		char PlayerName[64];
+		char Notes[64];
+		memset(LeaderName, 0, 64);
+		memset(PlayerName, 0, 64);
+		memset(Notes, 0, 64);
+
+		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidNotes_Struct));
+		RaidNotes_Struct* rg = (RaidNotes_Struct*)outapp->pBuffer;
+		rg->action = raidSetNote;
+		strcpy(rg->LeaderName, sep->arg[2]);
+		strcpy(rg->PlayerName, sep->arg[2]);
+		rg->unk1 = 0xFFFFFFFF;
+		strcpy(rg->Notes, sep->arg[3]);
+
+		c->QueuePacket(outapp, false);
+		safe_delete(outapp);
+		break;
+	}
+	case 2: {
+		char leadername[64];
+		memset(leadername, 0, 64);
+		strncpy(leadername, sep->arg[2], sizeof(sep->arg[2]));
+		uint32 gid = atoi(sep->arg[3]);
+		RaidLeadershipAA_Struct raid_aa;
+		GroupLeadershipAA_Struct group_aa[MAX_RAID_GROUPS];
+		Client* rl = raid->GetLeader();
+		rl->GetRaidAAs(&raid_aa);
+		Client* gl = raid->GetGroupLeader(0);
+		gl->GetGroupAAs(&group_aa[0]);
+
+
+		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidLeadershipUpdate_Struct));
+		RaidLeadershipUpdate_Struct* rlaa = (RaidLeadershipUpdate_Struct*)outapp->pBuffer;
+		rlaa->action = raidSetLeaderAbilities;
+		strn0cpy(rlaa->leader_name, c->GetName(), 64);
+		strn0cpy(rlaa->player_name, c->GetName(), 64);
+		if (gid != RAID_GROUPLESS)
+			memcpy(&rlaa->group, &group_aa[gid], sizeof(GroupLeadershipAA_Struct));
+		memcpy(&rlaa->raid, &raid_aa, sizeof(RaidLeadershipAA_Struct));
+		c->QueuePacket(outapp);
+		safe_delete(outapp);
+		break;
+	}
+	case 3: {
+
+		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidGeneral_Struct));
+		RaidGeneral_Struct* rg = (RaidGeneral_Struct*)outapp->pBuffer;
+		rg->action = raidLock;
+		strn0cpy(rg->leader_name, "Rola", 64);
+		strn0cpy(rg->player_name, "Rola", 64);
+		c->QueuePacket(outapp);
+		safe_delete(outapp);
+		break;
+
+	}
+	}
+
+}
