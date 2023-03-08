@@ -94,15 +94,18 @@ void command_test(Client* c, const Seperator* sep)
 		memset(PlayerName, 0, 64);
 		memset(Notes, 0, 64);
 
-		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidNotes_Struct));
+		auto outapp = new EQApplicationPacket(OP_RaidTest, sizeof(RaidNotes_Struct));
 		RaidNotes_Struct* rg = (RaidNotes_Struct*)outapp->pBuffer;
 		rg->action = raidSetNote;
 		strcpy(rg->LeaderName, sep->arg[2]);
 		strcpy(rg->PlayerName, sep->arg[2]);
 		rg->unk1 = 0xFFFFFFFF;
 		strcpy(rg->Notes, sep->arg[3]);
+		rg->unk2 = 0xAAAAAAAA;
+		rg->unk3 = 0xbbbbbbbb;
 
-		c->QueuePacket(outapp, false);
+//		c->QueuePacket(outapp, false);
+		c->FastQueuePacket(&outapp);
 		safe_delete(outapp);
 		break;
 	}
