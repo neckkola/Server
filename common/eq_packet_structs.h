@@ -4160,7 +4160,7 @@ struct RaidNotes_Struct
 	char	LeaderName[64];		//004 - Rola
 	char	PlayerName[64];		//072 - Rola
 	uint32	unk1;
-	char	Notes[64];			//140 - Notes
+	char	Notes[0];			//140 - Notes
 
 };
 struct RaidLeadershipUpdate_Struct {

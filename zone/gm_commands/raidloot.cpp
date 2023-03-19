@@ -94,7 +94,7 @@ void command_test(Client* c, const Seperator* sep)
 		memset(PlayerName, 0, 64);
 		memset(Notes, 0, 64);
 
-		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidNotes_Struct));
+		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidNotes_Struct) + 64);
 		RaidNotes_Struct* rg = (RaidNotes_Struct*)outapp->pBuffer;
 		rg->action = raidSetNote;
 		strcpy(rg->LeaderName, sep->arg[2]);
@@ -107,28 +107,44 @@ void command_test(Client* c, const Seperator* sep)
 		break;
 	}
 	case 2: {
-		char leadername[64];
-		memset(leadername, 0, 64);
-		strncpy(leadername, sep->arg[2], sizeof(sep->arg[2]));
-		uint32 gid = atoi(sep->arg[3]);
-		RaidLeadershipAA_Struct raid_aa;
-		GroupLeadershipAA_Struct group_aa[MAX_RAID_GROUPS];
-		Client* rl = raid->GetLeader();
-		rl->GetRaidAAs(&raid_aa);
-		Client* gl = raid->GetGroupLeader(0);
-		gl->GetGroupAAs(&group_aa[0]);
+	
+		struct raidtesting {
+			uint32 b1;
+			uint32 b2;
+			uint32 b3;
+			uint32 b4;
+			uint32 b5;
+			uint32 b6;
+			uint32 b7;
+			uint32 b8;
+			uint32 b9;
+			uint32 b10;
+			uint32 b11;
+			uint32 b12;
+			uint32 b13;
+			uint32 b14;
+			uint32 b15;
+			uint32 b16;
+			uint32 b17;
+			uint32 b18;
+			uint32 b19;
+			uint32 b20;
+			uint32 b21;
+			uint32 b22;
+			uint32 b23;
+		};
+		auto outapp = new EQApplicationPacket(OP_RaidAMW, sizeof(raidtesting));
+		raidtesting* rg = (raidtesting*)outapp->pBuffer;
+		rg->b1 = atoi(sep->arg[2]);		rg->b2 = 5;		rg->b3 = 1;  rg->b4 = 0;
+		rg->b5 = atoi(sep->arg[6]);		rg->b6 = 0;		rg->b7 = 0;  rg->b8 = 0;
+		rg->b9 = atoi(sep->arg[10]);		rg->b10 = 0;	rg->b11 = 0; rg->b12 = 0;
+		rg->b13 = atoi(sep->arg[14]);	rg->b14 = 0;	rg->b15 = 0; rg->b16 = 0;
+		rg->b17 = atoi(sep->arg[18]);	rg->b18 = 0;	rg->b19 = 0; rg->b20 = 0;
+		rg->b21 = atoi(sep->arg[22]);	rg->b22 = 0;	rg->b23 = 0;
 
-
-		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidLeadershipUpdate_Struct));
-		RaidLeadershipUpdate_Struct* rlaa = (RaidLeadershipUpdate_Struct*)outapp->pBuffer;
-		rlaa->action = raidSetLeaderAbilities;
-		strn0cpy(rlaa->leader_name, c->GetName(), 64);
-		strn0cpy(rlaa->player_name, c->GetName(), 64);
-		if (gid != RAID_GROUPLESS)
-			memcpy(&rlaa->group, &group_aa[gid], sizeof(GroupLeadershipAA_Struct));
-		memcpy(&rlaa->raid, &raid_aa, sizeof(RaidLeadershipAA_Struct));
-		c->QueuePacket(outapp);
+		c->QueuePacket(outapp, false);
 		safe_delete(outapp);
+
 		break;
 	}
 	case 3: {
