@@ -67,40 +67,52 @@ void command_raidloot(Client *c, const Seperator *sep)
 		).c_str()
 	);
 }
-void command_test(Client* c, const Seperator* sep)
-{
+	void command_test(Client* c, const Seperator* sep)
+	{
 
+		struct RaidNotes_Struct
+		{
+			uint32	action;				//000
+			char	LeaderName[64];		//004 - Rola
+			uint32	unk3;
+			char	PlayerName[64];		//072 - Rola
+			uint32	unk1;
+			char	Notes[64];			//140 - Notes
+			uint32	unk2;
 
-	int arguments = sep->argnum;
-	if (!arguments) {
-		c->Message(Chat::White, "Usage: #test 1 LeaderName Notes");
-		return;
-	}
+		};
+		int arguments = sep->argnum;
+		if (!arguments) {
+			c->Message(Chat::White, "Usage: #test 1 LeaderName Notes");
+			return;
+		}
 
-	auto raid = c->GetRaid();
-	if (!raid) {
-		c->Message(Chat::White, "You must be in a Raid to use this command.");
-		return;
-	}
+		auto raid = c->GetRaid();
+		if (!raid) {
+			c->Message(Chat::White, "You must be in a Raid to use this command.");
+			return;
+		}
 
-	uint32 item = atoi(sep->arg[1]);
+		uint32 item = atoi(sep->arg[1]);
 
-	switch (item) {
-	case 1: {
-		char LeaderName[64];
-		char PlayerName[64];
-		char Notes[64];
-		memset(LeaderName, 0, 64);
-		memset(PlayerName, 0, 64);
-		memset(Notes, 0, 64);
+		switch (item) {
+		case 1: {
+			char LeaderName[64];
+			char PlayerName[64];
+			char Notes[64];
+			memset(LeaderName, 0, 64);
+			memset(PlayerName, 0, 64);
+			memset(Notes, 0, 64);
 
-		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidNotes_Struct) + 64);
-		RaidNotes_Struct* rg = (RaidNotes_Struct*)outapp->pBuffer;
-		rg->action = raidSetNote;
-		strcpy(rg->LeaderName, sep->arg[2]);
-		strcpy(rg->PlayerName, sep->arg[2]);
-		rg->unk1 = 0xFFFFFFFF;
-		strcpy(rg->Notes, sep->arg[3]);
+			auto outapp = new EQApplicationPacket(OP_RaidTest, sizeof(RaidNotes_Struct));
+			RaidNotes_Struct* rg = (RaidNotes_Struct*)outapp->pBuffer;
+			rg->action = raidSetNote;
+			strcpy(rg->LeaderName, sep->arg[2]);
+			strcpy(rg->PlayerName, sep->arg[2]);
+			rg->unk1 = 0xFFFFFFFF;
+			strcpy(rg->Notes, sep->arg[3]);
+			rg->unk2 = 0xAAAAAAAA;
+			rg->unk3 = 0xbbbbbbbb;
 
 		c->QueuePacket(outapp, false);
 		safe_delete(outapp);
@@ -149,16 +161,16 @@ void command_test(Client* c, const Seperator* sep)
 	}
 	case 3: {
 
-		auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidGeneral_Struct));
-		RaidGeneral_Struct* rg = (RaidGeneral_Struct*)outapp->pBuffer;
-		rg->action = raidLock;
-		strn0cpy(rg->leader_name, "Rola", 64);
-		strn0cpy(rg->player_name, "Rola", 64);
-		c->QueuePacket(outapp);
-		safe_delete(outapp);
-		break;
+			auto outapp = new EQApplicationPacket(OP_RaidUpdate, sizeof(RaidGeneral_Struct));
+			RaidGeneral_Struct* rg = (RaidGeneral_Struct*)outapp->pBuffer;
+			rg->action = raidLock;
+			strn0cpy(rg->leader_name, "Rola", 64);
+			strn0cpy(rg->player_name, "Rola", 64);
+			c->QueuePacket(outapp);
+			safe_delete(outapp);
+			break;
+
+		}
+		}
 
 	}
-	}
-
-}
