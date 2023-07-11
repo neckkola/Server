@@ -3683,6 +3683,16 @@ struct SayLinkBodyFrame_Struct {
 /*045*/
 };
 
+struct GuildSetRank_Struct
+{
+	/*00*/	uint32	GuildID;	// Was Unknown00
+	/*04*/	uint32	Rank;
+	/*08*/	char	MemberName[64];
+	/*72*/	uint32	Banker;
+	/*76*/	uint32	Unknown76;	// Seen 1 - Maybe Banker?
+	/*80*/
+};
+
 	}; /*structs*/
 
 }; /*Titanium*/

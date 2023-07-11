@@ -1,3 +1,4 @@
+
 /*	EQEMu: Everquest Server Emulator
 Copyright (C) 2001-2005 EQEMu Development Team (http://eqemulator.net)
 
@@ -923,7 +924,9 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		}
 		case ServerOP_DeleteGuild:
 		case ServerOP_GuildCharRefresh:
+		case ServerOP_GuildCharRefresh2:
 		case ServerOP_GuildMemberUpdate:
+		case ServerOP_GuildPermissionUpdate:
 		case ServerOP_RefreshGuild: {
 			guild_mgr.ProcessZonePacket(pack);
 			break;

@@ -144,6 +144,7 @@ class BaseGuildManager
 				uint8 minstatus;
 				//tribute is not in here on purpose, since it is only valid in world!
 				RankInfo ranks[GUILD_MAX_RANK + 1];
+				uint32 functions[31];
 		};
 
 		std::map<uint32, GuildInfo *> m_guilds;	//we own the pointers in this map

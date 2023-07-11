@@ -3340,6 +3340,35 @@ struct GuildUpdate_PublicNote{
 	char	note[1]; //variable length.
 };
 
+struct GuildUpdateURLAndChannel {
+	char text[512];
+};
+
+struct GuildUpdatePermissions {
+	uint32	rank;				// the rank that is being changed
+	uint32	function_id;		// the id of the guild function
+	uint32	value;				// 1 is on, 0 is off
+
+};
+
+struct GuildUpdateUCP {
+	uint32	action;				// 0 and 1 use url and channel payload.  5 uses permissions payload
+	char	unknown[76];
+	union {
+		GuildUpdateURLAndChannel url_channel;
+		GuildUpdatePermissions permissions;
+	}payload;
+};
+
+struct GuildPermission_Struct 
+{
+	uint32	Action;				// 5 = Update function permission
+	char	Unknown0004[76];	// not used
+	uint32	rank;				// the rank that is being changed
+	uint32	function_id;		// the id of the guild function
+	uint32	value;				// 1 is on, 0 is off
+};
+
 struct GuildUpdateURLAndChannel_Struct
 {
 /*0000*/	uint32	Action;	// 0 = Update URL, 1 = Update Channel
@@ -3378,6 +3407,7 @@ struct GuildStatus_Struct
 struct GuildDemoteStruct{
 	char	name[64];
 	char	target[64];
+	uint32	rank;
 };
 
 struct GuildRemoveStruct{

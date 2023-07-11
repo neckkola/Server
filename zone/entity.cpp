@@ -2263,7 +2263,7 @@ void EntityList::ChannelMessageFromWorld(const char *from, const char *to,
 		if (chan_num == ChatChannel_Guild) {
 			if (!client->IsInGuild(guild_id))
 				continue;
-			if (!guild_mgr.CheckPermission(guild_id, client->GuildRank(), GUILD_HEAR))
+			if (!guild_mgr.CheckPermission(guild_id, client->GuildRank(), GUILD_ACTION_GUILD_CHAT_SEE))
 				continue;
 			if (client->GetFilter(FilterGuildChat) == FilterHide)
 				continue;

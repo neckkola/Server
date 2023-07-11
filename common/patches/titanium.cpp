@@ -663,6 +663,35 @@ namespace Titanium
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	ENCODE(OP_SetGuildRank)
+	{
+		ENCODE_LENGTH_EXACT(GuildSetRank_Struct);
+		SETUP_DIRECT_ENCODE(GuildSetRank_Struct, structs::GuildSetRank_Struct);
+
+		eq->GuildID = emu->Unknown00;
+
+		/* Translate older ranks to new values */
+		switch (emu->Rank) {
+		case 8: case 7: case 6: case 5: case 4: { eq->Rank = htonl(0); break; }  // GUILD_MEMBER	0
+		case 3: case 2: { eq->Rank = htonl(1); break; }							// GUILD_OFFICER 1
+		case 1: { eq->Rank = htonl(2); break; }									// GUILD_LEADER	2
+		default: { eq->Rank = htonl(255); break; }						// GUILD_NONE
+		}
+		//switch (emu->Rank) {
+		//case 0: { eq->Rank = 5; break; }  // GUILD_MEMBER	0
+		//case 1: { eq->Rank = 3; break; }  // GUILD_OFFICER	1
+		//case 2: { eq->Rank = 1; break; }  // GUILD_LEADER	2
+		//default: { eq->Rank = emu->Rank; break; }
+		//}
+//		eq->Rank = emu->Rank;
+
+		memcpy(eq->MemberName, emu->MemberName, sizeof(eq->MemberName));
+		OUT(Banker);
+		eq->Unknown76 = 1;
+
+		FINISH_ENCODE();
+	}
+
 	ENCODE(OP_GuildMemberList)
 	{
 		//consume the packet
@@ -726,12 +755,18 @@ namespace Titanium
 				str += sl + 1; \
 			}
 #define PutFieldN(field) e->field = htonl(emu_e->field)
-
+				/* Translate new ranks to older values */
 				SlideStructString(name, emu_name);
 				PutFieldN(level);
 				PutFieldN(banker);
 				PutFieldN(class_);
-				PutFieldN(rank);
+//				PutFieldN(rank);
+				switch (emu_e->rank) {
+				case 8: case 7: case 6: case 5: case 4: { e->rank = htonl(0); break; }  // GUILD_MEMBER	0
+				case 3: case 2: { e->rank = htonl(1); break; }							// GUILD_OFFICER 1
+				case 1: { e->rank = htonl(2); break; }									// GUILD_LEADER	2
+				default: { e->rank = htonl(0); break; }						// GUILD_NONE
+				}
 				PutFieldN(time_last_on);
 				PutFieldN(tribute_enable);
 				PutFieldN(total_tribute);
@@ -1148,7 +1183,13 @@ namespace Titanium
 		OUT(pvp);
 		OUT(anon);
 		OUT(gm);
-		OUT(guildrank);
+		switch (emu->guildrank) {
+		case 8: case 7: case 6: case 5: case 4: { eq->guildrank = 0; break; }  // GUILD_MEMBER	0
+		case 3: case 2: { eq->guildrank = 1; break; }       				   // GUILD_OFFICER 1
+		case 1: { eq->guildrank = 2; break; }								   // GUILD_LEADER	2
+		default: { break; }													   // GUILD_NONE
+		}
+//		OUT(guildrank);
 		OUT(guildbanker);
 		//	OUT(unknown13054[8]);
 		OUT(exp);
@@ -1750,7 +1791,13 @@ namespace Titanium
 			eq->beard = emu->beard;
 			strcpy(eq->suffix, emu->suffix);
 			eq->petOwnerId = emu->petOwnerId;
-			eq->guildrank = emu->guildrank;
+			switch (emu->guildrank) {
+			case 8: case 7: case 6: case 5: case 4: { eq->guildrank = 0; break; }  // GUILD_MEMBER	0
+			case 3: case 2: { eq->guildrank = 1; break; }       				   // GUILD_OFFICER 1
+			case 1: { eq->guildrank = 2; break; }								   // GUILD_LEADER	2
+			default: { break; }													   // GUILD_NONE
+			}
+//			eq->guildrank = emu->guildrank;
 			//		eq->unknown0194[3] = emu->unknown0194[3];
 			for (k = EQ::textures::textureBegin; k < EQ::textures::materialCount; k++) {
 				eq->equipment.Slot[k].Material = emu->equipment.Slot[k].Material;

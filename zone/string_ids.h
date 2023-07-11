@@ -396,6 +396,7 @@
 #define TRANSFORM_FAILED			6326	//This mold cannot be applied to your %1.
 #define TRANSFORM_COMPLETE			6327	//You have successfully transformed your %1.
 #define DETRANSFORM_FAILED			6341 	//%1 has no transformation that can be removed.
+#define GUILD_PERMISSION_FAILED		6418	//You do not have permission to change access options.
 #define GENERIC_STRING				6688	//%1 (used to any basic message)
 #define SENTINEL_TRIG_YOU			6724	//You have triggered your sentinel.
 #define SENTINEL_TRIG_OTHER			6725	//%1 has triggered your sentinel.
