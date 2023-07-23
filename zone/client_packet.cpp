@@ -8501,7 +8501,7 @@ void Client::Handle_OP_GuildStatus(const EQApplicationPacket *app)
 	}
 
 	uint32 TargetGuildID = c->GuildID();
-
+	
 	if (TargetGuildID == GUILD_NONE)
 	{
 		MessageString(Chat::LightGray, NOT_IN_A_GUILD, c->GetName());
@@ -8509,31 +8509,51 @@ void Client::Handle_OP_GuildStatus(const EQApplicationPacket *app)
 	}
 
 	const char *GuildName = guild_mgr.GetGuildName(TargetGuildID);
-
+	
 	if (!GuildName)
 		return;
 
-	bool IsLeader = guild_mgr.CheckPermission(TargetGuildID, c->GuildRank(), GUILD_ACTION_MEMBERS_PROMOTE);
-	bool IsOfficer = guild_mgr.CheckPermission(TargetGuildID, c->GuildRank(), GUILD_ACTION_MEMBERS_INVITE);
-
-	if ((TargetGuildID == GuildID()) && (c != this))
-	{
-		if (IsLeader)
-			MessageString(Chat::LightGray, LEADER_OF_YOUR_GUILD, c->GetName());
-		else if (IsOfficer)
-			MessageString(Chat::LightGray, OFFICER_OF_YOUR_GUILD, c->GetName());
-		else
-			MessageString(Chat::LightGray, MEMBER_OF_YOUR_GUILD, c->GetName());
-
-		return;
-	}
-
-	if (IsLeader)
+	auto rank = c->GuildRank();
+	switch (rank) {
+	case 1: {
 		MessageString(Chat::LightGray, LEADER_OF_X_GUILD, c->GetName(), GuildName);
-	else if (IsOfficer)
+		break;
+	}
+	case 2:
+	case 3: {
 		MessageString(Chat::LightGray, OFFICER_OF_X_GUILD, c->GetName(), GuildName);
-	else
+		break;
+	}
+	case 4:
+	case 5:
+	case 6:
+	case 7:
+	case 8: {
 		MessageString(Chat::LightGray, MEMBER_OF_X_GUILD, c->GetName(), GuildName);
+		break;
+	}
+	}
+	//bool IsLeader = guild_mgr.CheckPermission(TargetGuildID, c->GuildRank(), GUILD_ACTION_MEMBERS_PROMOTE);
+	//bool IsOfficer = guild_mgr.CheckPermission(TargetGuildID, c->GuildRank(), GUILD_ACTION_MEMBERS_INVITE);
+
+	//if ((TargetGuildID == GuildID()) && (c != this))
+	//{
+	//	if (IsLeader)
+	//		MessageString(Chat::LightGray, LEADER_OF_YOUR_GUILD, c->GetName());
+	//	else if (IsOfficer)
+	//		MessageString(Chat::LightGray, OFFICER_OF_YOUR_GUILD, c->GetName());
+	//	else
+	//		MessageString(Chat::LightGray, MEMBER_OF_YOUR_GUILD, c->GetName());
+
+	//	return;
+	//}
+
+	//if (IsLeader)
+	//	MessageString(Chat::LightGray, LEADER_OF_X_GUILD, c->GetName(), GuildName);
+	//else if (IsOfficer)
+	//	MessageString(Chat::LightGray, OFFICER_OF_X_GUILD, c->GetName(), GuildName);
+	//else
+	//	MessageString(Chat::LightGray, MEMBER_OF_X_GUILD, c->GetName(), GuildName);
 }
 
 void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)

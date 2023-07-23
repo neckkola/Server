@@ -202,11 +202,12 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
 			guild_id
 		);
 		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
+		auto guild = m_guilds.find(guild_id);
 		for (auto row : results_rank_names)
 		{
 			auto row_rank = Strings::ToUnsignedInt(row[0]);
 			auto row_rank_name = row[1];
-			res->second->ranks[row_rank].name = std::string(row_rank_name);
+			guild->second->ranks[row_rank].name = std::string(row_rank_name);
 		}
 
 		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
@@ -628,6 +629,10 @@ bool BaseGuildManager::DBDeleteGuild(uint32 guild_id) {
 	// Delete the guild bank
 	query = StringFormat("DELETE FROM guild_bank WHERE guildid=%lu", (unsigned long)guild_id);
 	QueryWithLogging(query, "deleting guild bank");
+
+ 	//clear out permissions belonging to this guild.
+	query = StringFormat("DELETE FROM guild_permissions WHERE guild_id=%lu", (unsigned long)guild_id);
+	QueryWithLogging(query, "clearing permissions in guild");
 
 	LogGuilds("Deleted guild [{}] from the database", guild_id);
 
@@ -1226,15 +1231,15 @@ bool BaseGuildManager::CheckGMStatus(uint32 guild_id, uint8 status) const {
 
 bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction act) const {
 	if(rank > GUILD_MAX_RANK) {
-		LogGuilds("Check permission on guild [{}] and rank [{}] for action [{}] ([{}]): Invalid rank, denied",
-			guild_id, rank, GuildActionNames[act], act);
+		LogGuilds("Check permission on guild [{}] and rank [{}] for action ([{}]): Invalid rank, denied",
+			guild_id, rank, act);
 		return(false);	//invalid rank
 	}
 	std::map<uint32, GuildInfo *>::const_iterator res;
 	res = m_guilds.find(guild_id);
 	if(res == m_guilds.end()) {
-		LogGuilds("Check permission on guild [{}] and rank [{}] for action [{}] ([{}]): Invalid guild, denied",
-			guild_id, rank, GuildActionNames[act], act);
+		LogGuilds("Check permission on guild [{}] and rank [{}] for action ([{}]): Invalid guild, denied",
+			guild_id, rank, act);
 		return(false);	//invalid guild
 	}
 
