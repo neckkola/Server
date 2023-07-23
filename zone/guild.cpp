@@ -144,6 +144,26 @@ void Client::SendGuildRanks()
 	}
 }
 
+void Client::SendGuildRankNames() 
+{
+	if (IsInAGuild())
+	{
+		auto guild = guild_mgr.GetGuildByGuildID(GuildID());
+		for (int i = 1; i <= 8; i++)
+		{
+			auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+
+			gucp->payload.rank_name.rank = i;
+			strcpy(gucp->payload.rank_name.rank_name, guild->ranks[i].name.c_str());
+			gucp->action = 4;
+
+			QueuePacket(outapp);
+			safe_delete(outapp);
+		}
+	}
+}
+
 void Client::SendGuildSpawnAppearance() {
 	if (!IsInAGuild()) {
 		// clear guildtag

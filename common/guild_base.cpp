@@ -101,15 +101,26 @@ bool BaseGuildManager::LoadGuilds() {
 		rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
 		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
 
-		res->second->ranks[0].name = "Unknown";
-		res->second->ranks[1].name = "Leader";
-		res->second->ranks[2].name = "Senior Officer";
-		res->second->ranks[3].name = "Officer";
-		res->second->ranks[4].name = "Senior Member";
-		res->second->ranks[5].name = "Member";
-		res->second->ranks[6].name = "Junior Member";
-		res->second->ranks[7].name = "Initiate";
-		res->second->ranks[8].name = "Recruit";
+		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
+			guild_id
+		);
+		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
+		for (auto row : results_rank_names) 
+		{
+			auto row_rank = Strings::ToUnsignedInt(row[0]);
+			auto row_rank_name = row[1];
+			res->second->ranks[row_rank].name = std::string(row_rank_name);
+		}
+
+		//res->second->ranks[0].name = "Unknown";
+		//res->second->ranks[1].name = "Leader";
+		//res->second->ranks[2].name = "Senior Officer";
+		//res->second->ranks[3].name = "Officer";
+		//res->second->ranks[4].name = "Senior Member";
+		//res->second->ranks[5].name = "Member";
+		//res->second->ranks[6].name = "Junior Member";
+		//res->second->ranks[7].name = "Initiate";
+		//res->second->ranks[8].name = "Recruit";
 
 		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
 			guild_id
@@ -187,15 +198,16 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
 		rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
 		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
 
-		info->ranks[0].name = "Unknown";
-		info->ranks[1].name = "Leader";
-		info->ranks[2].name = "Senior Officer";
-		info->ranks[3].name = "Officer";
-		info->ranks[4].name = "Senior Member";
-		info->ranks[5].name = "Member";
-		info->ranks[6].name = "Junior Member";
-		info->ranks[7].name = "Initiate";
-		info->ranks[8].name = "Recruit";
+		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
+			guild_id
+		);
+		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
+		for (auto row : results_rank_names)
+		{
+			auto row_rank = Strings::ToUnsignedInt(row[0]);
+			auto row_rank_name = row[1];
+			res->second->ranks[row_rank].name = std::string(row_rank_name);
+		}
 
 		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
 			guild_id
@@ -257,7 +269,6 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, con
 	info->ranks[2].permissions[GUILD_MOTD] = true;
 	info->ranks[2].permissions[GUILD_WARPEACE] = true;
 
-	info->ranks[0].name = "Unknown";
 	info->ranks[1].name = "Leader";
 	info->ranks[2].name = "Senior Officer";
 	info->ranks[3].name = "Officer";

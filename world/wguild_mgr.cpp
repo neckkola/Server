@@ -176,7 +176,20 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 
 		break;
 	}
+	case ServerOP_GuildRankNameChange:
+	{
+		ServerGuildRankNameChange* rnc = (ServerGuildRankNameChange*)pack->pBuffer;
 
+		LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
+			rnc->guild_id,
+			rnc->rank,
+			rnc->rank_name
+		);
+
+		zoneserver_list.SendPacket(pack);
+
+		break;
+	}
 	default:
 		LogGuilds("Unknown packet {:#04x} received from zone??", pack->opcode);
 		break;

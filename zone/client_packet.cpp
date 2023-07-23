@@ -846,6 +846,7 @@ void Client::CompleteConnect()
 		SendGuildRanks();
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
 		guild_mgr.RequestOnlineGuildMembers(CharacterID(), GuildID());
+		SendGuildRankNames();
 	}
 
 	SendDynamicZoneUpdates();
@@ -8558,6 +8559,19 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 		else if (gup->action) {
 			guild_mgr.SetGuildChannel(GuildID(), gup->payload.url_channel.text);
 		}
+		break;
+	}
+	case 4: {
+		if (!guild_mgr.CheckPermission(guild_id, guildrank, GUILD_ACTION_RANKS_CHANGE_RANK_NAMES)) {
+			MessageString(Chat::Yellow, GUILD_PERMISSION_FAILED);
+			return;
+		}
+		auto rank = gup->payload.rank_name.rank;
+		auto rank_name = gup->payload.rank_name.rank_name;
+
+		guild_mgr.UpdateRankName(guild_id, rank, rank_name);
+		guild_mgr.SendRankName(guild_id, rank, rank_name);
+
 		break;
 	}
 	case 5: {

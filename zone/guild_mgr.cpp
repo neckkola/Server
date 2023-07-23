@@ -717,6 +717,26 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 		break;
 	}
+	case ServerOP_GuildRankNameChange:
+	{
+		//if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
+		//	LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh2_Struct));
+		//	return;
+		//}
+		ServerGuildRankNameChange* s = (ServerGuildRankNameChange*)pack->pBuffer;
+
+		LogGuilds("Received guild rank name change from world for rank [{}] from guild [{}]", s->rank, s->guild_id);
+
+		auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+		GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+		gucp->payload.rank_name.rank = s->rank;
+		strcpy(gucp->payload.rank_name.rank_name, s->rank_name);
+		gucp->action = 4;
+
+		entity_list.QueueClientsGuild(nullptr, outapp, false, s->guild_id);
+
+		break;
+	}
 	}
 }
 
@@ -1578,4 +1598,47 @@ void ZoneGuildManager::SendPermissionUpdate(uint32 guild_id, uint32 rank, uint32
 	sgpus->FunctionValue = value;
 	worldserver.SendPacket(pack);
 	safe_delete(pack);
+}
+
+void ZoneGuildManager::UpdateRankName(uint32 guild_id, uint32 rank, std::string rank_name) 
+{
+	auto query = fmt::format("UPDATE guild_ranks gr SET gr.title = '{}' WHERE gr.guild_id = {} AND gr.`rank` = {};", rank_name, guild_id, rank);
+	auto results = m_db->QueryDatabase(query);
+
+}
+
+void ZoneGuildManager::SendRankName(uint32 guild_id, uint32 rank, std::string rank_name)
+{
+	auto pack = new ServerPacket(ServerOP_GuildRankNameChange, sizeof(ServerGuildRankNameChange));
+	ServerGuildRankNameChange* sgpus = (ServerGuildRankNameChange*)pack->pBuffer;
+
+	sgpus->guild_id = guild_id;
+	sgpus->rank = rank;
+	strcpy(sgpus->rank_name, rank_name.c_str());
+	worldserver.SendPacket(pack);
+	safe_delete(pack);
+}
+
+void ZoneGuildManager::SendAllRankNames(uint32 guild_id, uint32 char_id)
+{
+	auto guild = m_guilds.find(guild_id);
+	for (int i = 1; i <= 8; i++)
+	{
+		auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
+		GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
+
+		gucp->payload.rank_name.rank = i;
+		strcpy(gucp->payload.rank_name.rank_name, guild->second->ranks[i].name.c_str());
+		gucp->action = 4;
+
+		entity_list.QueueClientsGuild(nullptr, outapp, false, guild_id);
+		safe_delete(outapp);
+	}
+}
+
+BaseGuildManager::GuildInfo* ZoneGuildManager::GetGuildByGuildID(uint32 guild_id)
+{
+	auto guild = m_guilds.find(guild_id);
+	return guild->second;
+
 }

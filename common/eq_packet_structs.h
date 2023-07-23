@@ -3351,12 +3351,18 @@ struct GuildUpdatePermissions {
 
 };
 
+struct GuildUpdateRankNames {
+	uint32	rank;				// the rank that is being updated
+	char	rank_name[76];		// the rank name
+};
+
 struct GuildUpdateUCP {
 	uint32	action;				// 0 and 1 use url and channel payload.  5 uses permissions payload
 	char	unknown[76];
 	union {
 		GuildUpdateURLAndChannel url_channel;
 		GuildUpdatePermissions permissions;
+		GuildUpdateRankNames rank_name;
 	}payload;
 };
 
