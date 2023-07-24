@@ -12,6 +12,7 @@ public:
 
 	//called by zoneserver when it receives a guild message from zone.
 	void ProcessZonePacket(ServerPacket *pack);
+	WorldGuildManager::GuildInfo GetGuildJson(int guild_id);
 
 protected:
 	virtual void SendGuildRefresh(uint32 guild_id, bool name, bool motd, bool rank, bool relation);

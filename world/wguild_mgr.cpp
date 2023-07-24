@@ -196,3 +196,8 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	}
 }
 
+WorldGuildManager::GuildInfo WorldGuildManager::GetGuildJson(int guild_id) 
+{
+	auto guild = m_guilds.find(guild_id);
+	return *guild->second;
+}

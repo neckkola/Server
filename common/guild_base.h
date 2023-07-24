@@ -95,7 +95,7 @@ class BaseGuildManager
 
 		uint8 *MakeGuildList(const char *head_name, uint32 &length) const;	//make a guild list packet, returns ownership of the buffer.
 
-		static const char *const GuildActionNames[_MaxGuildAction];
+//		static const char *const GuildActionNames[_MaxGuildAction];
 		uint32	DoesAccountContainAGuildLeader(uint32 AccountID);
 
 	protected:
@@ -130,7 +130,8 @@ class BaseGuildManager
 				std::string name;
 				bool permissions[_MaxGuildAction];
 		};
-		class GuildInfo
+	public:
+	class GuildInfo
 		{
 			public:
 				GuildInfo();
@@ -146,7 +147,9 @@ class BaseGuildManager
 				RankInfo ranks[GUILD_MAX_RANK + 1];
 				uint32 functions[31];
 		};
+	BaseGuildManager::GuildInfo* GetGuildByGuildID(uint32 guild_id);
 
+	protected:
 		std::map<uint32, GuildInfo *> m_guilds;	//we own the pointers in this map
 		void ClearGuilds();	//clears internal structure
 
@@ -155,6 +158,7 @@ class BaseGuildManager
 		bool _StoreGuildDB(uint32 guild_id);
 		GuildInfo *_CreateGuild(uint32 guild_id, const char *guild_name, uint32 account_id, uint8 minstatus, const char *guild_motd, const char *motd_setter, const char *Channel, const char *URL);
 		uint32 _GetFreeGuildID();
+
 };
 
 

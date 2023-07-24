@@ -27,8 +27,8 @@
 //until we move MAX_NUMBER_GUILDS
 #include "eq_packet_structs.h"
 
-const char *const BaseGuildManager::GuildActionNames[_MaxGuildAction] =
-{ "HearGuildChat", "SpeakGuildChat", "Invite", "Remove", "Promote", "Demote", "Set_MOTD", "War/Peace" };
+//const char *const BaseGuildManager::GuildActionNames[_MaxGuildAction] =
+//{ "HearGuildChat", "SpeakGuildChat", "Invite", "Remove", "Promote", "Demote", "Set_MOTD", "War/Peace" };
 
 BaseGuildManager::BaseGuildManager()
 : m_db(nullptr)
@@ -1365,3 +1365,4 @@ bool BaseGuildManager::IsCharacterInGuild(uint32 character_id, uint32 guild_id)
 
 	return true;
 }
+
