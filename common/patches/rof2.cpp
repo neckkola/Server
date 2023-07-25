@@ -1422,7 +1422,7 @@ namespace RoF2
 			if (InBuffer[0])
 			{
 				PacketSize += (5 + strlen(InBuffer));
-				HighestGuildID = i - 1;
+				HighestGuildID += 1;
 			}
 			InBuffer += 64;
 		}

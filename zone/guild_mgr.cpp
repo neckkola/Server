@@ -435,7 +435,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 		//reload all the guild details from the database.
 		RefreshGuild(s->guild_id);
-
+		
 		if (s->motd_change) {
 			//resend guild MOTD to all guild members in this zone.
 			entity_list.SendGuildMOTD(s->guild_id);
@@ -481,6 +481,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		}
 		else {
 			entity_list.SendGuildMembers(s->guild_id);		//even send GUILD_NONE (empty)
+
 		}
 
 		if (s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
@@ -491,6 +492,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 			if (c->ClientVersion() >= EQ::versions::ClientVersion::RoF)
 			{
 				c->SendGuildRanks();
+//				entity_list.SendToGuildTitleDisplay(c);
 			}
 		}
 
@@ -529,6 +531,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		if (c) {
 			c->RefreshGuildInfo();
 		}
+		entity_list.SendAllGuildTitleDisplay(sgrus->GuildID);
 
 		break;
 	}
@@ -675,6 +678,9 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 				guuacs->value = sgpus->FunctionValue
 			);
 			RefreshGuild(sgpus->GuildID);
+			if (sgpus->FunctionID == 4) {
+				entity_list.SendAllGuildTitleDisplay(sgpus->GuildID);
+			}
 		}
 		break;
 	}
@@ -692,6 +698,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		if (c != nullptr) {
 			//this reloads the char's guild info from the database and sends appearance updates
 			c->RefreshGuildInfo();
+//			entity_list.SendToGuildTitleDisplay(c);
 		}
 
 		//it would be nice if we had the packet to send just a one-person update
@@ -1622,16 +1629,18 @@ void ZoneGuildManager::SendRankName(uint32 guild_id, uint32 rank, std::string ra
 void ZoneGuildManager::SendAllRankNames(uint32 guild_id, uint32 char_id)
 {
 	auto guild = m_guilds.find(guild_id);
-	for (int i = 1; i <= 8; i++)
+	auto c = entity_list.GetClientByCharID(char_id);
+	if (c) 
 	{
 		auto outapp = new EQApplicationPacket(OP_GuildUpdateURLAndChannel, sizeof(GuildUpdateUCP));
 		GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
-
-		gucp->payload.rank_name.rank = i;
-		strcpy(gucp->payload.rank_name.rank_name, guild->second->ranks[i].name.c_str());
-		gucp->action = 4;
-
-		entity_list.QueueClientsGuild(nullptr, outapp, false, guild_id);
+		for (int i = 1; i <= 8; i++)
+		{
+			gucp->payload.rank_name.rank = i;
+			strcpy(gucp->payload.rank_name.rank_name, guild->second->ranks[i].name.c_str());
+			gucp->action = 4;
+			c->QueuePacket(outapp);
+		}
 		safe_delete(outapp);
 	}
 }

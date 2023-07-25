@@ -91,15 +91,15 @@ bool BaseGuildManager::LoadGuilds() {
 
 		RankInfo &rank = res->second->ranks[rankn];
 
-		rank.name = row[2];
-		rank.permissions[GUILD_HEAR] = (row[3][0] == '1')?true:false;
-		rank.permissions[GUILD_SPEAK] = (row[4][0] == '1')?true:false;
-		rank.permissions[GUILD_INVITE] = (row[5][0] == '1')?true:false;
-		rank.permissions[GUILD_REMOVE] = (row[6][0] == '1')?true:false;
-		rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1')?true:false;
-		rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1')?true:false;
-		rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
-		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
+		//rank.name = row[2];
+		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1')?true:false;
+		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1')?true:false;
+		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1')?true:false;
+		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1')?true:false;
+		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1')?true:false;
+		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1')?true:false;
+		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
+		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
 
 		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
 			guild_id
@@ -188,15 +188,15 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
 
 		RankInfo &rank = info->ranks[rankn];
 
-		rank.name = row[2];
-		rank.permissions[GUILD_HEAR] = (row[3][0] == '1') ? true: false;
-		rank.permissions[GUILD_SPEAK] = (row[4][0] == '1') ? true: false;
-		rank.permissions[GUILD_INVITE] = (row[5][0] == '1') ? true: false;
-		rank.permissions[GUILD_REMOVE] = (row[6][0] == '1') ? true: false;
-		rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1') ? true: false;
-		rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1') ? true: false;
-		rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
-		rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
+		//rank.name = row[2];
+		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1') ? true: false;
+		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1') ? true: false;
+		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1') ? true: false;
+		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1') ? true: false;
+		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1') ? true: false;
+		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1') ? true: false;
+		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
+		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
 
 		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
 			guild_id
@@ -251,24 +251,24 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, con
 	m_guilds[guild_id] = info;
 
 	//now setup default ranks (everything defaults to false)
-	info->ranks[0].name = "Member";
-	info->ranks[0].permissions[GUILD_HEAR] = true;
-	info->ranks[0].permissions[GUILD_SPEAK] = true;
-	info->ranks[1].name = "Officer";
-	info->ranks[1].permissions[GUILD_HEAR] = true;
-	info->ranks[1].permissions[GUILD_SPEAK] = true;
-	info->ranks[1].permissions[GUILD_INVITE] = true;
-	info->ranks[1].permissions[GUILD_REMOVE] = true;
-	info->ranks[1].permissions[GUILD_MOTD] = true;
-	info->ranks[2].name = "Leader";
-	info->ranks[2].permissions[GUILD_HEAR] = true;
-	info->ranks[2].permissions[GUILD_SPEAK] = true;
-	info->ranks[2].permissions[GUILD_INVITE] = true;
-	info->ranks[2].permissions[GUILD_REMOVE] = true;
-	info->ranks[2].permissions[GUILD_PROMOTE] = true;
-	info->ranks[2].permissions[GUILD_DEMOTE] = true;
-	info->ranks[2].permissions[GUILD_MOTD] = true;
-	info->ranks[2].permissions[GUILD_WARPEACE] = true;
+	//info->ranks[0].name = "Member";
+	//info->ranks[0].permissions[GUILD_HEAR] = true;
+	//info->ranks[0].permissions[GUILD_SPEAK] = true;
+	//info->ranks[1].name = "Officer";
+	//info->ranks[1].permissions[GUILD_HEAR] = true;
+	//info->ranks[1].permissions[GUILD_SPEAK] = true;
+	//info->ranks[1].permissions[GUILD_INVITE] = true;
+	//info->ranks[1].permissions[GUILD_REMOVE] = true;
+	//info->ranks[1].permissions[GUILD_MOTD] = true;
+	//info->ranks[2].name = "Leader";
+	//info->ranks[2].permissions[GUILD_HEAR] = true;
+	//info->ranks[2].permissions[GUILD_SPEAK] = true;
+	//info->ranks[2].permissions[GUILD_INVITE] = true;
+	//info->ranks[2].permissions[GUILD_REMOVE] = true;
+	//info->ranks[2].permissions[GUILD_PROMOTE] = true;
+	//info->ranks[2].permissions[GUILD_DEMOTE] = true;
+	//info->ranks[2].permissions[GUILD_MOTD] = true;
+	//info->ranks[2].permissions[GUILD_WARPEACE] = true;
 
 	info->ranks[1].name = "Leader";
 	info->ranks[2].name = "Senior Officer";

@@ -886,6 +886,8 @@ void Client::CompleteConnect()
 
 	entity_list.ScanCloseMobs(close_mobs, this, true);
 
+	entity_list.SendAllGuildTitleDisplay(GuildID());
+
 	if (GetGM() && IsDevToolsEnabled()) {
 		ShowDevToolsMenu();
 	}
@@ -7821,49 +7823,63 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		return;
 	}
 
-	if (!IsInAGuild())
+	if (!IsInAGuild()) {
 		Message(Chat::Red, "Error: You aren't in a guild!");
-	else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE))
-		Message(Chat::Red, "You don't have permission to demote.");
-	else if (!worldserver.Connected())	
-		Message(Chat::Red, "Error: World server disconnected");
-	else {
-		GuildDemoteStruct* demote = (GuildDemoteStruct*)app->pBuffer;
-		auto rank = demote->rank;
+		return;
+	}
 
-		CharGuildInfo gci;
-		if (!guild_mgr.GetCharInfo(demote->target, gci)) {
-			Message(Chat::Red, "Unable to find '%s'", demote->target);
-			return;
-		}
-		if (gci.guild_id != GuildID()) {
-			Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
-			return;
-		}
+	GuildDemoteStruct* demote = (GuildDemoteStruct*)app->pBuffer;
+	auto rank = demote->rank;
+	auto target = demote->target;
 
-		if (rank > 8) {
-			Message(Chat::Red, "%s cannot be demoted any further!", demote->target);
-			return;
-		}
+	CharGuildInfo gci;
+	if (!guild_mgr.GetCharInfo(demote->target, gci)) {
+		Message(Chat::Red, "Unable to find '%s'", demote->target);
+		return;
+	}
+	
+	if (gci.guild_id != GuildID()) {
+		Message(Chat::Red, "You aren't in the same guild, what do you think you are doing?");
+		return;
+	}
 
+	if (rank > 8) {
+		Message(Chat::Red, "%s cannot be demoted any further!", demote->target);
+		return;
+	}
+
+	if ((strcasecmp(GetCleanName(), target) == 0 &&
+		guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE_SELF)) ||
+		(guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE)))
+	{
 		LogGuilds("Demoting [{}] ([{}]) from rank [{}] ([{}]) to [{}] ([{}]) in [{}] ([{}])",
 			demote->target, gci.char_id,
-			guild_mgr.GetRankName(GuildID(), gci.rank), gci.rank,
-			guild_mgr.GetRankName(GuildID(), rank), rank,
-			guild_mgr.GetGuildName(GuildID()), GuildID());
-
-		if (!guild_mgr.SetGuildRank(gci.char_id, rank)) {
+			guild_mgr.GetRankName(GuildID(), gci.rank),
+			gci.rank,
+			guild_mgr.GetRankName(GuildID(), rank),
+			rank,
+			guild_mgr.GetGuildName(GuildID()), GuildID()
+		);
+		if (!guild_mgr.SetGuildRank(gci.char_id, rank))
+		{
 			Message(Chat::Red, "Error while setting rank %d on '%s'.", rank, demote->target);
+			LogGuilds("Demoting [{}] ([{}]) from rank [{}] ([{}]) to [{}] ([{}]) in [{}] ([{}]) FAILED.",
+				demote->target, gci.char_id,
+				guild_mgr.GetRankName(GuildID(), gci.rank),
+				gci.rank,
+				guild_mgr.GetRankName(GuildID(), rank),
+				rank,
+				guild_mgr.GetGuildName(GuildID()), GuildID()
+			);
 			return;
 		}
-		//Message(Chat::White, "Successfully demoted %s to rank %d", demote->target, rank);
 
 		auto c = entity_list.GetClientByName(demote->target);
 		if (c) {
 			c->guildrank = rank;
 		}
 
-		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate,sizeof(ServerGuildRankUpdate_Struct));
+		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate, sizeof(ServerGuildRankUpdate_Struct));
 		auto sr = (ServerGuildRankUpdate_Struct*)outapp->pBuffer;
 		sr->GuildID = GuildID();
 		strcpy(sr->MemberName, demote->target);
@@ -7871,10 +7887,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		sr->Banker = gci.banker;
 		worldserver.SendPacket(outapp);
 		safe_delete(outapp);
-
 	}
-	//	SendGuildMembers(GuildID(), true);
-	return;
 }
 
 void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
@@ -8060,11 +8073,18 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks) {
 			GuildBanks->SendGuildBank(this);
 		}
-			LogGuilds("Adding [{}] ([{}]) to guild [{}] ([{}]) at rank [{}]",
-			GetName(), CharacterID(),
-			guild_mgr.GetGuildName(guild_id), guild_id,
-			GUILD_RECRUIT);
+		c_invitee->guild_id = guild_id;
+		c_invitee->guildrank = GUILD_RECRUIT;
+		SendGuildRankNames();
+		entity_list.SendAllGuildTitleDisplay(GuildID());
 
+		LogGuilds("Adding [{}] ([{}]) to guild [{}] ([{}]) at rank [{}]",
+		GetName(), 
+		CharacterID(),
+		guild_mgr.GetGuildName(guild_id), 
+		guild_id,	
+		GUILD_RECRUIT
+		);
 	}
 
 //	uint32 guildrank = gj->response == 0 ? GUILD_RECRUIT : gj->response;
@@ -8475,8 +8495,8 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 			entity_list.QueueClientsGuild(this, outapp, false, GuildID());
 			safe_delete(outapp);
 		}
-		else
-			Message(Chat::Red, "Unable to remove %s from your guild.", gc->othername);
+		//else
+		//	Message(Chat::Red, "Unable to remove %s from your guild.", gc->othername);
 	}
 	//	SendGuildMembers(GuildID(), true);
 	return;
@@ -8603,6 +8623,7 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 		}
 		guild_mgr.UpdateRankPermission(guild_id, character_id, gup->payload.permissions.function_id, gup->payload.permissions.rank, gup->payload.permissions.value);
 		guild_mgr.SendPermissionUpdate(guild_id, gup->payload.permissions.rank, gup->payload.permissions.function_id, gup->payload.permissions.value);
+		
 		break;
 	}
 	default:

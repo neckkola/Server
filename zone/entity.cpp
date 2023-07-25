@@ -5829,3 +5829,77 @@ void EntityList::DamageArea(
 		}
 	}
 }
+
+void EntityList::SendToGuildTitleDisplay(Client* c)
+{
+	if (c) {
+		for (auto& client : client_list) {
+			if (client.second->IsInAGuild()) {
+				if (client.second->GuildID() == c->GuildID()) {
+					c->SendAppearancePacket(AT_GuildID, client.second->GuildID(), false);
+				}
+				else if (!guild_mgr.CheckPermission(client.second->GuildID(), client.second->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME)) {
+					c->SendAppearancePacket(AT_GuildID, 0, false);
+				}
+			}
+		}
+	}
+}
+
+void EntityList::SendAllGuildTitleDisplay(uint32 guild_id)
+{
+
+	auto gm = [&]() {
+		std::vector<Client*> guild_members;
+		for (auto& client : client_list) {
+			if (client.second->GuildID() == guild_id) {
+				guild_members.push_back(client.second);
+			}
+		}
+		return guild_members;
+	};
+
+	auto ngm = [&]() {
+		std::vector<Client*> guild_members;
+		for (auto& client : client_list) {
+			if (client.second->GuildID() != guild_id) {
+				guild_members.push_back(client.second);
+			}
+		}
+		return guild_members;
+	};
+
+	for (auto& c : client_list) {
+		if (c.second->IsInAGuild()) {
+			if (!guild_mgr.CheckPermission(c.second->GuildID(), c.second->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
+			{
+				c.second->SendAppearancePacket(AT_GuildShow, 0, false, true, nullptr, true);
+			}
+			else {
+				c.second->SendAppearancePacket(AT_GuildShow, 1, false, true, nullptr, true);
+			}
+		}
+	}
+
+	//	for (auto& m : gm()) 
+	//	{
+	//		if (!guild_mgr.CheckPermission(m->GuildID(), m->GuildRank(), GUILD_ACTION_DISPLAY_GUILD_NAME))
+	//		{
+	//			m->SendAppearancePacket(AT_GuildShow, 0, true, true);
+	//		}
+	//		else {
+	//			m->SendAppearancePacket(AT_GuildShow, 1, true, true);
+	//		}
+	//}
+}
+
+void EntityList::QueueClientsNotInGuild(Mob* sender, const EQApplicationPacket* app, bool ignore_sender, uint32 guild_id)
+{
+	auto it = client_list.begin();
+	while (it != client_list.end()) {
+		Client* client = it->second;
+		if (!client->IsInGuild(guild_id))
+			client->QueuePacket(app);
+		++it;
+	}
+}
