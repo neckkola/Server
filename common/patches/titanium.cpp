@@ -2151,6 +2151,18 @@ namespace Titanium
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_GuildDemote)
+	{
+		DECODE_LENGTH_EXACT(structs::GuildDemoteStruct);
+		SETUP_DIRECT_DECODE(GuildDemoteStruct, structs::GuildDemoteStruct);
+
+		memcpy(emu->name, eq->name, sizeof(emu->name));
+		memcpy(emu->target, eq->target, sizeof(emu->target));
+		emu->rank = 5;
+
+		FINISH_DIRECT_DECODE();
+	}
+
 	DECODE(OP_InspectAnswer)
 	{
 		DECODE_LENGTH_EXACT(structs::InspectResponse_Struct);

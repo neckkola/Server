@@ -7835,13 +7835,13 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 
 	GuildDemoteStruct* demote = (GuildDemoteStruct*)app->pBuffer;
 	auto rank = demote->rank;
-	if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
-		switch (rank) {
-		case 0: { rank = 5;	break; }
-		case 1: { rank = 3; break; }
-		case 2: { rank = 1; break; }
-		}
-	}
+	//if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
+	//	switch (rank) {
+	//	case 0: { rank = 5;	break; }
+	//	case 1: { rank = 3; break; }
+	//	case 2: { rank = 1; break; }
+	//	}
+	//}
 	auto target = demote->target;
 
 	CharGuildInfo gci;
@@ -7864,7 +7864,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE_SELF)) ||
 		(guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE)) ||
 		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() <= GUILD_OFFICER))
-	{
+				{
 		LogGuilds("Demoting [{}] ([{}]) from rank [{}] ([{}]) to [{}] ([{}]) in [{}] ([{}])",
 			demote->target, gci.char_id,
 			guild_mgr.GetRankName(GuildID(), gci.rank),
@@ -7913,6 +7913,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 	}
 
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
+	auto rank = gc->officer;
 
 	if (!IsInAGuild())
 		Message(Chat::Red, "Error: You are not in a guild!");
@@ -7939,12 +7940,12 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				//they are already in this guild, must be a promotion or demotion
 				if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
 					switch (gc->officer) {
-					case 0: { gc->officer = 5; break; }
-					case 1: { gc->officer = 3; break; }
-					case 2: { gc->officer = 1; break; }
+					case 0: { rank = 5; break; }
+					case 1: { rank = 3; break; }
+					case 2: { rank = 1; break; }
 					}
 				}			
-				if (gc->officer < client->GuildRank()) {
+				if (rank > client->GuildRank()) {
 					//demotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_DEMOTE) ||
 						(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER)) {
@@ -7958,16 +7959,16 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 					LogGuilds("[{}] ([{}]) is demoting [{}] ([{}]) to rank [{}] in guild [{}] ([{}])",
 						GetName(), CharacterID(),
 						client->GetName(), client->CharacterID(),
-						gc->officer,
+						rank,
 						guild_mgr.GetGuildName(GuildID()), GuildID());
 
-					if (!guild_mgr.SetGuildRank(client->CharacterID(), gc->officer)) {
+					if (!guild_mgr.SetGuildRank(client->CharacterID(), rank)) {
 						Message(Chat::Red, "There was an error during the demotion, DB may now be inconsistent.");
 						return;
 					}
 
 				}
-				else if (gc->officer > client->GuildRank()) {
+				else if (rank < client->GuildRank()) {
 					//promotion
 					if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_PROMOTE) ||
 						(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER)
@@ -7979,18 +7980,35 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 					LogGuilds("[{}] ([{}]) is asking to promote [{}] ([{}]) to rank [{}] in guild [{}] ([{}])",
 						GetName(), CharacterID(),
 						client->GetName(), client->CharacterID(),
-						gc->officer,
+						rank,
 						guild_mgr.GetGuildName(GuildID()), GuildID());
 
 					//record the promotion with guild manager so we know its valid when we get the reply
-					guild_mgr.RecordInvite(client->CharacterID(), GuildID(), gc->officer);
+					guild_mgr.RecordInvite(client->CharacterID(), GuildID(), rank);
 
 					if (gc->guildeqid == 0)
 						gc->guildeqid = GuildID();
 
 					LogGuilds("Sending OP_GuildInvite for promotion to [{}], length [{}]", client->GetName(), app->size);
+					
+					// Convert Membership Level between RoF and previous clients.
+					if (client->ClientVersion() >= EQ::versions::ClientVersion::RoF)
+					{
+						gc->officer = rank;
+						if (client->ClientVersion() >= EQ::versions::ClientVersion::RoF && ClientVersion() < EQ::versions::ClientVersion::RoF)
+						{
+							auto outapp = new EQApplicationPacket(OP_GuildPromote, sizeof(GuildPromoteStruct));
+							GuildPromoteStruct* gps = (GuildPromoteStruct*)outapp->pBuffer;
+							strcpy(gps->name, gc->myname);
+							strcpy(gps->target, gc->othername);
+							gps->myrank = GuildRank();
+							gps->rank = rank;
+							Handle_OP_GuildPromote(outapp);
+							safe_delete(outapp);
+							return;
+						}
+					}
 					client->QueuePacket(app);
-
 				}
 				else {
 					Message(Chat::Red, "That member is already that rank.");
@@ -8029,7 +8047,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 				}
 				if (client->ClientVersion() >= EQ::versions::ClientVersion::RoF && ClientVersion() < EQ::versions::ClientVersion::RoF)
 				{
-					gc->officer = GUILD_RECRUIT;
+					gc->officer = 8;
 				}
 
 				LogGuilds("Sending OP_GuildInvite for invite to [{}], length [{}]", client->GetName(), app->size);
@@ -8064,34 +8082,43 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 	auto guild_id = gj->guildeqid;
 	auto response = gj->response;
 								
+	if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
+		switch (response) {
+		case 0: { response = 8; break; }
+		case 1: { response = 3; break; }
+		default: {response = 9; break; }
+		}
+	}
+
 	Client* c_invitor = entity_list.GetClientByName(invitor);
 	Client* c_invitee = entity_list.GetClientByName(invitee);
 
 	if (!c_invitee || !c_invitor) {
-		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, response);
+		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "Both players must be in the same zone.");
 		c_invitor->Message(Chat::Yellow, "Both players must be in the same zone.");
 		return;
 	}
 
-	if (response == 9 || response == 5 || response == 4) {
-		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, response);
+//	if (response == 9 || response == 5 || response == 4) {
+	if (response == 9) {
+		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "You declined the guild invite.");
 		c_invitor->Message(Chat::Yellow, "The player declined the guild invite.");
 		return;
 	}
 
-	if (IsInAGuild()) {
-		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, response);
+	if (IsInAGuild() && GuildID() != c_invitor->GuildID()) {
+		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
 		Message(Chat::Yellow, "You are already in a guild.  Please leave that guild first.");
 		c_invitor->Message(Chat::Yellow, "Player is already in a guild.");
 		return;
 	}
 
-	if (response == 0 || response == 8) {
+//	if (response == 0 || response == 8) {
 		//accept guild invite
-		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, response);
-		if (!guild_mgr.SetGuild(CharacterID(), guild_id, GUILD_RECRUIT)) {
+		guild_mgr.VerifyAndClearInvite(CharacterID(), guild_id, gj->response);
+		if (!guild_mgr.SetGuild(CharacterID(), guild_id, response)) {
 			Message(Chat::Red, "There was an error during the invite, DB may now be inconsistent.");
 			return;
 		}
@@ -8099,7 +8126,7 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 			GuildBanks->SendGuildBank(this);
 		}
 		c_invitee->guild_id = guild_id;
-		c_invitee->guildrank = GUILD_RECRUIT;
+		c_invitee->guildrank = response;
 		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 			SendGuildRankNames();
 			entity_list.SendAllGuildTitleDisplay(GuildID());
@@ -8110,9 +8137,9 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		CharacterID(),
 		guild_mgr.GetGuildName(guild_id), 
 		guild_id,	
-		GUILD_RECRUIT
+		response
 		);
-	}
+//	}
 
 //	uint32 guildrank = gj->response == 0 ? GUILD_RECRUIT : gj->response;
 
