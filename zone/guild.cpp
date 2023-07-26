@@ -146,7 +146,7 @@ void Client::SendGuildRanks()
 
 void Client::SendGuildRankNames() 
 {
-	if (IsInAGuild())
+	if (IsInAGuild() && (ClientVersion() >= EQ::versions::ClientVersion::RoF))
 	{
 		auto guild = guild_mgr.GetGuildByGuildID(GuildID());
 		for (int i = 1; i <= 8; i++)
@@ -182,14 +182,14 @@ void Client::SendGuildSpawnAppearance() {
 		//		default: { break; }				// GUILD_NONE
 		//	}
 		//}
-		if (ClientVersion() < EQ::versions::ClientVersion::RoF)
-		{
-			switch (rank) {
-			case 1: { rank = 2; break; }
-			case 3: { rank = 1; break; }
-			case 5: { rank = 0; break; }
-			}
-		}
+		//if (ClientVersion() < EQ::versions::ClientVersion::RoF)
+		//{
+		//	switch (rank) {
+		//	case 1: { rank = 2; break; }
+		//	case 3: { rank = 1; break; }
+		//	case 5: { rank = 0; break; }
+		//	}
+		//}
 		SendAppearancePacket(AT_GuildRank, rank);
 	}
 	UpdateWho();

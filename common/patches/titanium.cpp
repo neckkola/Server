@@ -668,28 +668,41 @@ namespace Titanium
 		ENCODE_LENGTH_EXACT(GuildSetRank_Struct);
 		SETUP_DIRECT_ENCODE(GuildSetRank_Struct, structs::GuildSetRank_Struct);
 
-		eq->GuildID = emu->Unknown00;
+		eq->Unknown00 = 0;
+		eq->Unknown04 = 0;
 
-		/* Translate older ranks to new values */
+		//Translate older ranks to new values* /
 		switch (emu->Rank) {
-		case 8: case 7: case 6: case 5: case 4: { eq->Rank = htonl(0); break; }  // GUILD_MEMBER	0
-		case 3: case 2: { eq->Rank = htonl(1); break; }							// GUILD_OFFICER 1
-		case 1: { eq->Rank = htonl(2); break; }									// GUILD_LEADER	2
-		default: { eq->Rank = htonl(255); break; }						// GUILD_NONE
+		case 8: case 7: case 6: case 5: case 4: { eq->Rank = 0; break; }	// GUILD_MEMBER  0
+		case 3: case 2: { eq->Rank = 1; break; }							// GUILD_OFFICER 1
+		case 1: { eq->Rank = 2; break; }									// GUILD_LEADER	 2
 		}
-		//switch (emu->Rank) {
-		//case 0: { eq->Rank = 5; break; }  // GUILD_MEMBER	0
-		//case 1: { eq->Rank = 3; break; }  // GUILD_OFFICER	1
-		//case 2: { eq->Rank = 1; break; }  // GUILD_LEADER	2
-		//default: { eq->Rank = emu->Rank; break; }
-		//}
-//		eq->Rank = emu->Rank;
 
 		memcpy(eq->MemberName, emu->MemberName, sizeof(eq->MemberName));
 		OUT(Banker);
-		eq->Unknown76 = 1;
 
 		FINISH_ENCODE();
+	}
+
+	ENCODE(OP_SpawnAppearance)
+	{
+		EQApplicationPacket* in = *p;
+		*p = nullptr;
+
+		unsigned char* emu_buffer = in->pBuffer;
+
+		SpawnAppearance_Struct* sas = (SpawnAppearance_Struct*)emu_buffer;
+
+		if (sas->type == AT_GuildRank) {
+			//Translate older ranks to new values* /
+			switch (sas->parameter) {
+			case 8: case 7: case 6: case 5: case 4: { sas->parameter = 0; break; }
+			case 3: case 2: { sas->parameter = 1; break; }  // GUILD_OFFICER	1
+			case 1: { sas->parameter = 2; break; }  // GUILD_LEADER	2
+			}
+			dest->FastQueuePacket(&in, ack_req);
+			return;
+		}
 	}
 
 	ENCODE(OP_GuildMemberList)
