@@ -930,12 +930,13 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 	switch(chan_num)
 	{
 	case ChatChannel_Guild: { /* Guild Chat */
-		if (!IsInAGuild())
+		if (!IsInAGuild()) {
 			MessageString(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
-		else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_GUILD_CHAT_SPEAK_IN))
-			Message(0, "Error: You dont have permission to speak to the guild.");
-		else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, lang_skill, message))
-			Message(0, "Error: World server disconnected");
+		} else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_GUILD_CHAT_SPEAK_IN)) {
+			MessageString(Chat::EchoGuild, GUILD_PERMISSION_FAILED);
+		} else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, lang_skill, message)) {
+			Message(Chat::White, "Error: World server disconnected");
+		}
 		break;
 	}
 	case ChatChannel_Group: { /* Group Chat */
