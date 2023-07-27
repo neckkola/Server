@@ -1580,17 +1580,21 @@ bool GuildBankManager::AllowedToWithdraw(uint32 GuildID, uint16 Area, uint16 Slo
 }
 
 void ZoneGuildManager::UpdateRankPermission(uint32 gid, uint32 charid, uint32 fid, uint32 rank, uint32 value) {
-
 	auto res = m_guilds.find(gid);
+	
 	if (value) {
 		res->second->functions[fid] |= (1UL << (8 - rank));
-	}
-	else {
+	} else {
 		res->second->functions[fid] &= ~(1UL << (8 - rank));
 	}
-	auto query = fmt::format("UPDATE guild_permissions SET permission = {} WHERE perm_id = {} AND guild_id = {};", res->second->functions[fid], fid, gid);
-	auto results = m_db->QueryDatabase(query);
 
+	auto query = fmt::format("REPLACE INTO guild_permissions (perm_id, guild_id, permission) "
+			"VALUES('{}','{}','{}');",
+			fid,
+			gid,
+			res->second->functions[fid]
+	);
+	auto results = m_db->QueryDatabase(query);
 }
 
 void ZoneGuildManager::SendPermissionUpdate(uint32 guild_id, uint32 rank, uint32 function_id, uint32 value)
