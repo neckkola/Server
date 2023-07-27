@@ -933,7 +933,7 @@ void Client::ChannelMessageReceived(uint8 chan_num, uint8 language, uint8 lang_s
 		if (!IsInAGuild()) {
 			MessageString(Chat::DefaultText, GUILD_NOT_MEMBER2);	//You are not a member of any guild.
 		} else if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_GUILD_CHAT_SPEAK_IN)) {
-			MessageString(Chat::EchoGuild, GUILD_PERMISSION_FAILED);
+			MessageString(Chat::EchoGuild, NO_PROPER_ACCESS);
 		} else if (!worldserver.SendChannelMessage(this, targetname, chan_num, GuildID(), language, lang_skill, message)) {
 			Message(Chat::White, "Error: World server disconnected");
 		}
