@@ -1581,15 +1581,15 @@ bool GuildBankManager::AllowedToWithdraw(uint32 GuildID, uint16 Area, uint16 Slo
 
 void ZoneGuildManager::UpdateRankPermission(uint32 gid, uint32 charid, uint32 fid, uint32 rank, uint32 value) {
 	auto res = m_guilds.find(gid);
-	
+
 	if (value) {
 		res->second->functions[fid] |= (1UL << (8 - rank));
 	} else {
 		res->second->functions[fid] &= ~(1UL << (8 - rank));
 	}
 
-	auto query = fmt::format("REPLACE INTO guild_permissions (perm_id, guild_id, permission) "
-			"VALUES('{}','{}','{}');",
+	auto query = fmt::format("INSERT INTO guild_permissions (perm_id, guild_id, permission) "
+			"VALUES('{}','{}','{}') ON DUPLICATE KEY UPDATE guild_permissions.permission = VALUES(permission);",
 			fid,
 			gid,
 			res->second->functions[fid]
