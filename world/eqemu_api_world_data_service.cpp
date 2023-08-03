@@ -287,7 +287,7 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response)
 
 	row["guild_id"] = "98";
 	row["guild_name"] = guild.name;
-	row["leader_id"] = guild.leader_char_id;
+	row["leader_id"] = guild.leader;
 	row["min_status"] = guild.minstatus;
 	row["motd"] = guild.motd;
 	row["motd_setter"] = guild.motd_setter;
@@ -296,7 +296,7 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value& response)
 
 	for (int i = 0; i <= 8; i++) {
 		auto st = fmt::format("Rank-{}", i);
-		row[st] = guild.ranks[i].name;
+		row[st] = guild.rank_names[i].c_str();
 	}
 
 	for (int i = 0; i <= 31; i++) {

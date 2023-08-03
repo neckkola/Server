@@ -45,6 +45,63 @@ public:
 
 	// Custom extended repository methods here
 
+	static int UpdateOne(
+		Database& db,
+		const GuildPermissions& e
+	)
+	{
+		std::vector<std::string> v;
+
+		std::vector<std::string> columns = { "perm_id", "guild_id", "permission" };
+
+		v.push_back(std::to_string(e.perm_id));
+		v.push_back(std::to_string(e.guild_id));
+		v.push_back(std::to_string(e.permission));
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} ({}) VALUES({})",
+				TableName(),
+				Strings::Implode(", ", columns),
+				Strings::Implode(", ", v)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
+	static int ReplaceMany(
+		Database& db,
+		const std::vector<GuildPermissions>& entries
+	)
+	{
+		std::vector<std::string> insert_chunks;
+		std::vector<std::string> columns = { "perm_id", "guild_id", "permission" };
+
+		for (auto& e : entries) {
+			std::vector<std::string> v;
+
+			v.push_back(std::to_string(e.perm_id));
+			v.push_back(std::to_string(e.guild_id));
+			v.push_back(std::to_string(e.permission));
+
+			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
+		}
+
+		std::vector<std::string> v;
+
+		auto results = db.QueryDatabase(
+			fmt::format(
+				"REPLACE INTO {} ({}) VALUES{}",
+				TableName(),
+				Strings::Implode(", ", columns),
+				Strings::Implode(", ", insert_chunks)
+			)
+		);
+
+		return (results.Success() ? results.RowsAffected() : 0);
+	}
+
 };
 
 #endif //EQEMU_GUILD_PERMISSIONS_REPOSITORY_H

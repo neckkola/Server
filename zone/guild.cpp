@@ -155,7 +155,7 @@ void Client::SendGuildRankNames()
 			GuildUpdateUCP* gucp = (GuildUpdateUCP*)outapp->pBuffer;
 
 			gucp->payload.rank_name.rank = i;
-			strcpy(gucp->payload.rank_name.rank_name, guild->ranks[i].name.c_str());
+			strcpy(gucp->payload.rank_name.rank_name, guild->rank_names[i].c_str());
 			gucp->action = 4;
 
 			QueuePacket(outapp);

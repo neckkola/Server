@@ -227,7 +227,7 @@ void ZoneGuildManager::ListGuilds(Client *c, uint32 guild_id) const {
 			return;
 		}
 
-		const auto leader_name = database.GetCharNameByID(g->second->leader_char_id);
+		const auto leader_name = database.GetCharNameByID(g->second->leader);
 		c->Message(
 			Chat::White,
 			fmt::format(
@@ -238,7 +238,7 @@ void ZoneGuildManager::ListGuilds(Client *c, uint32 guild_id) const {
 					fmt::format(
 						"Leader: {} ({}) ",
 						leader_name,
-						g->second->leader_char_id
+						g->second->leader
 					) :
 					""
 				),
@@ -276,7 +276,7 @@ void ZoneGuildManager::ListGuilds(Client *c, std::string search_criteria) const 
 				continue;
 			}
 
-			const auto leader_name = database.GetCharNameByID(guild.second->leader_char_id);
+			const auto leader_name = database.GetCharNameByID(guild.second->leader);
 			c->Message(
 				Chat::White,
 				fmt::format(
@@ -287,7 +287,7 @@ void ZoneGuildManager::ListGuilds(Client *c, std::string search_criteria) const 
 						fmt::format(
 							"Leader: {} ({}) ",
 							leader_name,
-							guild.second->leader_char_id
+							guild.second->leader
 						) :
 						""
 					),
@@ -336,7 +336,7 @@ void ZoneGuildManager::DescribeGuild(Client *c, uint32 guild_id) const {
 
 	const GuildInfo *info = res->second;
 
-	auto leader_name = database.GetCharNameByID(info->leader_char_id);
+	auto leader_name = database.GetCharNameByID(info->leader);
 	std::string popup_text = "<table>";
 	popup_text += fmt::format(
 		"<tr><td>Name</td><td>{}</td><td>Guild ID</td><td>{}</td></tr>",
@@ -346,7 +346,7 @@ void ZoneGuildManager::DescribeGuild(Client *c, uint32 guild_id) const {
 	popup_text += fmt::format(
 		"<tr><td>Leader</td><td>{}</td><td>Character ID</td><td>{}</td></tr>",
 		leader_name,
-		info->leader_char_id
+		info->leader
 	);
 	popup_text += "<br><br>";
 	popup_text += "<tr>";
@@ -361,39 +361,39 @@ void ZoneGuildManager::DescribeGuild(Client *c, uint32 guild_id) const {
 	popup_text += "<td>War/Peace</td>";
 	popup_text += "</tr>";
 
-	for (uint8 guild_rank = 0; guild_rank <= GUILD_MAX_RANK; guild_rank++) {
-		auto can_hear_guild_chat = info->ranks[guild_rank].permissions[GUILD_HEAR] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_speak_guild_chat = info->ranks[guild_rank].permissions[GUILD_SPEAK] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_invite = info->ranks[guild_rank].permissions[GUILD_INVITE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_remove = info->ranks[guild_rank].permissions[GUILD_REMOVE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_promote = info->ranks[guild_rank].permissions[GUILD_PROMOTE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_demote = info->ranks[guild_rank].permissions[GUILD_DEMOTE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_set_motd = info->ranks[guild_rank].permissions[GUILD_MOTD] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		auto can_war_peace = info->ranks[guild_rank].permissions[GUILD_WARPEACE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
-		popup_text += fmt::format(
-			"<tr>"
-			"<td>{} ({})</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"<td>{}</td>"
-			"</tr>",
-			!info->ranks[guild_rank].name.empty() ? info->ranks[guild_rank].name : "Nameless",
-			guild_rank,
-			can_demote,
-			can_hear_guild_chat,
-			can_invite,
-			can_promote,
-			can_remove,
-			can_set_motd,
-			can_speak_guild_chat,
-			can_war_peace
-		);
-	}
+	//for (uint8 guild_rank = 0; guild_rank <= GUILD_MAX_RANK; guild_rank++) {
+	//	auto can_hear_guild_chat = info->rank_s[guild_rank].permissions[GUILD_HEAR] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_speak_guild_chat = info->ranks[guild_rank].permissions[GUILD_SPEAK] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_invite = info->ranks[guild_rank].permissions[GUILD_INVITE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_remove = info->ranks[guild_rank].permissions[GUILD_REMOVE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_promote = info->ranks[guild_rank].permissions[GUILD_PROMOTE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_demote = info->ranks[guild_rank].permissions[GUILD_DEMOTE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_set_motd = info->ranks[guild_rank].permissions[GUILD_MOTD] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	auto can_war_peace = info->ranks[guild_rank].permissions[GUILD_WARPEACE] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
+	//	popup_text += fmt::format(
+	//		"<tr>"
+	//		"<td>{} ({})</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"<td>{}</td>"
+	//		"</tr>",
+	//		!info->ranks[guild_rank].name.empty() ? info->ranks[guild_rank].name : "Nameless",
+	//		guild_rank,
+	//		can_demote,
+	//		can_hear_guild_chat,
+	//		can_invite,
+	//		can_promote,
+	//		can_remove,
+	//		can_set_motd,
+	//		can_speak_guild_chat,
+	//		can_war_peace
+	//	);
+	//}
 
 	popup_text += "</table>";
 
@@ -1638,7 +1638,7 @@ void ZoneGuildManager::SendAllRankNames(uint32 guild_id, uint32 char_id)
 		for (int i = 1; i <= 8; i++)
 		{
 			gucp->payload.rank_name.rank = i;
-			strcpy(gucp->payload.rank_name.rank_name, guild->second->ranks[i].name.c_str());
+			strcpy(gucp->payload.rank_name.rank_name, guild->second->rank_names[i].c_str());
 			gucp->action = 4;
 			c->QueuePacket(outapp);
 		}

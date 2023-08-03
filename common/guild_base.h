@@ -16,8 +16,6 @@ struct default_rank_names_struct {
 	std::string	name;
 };
 
-
-
 class Database;
 
 class CharGuildInfo
@@ -140,7 +138,6 @@ class BaseGuildManager
 			public:
 				RankInfo();
 				std::string name;
-				bool permissions[_MaxGuildAction];
 		};
 	public:
 	class GuildInfo
@@ -153,11 +150,11 @@ class BaseGuildManager
 				std::string url;
 				std::string channel;
 
-				uint32 leader_char_id;
+				uint32 leader;
 				uint8 minstatus;
 				//tribute is not in here on purpose, since it is only valid in world!
-				RankInfo ranks[GUILD_MAX_RANK + 1];
-				uint32 functions[31];
+				std::string rank_names[GUILD_MAX_RANK + 1];
+				uint32		functions[GUILD_MAX_FUNCTIONS + 1];
 		};
 	virtual GuildInfo* GetGuildByGuildID(uint32 guild_id);
 
