@@ -529,7 +529,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 		Client* c = entity_list.GetClientByName(sgrus->MemberName);
 		if (c) {
-			c->RefreshGuildInfo();
+			c->SendAppearancePacket(AT_GuildRank, sgrus->Rank, false);
 		}
 		entity_list.SendAllGuildTitleDisplay(sgrus->GuildID);
 
@@ -742,6 +742,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 
 		entity_list.QueueClientsGuild(nullptr, outapp, false, s->guild_id);
 
+		safe_delete(outapp);
 		break;
 	}
 	}

@@ -6,6 +6,18 @@
 #include <string>
 #include <vector>
 
+struct default_permission_struct {
+	GuildAction	id;
+	uint32		value;
+};
+
+struct default_rank_names_struct {
+	uint32		id;
+	std::string	name;
+};
+
+
+
 class Database;
 
 class CharGuildInfo
@@ -147,7 +159,7 @@ class BaseGuildManager
 				RankInfo ranks[GUILD_MAX_RANK + 1];
 				uint32 functions[31];
 		};
-	BaseGuildManager::GuildInfo* GetGuildByGuildID(uint32 guild_id);
+	virtual GuildInfo* GetGuildByGuildID(uint32 guild_id);
 
 	protected:
 		std::map<uint32, GuildInfo *> m_guilds;	//we own the pointers in this map
@@ -156,7 +168,7 @@ class BaseGuildManager
 		Database *m_db;	//we do not own this
 
 		bool _StoreGuildDB(uint32 guild_id);
-		GuildInfo *_CreateGuild(uint32 guild_id, const char *guild_name, uint32 account_id, uint8 minstatus, const char *guild_motd, const char *motd_setter, const char *Channel, const char *URL);
+		GuildInfo* _CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL);
 		uint32 _GetFreeGuildID();
 
 };

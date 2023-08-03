@@ -1,5 +1,5 @@
-#ifndef GUILD_MGR_H_
-#define GUILD_MGR_H_
+#ifndef WGUILD_MGR_H_
+#define WGUILD_MGR_H_
 
 #include "../common/types.h"
 #include "../common/guild_base.h"
@@ -20,11 +20,12 @@ protected:
 	virtual void SendRankUpdate(uint32 CharID) { return; }
 	virtual void SendGuildDelete(uint32 guild_id);
 
+
 	//map<uint32, uint32> m_tribute;	//map from guild ID to current tribute ammount
 };
 
 extern WorldGuildManager guild_mgr;
 
 
-#endif /*GUILD_MGR_H_*/
+#endif /*WGUILD_MGR_H_*/
 

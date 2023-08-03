@@ -18,6 +18,9 @@
 
 #include "guild_base.h"
 #include "database.h"
+#include "../common/repositories/base/base_guilds_repository.h"
+#include "../common/repositories/base/base_guild_ranks_repository.h"
+#include "../common/repositories/base/base_guild_permissions_repository.h"
 
 //#include "misc_functions.h"
 #include "strings.h"
@@ -27,8 +30,49 @@
 //until we move MAX_NUMBER_GUILDS
 #include "eq_packet_structs.h"
 
-//const char *const BaseGuildManager::GuildActionNames[_MaxGuildAction] =
-//{ "HearGuildChat", "SpeakGuildChat", "Invite", "Remove", "Promote", "Demote", "Set_MOTD", "War/Peace" };
+std::vector<default_permission_struct> default_permissions = {
+	{GUILD_ACTION_BANK_CHANGE_ITEM_PERMISSIONS,128},
+	{GUILD_ACTION_BANK_DEPOSIT_ITEMS,248},
+	{GUILD_ACTION_BANK_PROMOTE_ITEMS,128},
+	{GUILD_ACTION_BANK_VIEW_ITEMS,248},
+	{GUILD_ACTION_BANK_WITHDRAW_ITEMS,224},
+	{GUILD_ACTION_BANNER_CHANGE,224},
+	{GUILD_ACTION_BANNER_PLANT,224},
+	{GUILD_ACTION_BANNER_REMOVE,224},
+	{GUILD_ACTION_CHANGE_THE_MOTD,224},
+	{GUILD_ACTION_DISPLAY_GUILD_NAME,255},
+	{GUILD_ACTION_EDIT_PUBLIC_NOTES,224},
+	{GUILD_ACTION_EDIT_RECRUITING_SETTINGS,224},
+	{GUILD_ACTION_GUILD_CHAT_SEE,255},
+	{GUILD_ACTION_GUILD_CHAT_SPEAK_IN,255},
+	{GUILD_ACTION_MEMBERS_CHANGE_ALT_FLAG_FOR_OTHER,224},
+	{GUILD_ACTION_MEMBERS_DEMOTE,128},
+	{GUILD_ACTION_MEMBERS_DEMOTE_SELF,	224},
+	{GUILD_ACTION_MEMBERS_INVITE,224},
+	{GUILD_ACTION_MEMBERS_PROMOTE,224},
+	{GUILD_ACTION_MEMBERS_REMOVE,128},
+	{GUILD_ACTION_RANKS_CHANGE_PERMISSIONS,	128},
+	{GUILD_ACTION_RANKS_CHANGE_RANK_NAMES,	128},
+	{GUILD_ACTION_REAL_ESTATE_GUILD_PLOT_BUY,128},
+	{GUILD_ACTION_REAL_ESTATE_GUILD_PLOT_SELL,128},
+	{GUILD_ACTION_REAL_ESTATE_MODIFY_TROPHIES,224},
+	{GUILD_ACTION_SEND_THE_WHOLE_GUILD_E_MAIL,224},
+	{GUILD_ACTION_TRIBUTE_CHANGE_ACTIVE_BENEFIT,224},
+	{GUILD_ACTION_TRIBUTE_CHANGE_FOR_OTHERS,224},
+	{GUILD_ACTION_TROPHY_TRIBUTE_CHANGE_ACTIVE_BENEFIT,224},
+	{GUILD_ACTION_TROPHY_TRIBUTE_CHANGE_FOR_OTHERS,224}
+};
+
+std::vector<default_rank_names_struct> default_rank_names = {
+	{1, "Leader"},
+	{2, "Senior Officer"},
+	{3, "Officer"},
+	{4, "Senior Member"},
+	{5, "Member"},
+	{6, "Junior Member"},
+	{7, "Initiate"},
+	{8, "Recruit"}
+};
 
 BaseGuildManager::BaseGuildManager()
 : m_db(nullptr)
@@ -39,196 +83,82 @@ BaseGuildManager::~BaseGuildManager() {
 	ClearGuilds();
 }
 
-
-
 bool BaseGuildManager::LoadGuilds() {
 
 	ClearGuilds();
 
 	if(m_db == nullptr) {
-		LogGuilds("Requested to load guilds when we have no database object");
-		return(false);
-	}
-
-	std::string query("SELECT id, name, leader, minstatus, motd, motd_setter,channel,url FROM guilds");
-	std::map<uint32, GuildInfo *>::iterator res;
-
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
+		LogError("Requested to load guilds from the database however there is no database connectivity.");
 		return false;
 	}
 
-	for (auto row=results.begin();row!=results.end();++row)
-		_CreateGuild(Strings::ToUnsignedInt(row[0]), row[1], Strings::ToUnsignedInt(row[2]), Strings::ToUnsignedInt(row[3]), row[4], row[5], row[6], row[7]);
+	auto guilds = BaseGuildsRepository::All(*m_db);
+	
+	if (guilds.empty()) {
+		LogGuilds("No Guilds found in database.");
+		return false;
+	}
+	
+	LogGuilds("Found {} guilds.  Loading.....", guilds.size());
 
-	LogInfo("Loaded [{}] Guilds", Strings::Commify(std::to_string(results.RowCount())));
+	for (auto const& g : guilds) {
+		_CreateGuild(g.id, g.name.c_str(), g.leader, g.minstatus, g.motd.c_str(), g.motd_setter.c_str(), g.channel.c_str(), g.url.c_str());
+	}
+	
+	for (auto g : m_guilds) {
+		auto where_filter = fmt::format("guild_id = '{}'", g.first);
+		auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
+		for (auto const& r : g_ranks) {
+			g.second->ranks[r.rank].name = r.title;
+		}
 
-	query = "SELECT guild_id,`rank`,title,can_hear,can_speak,can_invite,can_remove,can_promote,can_demote,can_motd,can_warpeace FROM guild_ranks";
-	results = m_db->QueryDatabase(query);
+		where_filter = fmt::format("guild_id = '{}'", g.first);
+		auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
+		for (auto const& p : g_permissions) {
+			g.second->functions[p.perm_id] = p.permission | 128; // ensure that the leader always has permission regardless of db setting
+		}
+		LogGuilds("Loaded guild id [{}] .", g.first);
+	}
+	return true;
+}
 
-	if (!results.Success())
-	{
+bool BaseGuildManager::RefreshGuild(uint32 guild_id) 
+{
+	if (guild_id <= 0) {
+		LogGuilds("Requested to refresh guild id [{}] but id must be greater than 0.", guild_id);
 		return false;
 	}
 
-	for (auto row=results.begin();row!=results.end();++row)
-	{
-		uint32 guild_id = Strings::ToUnsignedInt(row[0]);
-		uint8 rankn = Strings::ToUnsignedInt(row[1]);
+	auto db_guild = BaseGuildsRepository::FindOne(*m_db, guild_id);
 
-		if(rankn > GUILD_MAX_RANK) {
-			LogGuilds("Found invalid (too high) rank [{}] for guild [{}], skipping", rankn, guild_id);
-			continue;
-		}
-
-		res = m_guilds.find(guild_id);
-		if(res == m_guilds.end()) {
-			LogGuilds("Found rank [{}] for non-existent guild [{}], skipping", rankn, guild_id);
-			continue;
-		}
-
-		RankInfo &rank = res->second->ranks[rankn];
-
-		//rank.name = row[2];
-		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1')?true:false;
-		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1')?true:false;
-		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1')?true:false;
-		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1')?true:false;
-		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1')?true:false;
-		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1')?true:false;
-		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1')?true:false;
-		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1')?true:false;
-
-		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
-			guild_id
-		);
-		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
-		for (auto row : results_rank_names) 
-		{
-			auto row_rank = Strings::ToUnsignedInt(row[0]);
-			auto row_rank_name = row[1];
-			res->second->ranks[row_rank].name = std::string(row_rank_name);
-		}
-
-		//res->second->ranks[0].name = "Unknown";
-		//res->second->ranks[1].name = "Leader";
-		//res->second->ranks[2].name = "Senior Officer";
-		//res->second->ranks[3].name = "Officer";
-		//res->second->ranks[4].name = "Senior Member";
-		//res->second->ranks[5].name = "Member";
-		//res->second->ranks[6].name = "Junior Member";
-		//res->second->ranks[7].name = "Initiate";
-		//res->second->ranks[8].name = "Recruit";
-
-		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
-			guild_id
-		);
-		auto results_actions = m_db->QueryDatabase(query_actions);
-		auto guild = m_guilds[guild_id];
-		for (auto row : results_actions)
-		{
-			uint32 perm_id = Strings::ToUnsignedInt(row[0]);
-			uint32 permission = Strings::ToUnsignedInt(row[1]);
-			permission = permission | 128;	// ensure that the leader always has permission regardless of db setting
-			guild->functions[perm_id] = permission;
-		}
+	if (!db_guild.id) {
+		LogGuilds("Guild ID [{}] not found in database.", db_guild.id);
+		return false;
 	}
 
+	LogGuilds("Found guild id [{}].  Loading details.....", db_guild.id);
+
+	_CreateGuild(db_guild.id, db_guild.name.c_str(), db_guild.leader, db_guild.minstatus, db_guild.motd.c_str(), db_guild.motd_setter.c_str(), db_guild.channel.c_str(), db_guild.url.c_str());
+
+	auto guild = GetGuildByGuildID(guild_id);
+	auto where_filter = fmt::format("guild_id = '{}'", guild_id);
+	auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
+	for (auto const& r : g_ranks) {
+		guild->ranks[r.rank].name = r.title;
+	}
+
+	where_filter = fmt::format("guild_id = '{}'", guild_id);
+	auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
+	for (auto const& p : g_permissions) {
+		guild->functions[p.perm_id] = p.permission | 128; // ensure that the leader always has permission regardless of db setting
+	}
+
+	LogGuilds("Successfully refreshed guild id [{}] from the database", guild_id);
 
 	return true;
 }
 
-bool BaseGuildManager::RefreshGuild(uint32 guild_id) {
-	if(m_db == nullptr) {
-		LogGuilds("Requested to refresh guild [{}] when we have no database object", guild_id);
-		return(false);
-	}
-
-	std::string query = StringFormat("SELECT name, leader, minstatus, motd, motd_setter, channel,url FROM guilds WHERE id=%lu", (unsigned long)guild_id);
-	std::map<uint32, GuildInfo *>::iterator res;
-	GuildInfo *info;
-
-	// load up all the guilds
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		return false;
-	}
-
-	if (results.RowCount() == 0)
-	{
-		LogGuilds("Unable to find guild [{}] in the database", guild_id);
-		return false;
-	}
-
-	auto row = results.begin();
-
-	info = _CreateGuild(guild_id, row[0], Strings::ToUnsignedInt(row[1]), Strings::ToUnsignedInt(row[2]), row[3], row[4], row[5], row[6]);
-
-    query = StringFormat("SELECT guild_id, `rank`, title, can_hear, can_speak, can_invite, can_remove, can_promote, can_demote, can_motd, can_warpeace "
-                        "FROM guild_ranks WHERE guild_id=%lu", (unsigned long)guild_id);
-	results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		return false;
-	}
-
-	for (auto row=results.begin();row!=results.end();++row)
-	{
-		uint8 rankn = Strings::ToUnsignedInt(row[1]);
-
-		if(rankn > GUILD_MAX_RANK) {
-			LogGuilds("Found invalid (too high) rank [{}] for guild [{}], skipping", rankn, guild_id);
-			continue;
-		}
-
-		RankInfo &rank = info->ranks[rankn];
-
-		//rank.name = row[2];
-		//rank.permissions[GUILD_HEAR] = (row[3][0] == '1') ? true: false;
-		//rank.permissions[GUILD_SPEAK] = (row[4][0] == '1') ? true: false;
-		//rank.permissions[GUILD_INVITE] = (row[5][0] == '1') ? true: false;
-		//rank.permissions[GUILD_REMOVE] = (row[6][0] == '1') ? true: false;
-		//rank.permissions[GUILD_PROMOTE] = (row[7][0] == '1') ? true: false;
-		//rank.permissions[GUILD_DEMOTE] = (row[8][0] == '1') ? true: false;
-		//rank.permissions[GUILD_MOTD] = (row[9][0] == '1') ? true: false;
-		//rank.permissions[GUILD_WARPEACE] = (row[10][0] == '1') ? true: false;
-
-		auto query_rank_names = fmt::format("SELECT `rank`,title FROM guild_ranks gr WHERE gr.guild_id = {};",
-			guild_id
-		);
-		auto results_rank_names = m_db->QueryDatabase(query_rank_names);
-		auto guild = m_guilds.find(guild_id);
-		for (auto row : results_rank_names)
-		{
-			auto row_rank = Strings::ToUnsignedInt(row[0]);
-			auto row_rank_name = row[1];
-			guild->second->ranks[row_rank].name = std::string(row_rank_name);
-		}
-
-		auto query_actions = fmt::format("SELECT perm_id, permission FROM guild_permissions WHERE guild_id = '{}';",
-			guild_id
-		);
-		auto results_actions = m_db->QueryDatabase(query_actions);
-		for (auto row : results_actions)
-		{
-			uint32 perm_id = Strings::ToUnsignedInt(row[0]);
-			uint32 permission = Strings::ToUnsignedInt(row[1]);
-			permission = permission | 128;	// ensure that the leader always has permission regardless of db setting
-			info->functions[perm_id] = permission;
-		}
-	}
-
-	LogGuilds("Successfully refreshed guild [{}] from the database", guild_id);
-
-	return true;
-}
-
-BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, const char* guild_name, uint32 leader_char_id, uint8 minstatus, const char* guild_motd, const char* motd_setter, const char* Channel, const char* URL)
+BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std::string guild_name, uint32 leader_char_id, uint8 minstatus, std::string guild_motd, std::string motd_setter, std::string Channel, std::string URL)
 {
 	std::map<uint32, GuildInfo*>::iterator res;
 
@@ -248,42 +178,18 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, con
 	info->motd_setter = motd_setter;
 	info->url = URL;
 	info->channel = Channel;
-	m_guilds[guild_id] = info;
 
-	//now setup default ranks (everything defaults to false)
-	//info->ranks[0].name = "Member";
-	//info->ranks[0].permissions[GUILD_HEAR] = true;
-	//info->ranks[0].permissions[GUILD_SPEAK] = true;
-	//info->ranks[1].name = "Officer";
-	//info->ranks[1].permissions[GUILD_HEAR] = true;
-	//info->ranks[1].permissions[GUILD_SPEAK] = true;
-	//info->ranks[1].permissions[GUILD_INVITE] = true;
-	//info->ranks[1].permissions[GUILD_REMOVE] = true;
-	//info->ranks[1].permissions[GUILD_MOTD] = true;
-	//info->ranks[2].name = "Leader";
-	//info->ranks[2].permissions[GUILD_HEAR] = true;
-	//info->ranks[2].permissions[GUILD_SPEAK] = true;
-	//info->ranks[2].permissions[GUILD_INVITE] = true;
-	//info->ranks[2].permissions[GUILD_REMOVE] = true;
-	//info->ranks[2].permissions[GUILD_PROMOTE] = true;
-	//info->ranks[2].permissions[GUILD_DEMOTE] = true;
-	//info->ranks[2].permissions[GUILD_MOTD] = true;
-	//info->ranks[2].permissions[GUILD_WARPEACE] = true;
-
-	info->ranks[1].name = "Leader";
-	info->ranks[2].name = "Senior Officer";
-	info->ranks[3].name = "Officer";
-	info->ranks[4].name = "Senior Member";
-	info->ranks[5].name = "Member";
-	info->ranks[6].name = "Junior Member";
-	info->ranks[7].name = "Initiate";
-	info->ranks[8].name = "Recruit";
-
-	for (int i = 0; i < GUILD_MAX_FUNCTIONS; i++) {
-		info->functions[i] = 128;
+	for (auto r : default_rank_names) {
+		info->ranks[r.id].name = r.name;
 	}
 
-	return(info);
+	for (auto p : default_permissions) {
+		info->functions[p.id] = p.value;
+	}
+
+	m_guilds[guild_id] = info;
+
+	return info;
 }
 
 bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) {
@@ -530,7 +436,7 @@ bool BaseGuildManager::SetGuildRank(uint32 charid, uint8 rank) {
 	if(!DBSetGuildRank(charid, rank))
 		return(false);
 
-	SendCharRefresh(GUILD_NONE, 0, charid);
+	//SendCharRefresh(GUILD_NONE, 0, charid);
 
 	return(true);
 }
@@ -1366,3 +1272,8 @@ bool BaseGuildManager::IsCharacterInGuild(uint32 character_id, uint32 guild_id)
 	return true;
 }
 
+BaseGuildManager::GuildInfo* BaseGuildManager::GetGuildByGuildID(uint32 guild_id) 
+{
+	auto guild = m_guilds[guild_id];
+	return guild;
+}

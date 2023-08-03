@@ -7890,6 +7890,7 @@ void Client::Handle_OP_GuildDemote(const EQApplicationPacket *app)
 		auto c = entity_list.GetClientByName(demote->target);
 		if (c) {
 			c->guildrank = rank;
+			c->SendAppearancePacket(AT_GuildRank, rank, false);
 		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate, sizeof(ServerGuildRankUpdate_Struct));
@@ -8450,6 +8451,7 @@ void Client::Handle_OP_GuildPromote(const EQApplicationPacket *app)
 		auto c = entity_list.GetClientByName(promote->target);
 		if (c) {
 			c->guildrank = rank;
+			c->SendAppearancePacket(AT_GuildRank, rank, false);
 		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildRankUpdate, sizeof(ServerGuildRankUpdate_Struct));
