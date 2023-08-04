@@ -360,7 +360,7 @@ void ZoneGuildManager::DescribeGuild(Client *c, uint32 guild_id) const {
 	popup_text += "<td>Speak Guild Chat</td>";
 	popup_text += "<td>War/Peace</td>";
 	popup_text += "</tr>";
-
+					
 	//for (uint8 guild_rank = 0; guild_rank <= GUILD_MAX_RANK; guild_rank++) {
 	//	auto can_hear_guild_chat = info->rank_s[guild_rank].permissions[GUILD_HEAR] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
 	//	auto can_speak_guild_chat = info->ranks[guild_rank].permissions[GUILD_SPEAK] ? "<c \"#00FF00\">Y</c>" : "<c \"#F62217\">N</c>";
