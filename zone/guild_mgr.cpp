@@ -422,18 +422,26 @@ bool ZoneGuildManager::VerifyAndClearInvite(uint32 char_id, uint32 guild_id, uin
 	return(valid);
 }
 
-void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
-	switch (pack->opcode) {
-	case ServerOP_RefreshGuild: {
+void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) 
+{
+	switch (pack->opcode) 
+	{
+	case ServerOP_RefreshGuild: 
+	{
 		if (pack->size != sizeof(ServerGuildRefresh_Struct)) {
 			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildRefresh_Struct));
 			return;
 		}
+	
 		ServerGuildRefresh_Struct* s = (ServerGuildRefresh_Struct*)pack->pBuffer;
+		LogDebug("Received guild refresh from world for guild id [{}] changes: name=[{}] motd=[{}] rank=[{}] relation=[{}]",
+			s->guild_id,
+			s->name_change,
+			s->motd_change,
+			s->rank_change,
+			s->relation_change
+		);
 
-		LogGuilds("Received guild refresh from world for [{}], changes: name=[{}], motd=[{}], rank=[{}], relation=[{}]", s->guild_id, s->name_change, s->motd_change, s->rank_change, s->relation_change);
-
-		//reload all the guild details from the database.
 		RefreshGuild(s->guild_id);
 		
 		if (s->motd_change) {
@@ -458,14 +466,17 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		break;
 	}
 
-	case ServerOP_GuildCharRefresh: {
+	case ServerOP_GuildCharRefresh: 
+	{
 		if (pack->size != sizeof(ServerGuildCharRefresh_Struct)) {
 			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh_Struct));
 			return;
 		}
 		ServerGuildCharRefresh_Struct* s = (ServerGuildCharRefresh_Struct*)pack->pBuffer;
-
-		LogGuilds("Received guild member refresh from world for char [{}] from guild [{}]", s->char_id, s->guild_id);
+		LogDebug("Received guild member refresh from world for char [{}] from guild [{}]",
+			s->char_id,
+			s->guild_id
+		);
 
 		Client* c = entity_list.GetClientByCharID(s->char_id);
 
@@ -536,11 +547,13 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		break;
 	}
 
-	case ServerOP_DeleteGuild: {
+	case ServerOP_DeleteGuild: 
+	{
 		if (pack->size != sizeof(ServerGuildID_Struct)) {
 			LogError("Received ServerOP_DeleteGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildID_Struct));
 			return;
 		}
+	
 		ServerGuildID_Struct* s = (ServerGuildID_Struct*)pack->pBuffer;
 
 		LogGuilds("Received guild delete from world for guild [{}]", s->guild_id);
@@ -672,7 +685,7 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 			entity_list.QueueClientsGuild(client, outapp, true, sgpus->GuildID);
 			delete(outapp);
 
-			LogGuilds("Zone Received guild permission update from world for rank {} function id [{}] and value [{}]",
+			LogDebug("Zone Received guild permission update from world for rank {} function id [{}] and value [{}]",
 				guuacs->rank = sgpus->Rank,
 				guuacs->function_id = sgpus->FunctionID,
 				guuacs->value = sgpus->FunctionValue
@@ -684,46 +697,46 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack) {
 		}
 		break;
 	}
-	case ServerOP_GuildCharRefresh2: {
-		if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
-			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh2_Struct));
-			return;
-		}
-		ServerGuildCharRefresh2_Struct* s = (ServerGuildCharRefresh2_Struct*)pack->pBuffer;
-
-		LogGuilds("Received guild member refresh from world for char [{}] from guild [{}]", s->char_id, s->guild_id);
-
-		Client* c = entity_list.GetClientByCharID(s->char_id);
-
-		if (c != nullptr) {
-			//this reloads the char's guild info from the database and sends appearance updates
-			c->RefreshGuildInfo();
-//			entity_list.SendToGuildTitleDisplay(c);
-		}
-
-		//it would be nice if we had the packet to send just a one-person update
-		//if (s->guild_id == GUILD_NONE) {
-		//	if (c != nullptr)
-		//		c->SendGuildMembers();	//only need to update this player's list (trying to clear it)
-		//}
-		//else {
-		////////entity_list.SendGuildMembers(s->guild_id);		//even send GUILD_NONE (empty)
-		//}
-
-		//if (s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
-		//	entity_list.SendGuildMembers(s->old_guild_id);
-		//else if (c != nullptr && s->guild_id != GUILD_NONE) {
-		//	//char is in zone, and has changed into a new guild, send MOTD.
-		//	c->SendGuildMOTD();
-		//	if (c->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-		//	{
-		//		c->SendGuildRanks();
-		//	}
-		//}
-
-
-		break;
-	}
+//	case ServerOP_GuildCharRefresh2: {
+//		if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
+//			LogError("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh2_Struct));
+//			return;
+//		}
+//		ServerGuildCharRefresh2_Struct* s = (ServerGuildCharRefresh2_Struct*)pack->pBuffer;
+//
+//		LogGuilds("Received guild member refresh from world for char [{}] from guild [{}]", s->char_id, s->guild_id);
+//
+//		Client* c = entity_list.GetClientByCharID(s->char_id);
+//
+//		if (c != nullptr) {
+//			//this reloads the char's guild info from the database and sends appearance updates
+//			c->RefreshGuildInfo();
+////			entity_list.SendToGuildTitleDisplay(c);
+//		}
+//
+//		//it would be nice if we had the packet to send just a one-person update
+//		//if (s->guild_id == GUILD_NONE) {
+//		//	if (c != nullptr)
+//		//		c->SendGuildMembers();	//only need to update this player's list (trying to clear it)
+//		//}
+//		//else {
+//		////////entity_list.SendGuildMembers(s->guild_id);		//even send GUILD_NONE (empty)
+//		//}
+//
+//		//if (s->old_guild_id != 0 && s->old_guild_id != GUILD_NONE && s->old_guild_id != s->guild_id)
+//		//	entity_list.SendGuildMembers(s->old_guild_id);
+//		//else if (c != nullptr && s->guild_id != GUILD_NONE) {
+//		//	//char is in zone, and has changed into a new guild, send MOTD.
+//		//	c->SendGuildMOTD();
+//		//	if (c->ClientVersion() >= EQ::versions::ClientVersion::RoF)
+//		//	{
+//		//		c->SendGuildRanks();
+//		//	}
+//		//}
+//
+//
+//		break;
+//	}
 	case ServerOP_GuildRankNameChange:
 	{
 		//if (pack->size != sizeof(ServerGuildCharRefresh2_Struct)) {
@@ -1584,12 +1597,12 @@ void ZoneGuildManager::UpdateRankPermission(uint32 gid, uint32 charid, uint32 fi
 
 	auto res = m_guilds.find(gid);
 	if (value) {
-		res->second->functions[fid] |= (1UL << (8 - rank));
+		res->second->functions[fid].perm_value |= (1UL << (8 - rank));
 	}
 	else {
-		res->second->functions[fid] &= ~(1UL << (8 - rank));
+		res->second->functions[fid].perm_value &= ~(1UL << (8 - rank));
 	}
-	auto query = fmt::format("UPDATE guild_permissions SET permission = {} WHERE perm_id = {} AND guild_id = {};", res->second->functions[fid], fid, gid);
+	auto query = fmt::format("UPDATE guild_permissions SET permission = {} WHERE perm_id = {} AND guild_id = {};", res->second->functions[fid].perm_value, fid, gid);
 	auto results = m_db->QueryDatabase(query);
 
 }

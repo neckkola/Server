@@ -24,6 +24,11 @@
 #include "../common/repositories/guild_ranks_repository.h"
 #include "../common/repositories/base/base_guild_permissions_repository.h"
 #include "../common/repositories/guild_permissions_repository.h"
+#include "../common/repositories/base/base_guild_members_repository.h"
+#include "../common/repositories/guild_members_repository.h"
+#include "../common/repositories/base/base_guild_bank_repository.h"
+#include "../common/repositories/guild_bank_repository.h"
+
 
 //#include "misc_functions.h"
 #include "strings.h"
@@ -118,17 +123,21 @@ bool BaseGuildManager::LoadGuilds() {
 		where_filter = fmt::format("guild_id = '{}'", g.first);
 		auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
 		for (auto const& p : g_permissions) {
-			g.second->functions[p.perm_id] = p.permission | GUILD_STARTING_FUNCTION_PERMISSION;  //ensure that the leader always has permission regardless of db setting
+			g.second->functions[p.perm_id].id = p.id;
+			g.second->functions[p.perm_id].guild_id = p.guild_id;
+			g.second->functions[p.perm_id].perm_id = p.perm_id;
+			g.second->functions[p.perm_id].perm_value = p.permission;
 		}
-		LogGuilds("Loaded guild id [{}] .", g.first);
+		LogGuilds("Loaded guild id [{}]", g.first);
 	}
+	LogGuilds("Completed loading {} guilds.", guilds.size());
 	return true;
 }
 
 bool BaseGuildManager::RefreshGuild(uint32 guild_id) 
 {
 	if (guild_id <= 0) {
-		LogGuilds("Requested to refresh guild id [{}] but id must be greater than 0.", guild_id);
+		LogError("Requested to refresh guild id [{}] but id must be greater than 0.", guild_id);
 		return false;
 	}
 
@@ -153,7 +162,10 @@ bool BaseGuildManager::RefreshGuild(uint32 guild_id)
 	where_filter = fmt::format("guild_id = '{}'", guild_id);
 	auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
 	for (auto const& p : g_permissions) {
-		guild->functions[p.perm_id] = p.permission | 128;  //ensure that the leader always has permission regardless of db setting
+		guild->functions[p.perm_id].id = p.id;
+		guild->functions[p.perm_id].guild_id = p.guild_id;
+		guild->functions[p.perm_id].perm_id = p.perm_id;
+		guild->functions[p.perm_id].perm_value = p.permission;
 	}
 
 	LogGuilds("Successfully refreshed guild id [{}] from the database", guild_id);
@@ -187,7 +199,9 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 	}
 
 	for (auto p : default_permissions) {
-		info->functions[p.id] = p.value;
+		info->functions[p.id].guild_id = guild_id;
+		info->functions[p.id].perm_id = p.id;
+		info->functions[p.id].perm_value = p.value;
 	}
 
 	m_guilds[guild_id] = info;
@@ -198,7 +212,7 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 bool BaseGuildManager::_StoreGuildDB(uint32 guild_id) 
 {
 	if(m_db == nullptr) {
-		LogGuilds("Requested to store guild [{}] however there is no database object", guild_id);
+		LogError("Requested to store guild [{}] however there is no database object", guild_id);
 		return false;
 	}
 
@@ -207,16 +221,17 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 		LogGuilds("Request to save guild id [{}] to the database however guild could not be found.", guild_id);
 		return false;
 	}
+
 	{
 		BaseGuildsRepository::Guilds out;
-		out.id		= guild_id;
-		out.channel = in->channel;
-		out.url		= in->url;
-		out.leader	= in->leader;
-		out.name	= in->name;
-		out.motd	= in->motd;
-		out.minstatus = in->minstatus;
-		out.motd_setter = in->motd_setter;
+		out.id = guild_id;
+		GOUT(channel);
+		GOUT(name);
+		GOUT(url);
+		GOUT(motd);
+		GOUT(motd_setter);
+		GOUT(leader);
+		GOUT(minstatus);
 		if (!GuildsRepository::ReplaceOne(*m_db, out)) {
 			LogGuilds("Error storing guild [{}] details in the database", guild_id);
 			return false;
@@ -244,9 +259,9 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 		std::vector<BaseGuildPermissionsRepository::GuildPermissions> out;
 		BaseGuildPermissionsRepository::GuildPermissions gp;
 		for (int i = 1; i <= GUILD_MAX_FUNCTIONS; i++) {
-			gp.guild_id = guild_id;
-			gp.perm_id = i;
-			gp.permission = in->functions[i];
+			gp.guild_id = in->functions[i].guild_id;
+			gp.perm_id = in->functions[i].perm_id;
+			gp.permission = in->functions[i].perm_value;
 			out.push_back(gp);
 		}
 		if (!GuildPermissionsRepository::ReplaceMany(*m_db, out)) {
@@ -264,60 +279,41 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 uint32 BaseGuildManager::_GetFreeGuildID() 
 {
 	if(m_db == nullptr) {
-		LogGuilds("Requested to find a free guild ID however there is no database object");
+		LogError("Requested to find a free guild ID however there is no database object");
 		return GUILD_NONE;
 	}
+	BaseGuildsRepository::DeleteWhere(*m_db, "`name` = ''");
 
-	std::string query;
-	//this has got to be one of the more retarded things I have seen.
-	//none the less, im too lazy to rewrite it right now.
-	//possibly:
-	//
-	// SELECT t1.id + 1
-	// FROM guilds t1
-	// WHERE NOT EXISTS (
-    //	SELECT *
-    //	FROM guilds t2
-    //	WHERE t2.id = t1.id + 1
-	// )
-	// LIMIT 1
-	//
-	// Seems likely what we should be doing is auto incrementing the guild table
-	// inserting, then getting the id. NOT getting a free id then inserting.
-	// could be a race condition.
-
-	for (auto index = 1; index < MAX_NUMBER_GUILDS; ++index)
-	{
-        query = StringFormat("SELECT id FROM guilds where id=%i;", index);
-		auto results = m_db->QueryDatabase(query);
-
-		if (!results.Success())
-		{
-			continue;
-		}
-
-		if (results.RowCount() == 0)
-		{
-			LogGuilds("Located free guild ID [{}] in the database", index);
-			return index;
-		}
+	BaseGuildsRepository::Guilds out;
+	out.id          = 0;
+	out.leader      = 0;
+	out.minstatus   = 0;
+	out.tribute     = 0;
+	out.name        = "";
+	out.motd        = "";
+	out.motd_setter = "";
+	out.url         = "";
+	out.channel     = "";
+	auto last_insert_id = BaseGuildsRepository::InsertOne(*m_db, out);
+	if (last_insert_id.id > 0) {
+		LogGuilds("Located a free guild ID [{}] in the database", last_insert_id.id);
+		return last_insert_id.id;
 	}
 
-	LogGuilds("Unable to find a free guild ID when requested");
+	LogGuilds("Unable to find a free guild ID in the database");
 	return GUILD_NONE;
 }
 
-
-
-uint32 BaseGuildManager::CreateGuild(const char* name, uint32 leader_char_id) {
-	uint32 gid = DBCreateGuild(name, leader_char_id);
-	if(gid == GUILD_NONE)
+uint32 BaseGuildManager::CreateGuild(std::string name, uint32 leader_char_id) 
+{
+	uint32 guild_id = DBCreateGuild(name, leader_char_id);
+	if(guild_id == GUILD_NONE)
 		return(GUILD_NONE);
+	RefreshGuild(guild_id);
+	SendGuildRefresh(guild_id, true, false, false, false);
+	SendCharRefresh(GUILD_NONE, guild_id, leader_char_id);
 
-	SendGuildRefresh(gid, true, false, false, false);
-	SendCharRefresh(GUILD_NONE, gid, leader_char_id);
-
-	return(gid);
+	return guild_id;
 }
 
 bool BaseGuildManager::DeleteGuild(uint32 guild_id) {
@@ -329,9 +325,9 @@ bool BaseGuildManager::DeleteGuild(uint32 guild_id) {
 	return(true);
 }
 
-bool BaseGuildManager::RenameGuild(uint32 guild_id, const char* name) {
+bool BaseGuildManager::RenameGuild(uint32 guild_id, std::string name) {
 	if(!DBRenameGuild(guild_id, name))
-		return(false);
+		return false;
 
 	SendGuildRefresh(guild_id, true, false, false, false);
 
@@ -357,29 +353,29 @@ bool BaseGuildManager::SetGuildLeader(uint32 guild_id, uint32 leader_char_id) {
 	return(true);
 }
 
-bool BaseGuildManager::SetGuildMOTD(uint32 guild_id, const char* motd, const char *setter) {
+bool BaseGuildManager::SetGuildMOTD(uint32 guild_id, std::string motd, std::string setter) {
 	if(!DBSetGuildMOTD(guild_id, motd, setter))
-		return(false);
+		return false;
 
 	SendGuildRefresh(guild_id, false, true, false, false);
 
 	return(true);
 }
 
-bool BaseGuildManager::SetGuildURL(uint32 GuildID, const char* URL)
+bool BaseGuildManager::SetGuildURL(uint32 GuildID, std::string URL)
 {
 	if(!DBSetGuildURL(GuildID, URL))
-		return(false);
+		return false;
 
 	SendGuildRefresh(GuildID, false, true, false, false);
 
 	return(true);
 }
 
-bool BaseGuildManager::SetGuildChannel(uint32 GuildID, const char* Channel)
+bool BaseGuildManager::SetGuildChannel(uint32 GuildID, std::string Channel)
 {
 	if(!DBSetGuildChannel(GuildID, Channel))
-		return(false);
+		return false;
 
 	SendGuildRefresh(GuildID, false, true, false, false);
 
@@ -461,277 +457,281 @@ bool BaseGuildManager::SetPublicNote(uint32 charid, const char *note) {
 	return(true);
 }
 
-uint32 BaseGuildManager::DBCreateGuild(const char* name, uint32 leader) {
-	//first try to find a free ID.
-	uint32 new_id = _GetFreeGuildID();
-	if(new_id == GUILD_NONE)
-		return(GUILD_NONE);
+uint32 BaseGuildManager::DBCreateGuild(std::string name, uint32 leader) 
+{
+	auto new_id = _GetFreeGuildID();
+	if (new_id == GUILD_NONE) {
+		return GUILD_NONE;
+	}
 
-	//now make the guild record in our local manager.
-	//this also sets up the default ranks for us.
 	_CreateGuild(new_id, name, leader, 0, "", "", "", "");
 
-	//now store the resulting guild setup into the DB.
 	if(!_StoreGuildDB(new_id)) {
-		LogGuilds("Error storing new guild. It may have been partially created which may need manual removal");
-		return(GUILD_NONE);
+		LogGuilds("Error storing new guild with id [{}]", new_id);
+		return GUILD_NONE;
 	}
 
-	LogGuilds("Created guild [{}] in the database", new_id);
+	LogGuilds("Created new guild with id [{}] in the database", new_id);
 
-	return(new_id);
+	return new_id;
 }
 
-bool BaseGuildManager::DBDeleteGuild(uint32 guild_id) {
-
-	//remove the local entry
-	std::map<uint32, GuildInfo *>::iterator res;
-	res = m_guilds.find(guild_id);
-	if(res != m_guilds.end()) {
-		delete res->second;
-		m_guilds.erase(res);
+bool BaseGuildManager::DBDeleteGuild(uint32 guild_id, bool local_delete, bool db_delete) 
+{
+	if (local_delete) {
+		auto where_filter = fmt::format("guildid = {}", guild_id);
+		auto bank_items = BaseGuildBankRepository::GetWhere(*m_db, where_filter);
+		if (!bank_items.empty()) {
+			LogError("Attempt to delete guild id [{}] that still has [{}] items in the bank. Please remove them and try again.",
+				guild_id,
+				bank_items.size()
+			);
+			LogGuilds("Attempt to delete guild id [{}] that still has [{}] items in the bank. Please remove them and try again.",
+				guild_id,
+				bank_items.size()
+			);
+			return false;
+		}
+		else
+		{
+			std::map<uint32, GuildInfo*>::iterator res;
+			res = m_guilds.find(guild_id);
+			if (res != m_guilds.end()) {
+				delete res->second;
+				m_guilds.erase(res);
+				LogGuilds("Deleted guild [{}] from memory", guild_id);
+				//Does this need to be sent to world?
+			}
+		}
 	}
 
-	if(m_db == nullptr) {
-		LogGuilds("Requested to delete guild [{}] when we have no database object", guild_id);
-		return(false);
+	if (db_delete) 
+	{
+		if (m_db == nullptr) 
+		{
+			LogError("Requested to delete guild [{}] when we have no database object", guild_id);
+			return(false);
+		}
+
+		auto where_filter = fmt::format("guildid = {}", guild_id);
+		auto bank_items = BaseGuildBankRepository::GetWhere(*m_db, where_filter);
+		if (!bank_items.empty()) {
+			LogError("Attempt to delete guild id [{}] that still has [{}] items in the bank. Please remove them and try again.",
+				guild_id,
+				bank_items.size()
+			);
+			LogGuilds("Attempt to delete guild id [{}] that still has [{}] items in the bank. Please remove them and try again.",
+				guild_id,
+				bank_items.size()
+			);
+			return false;
+		}
+		else 
+		{
+			auto where_filter = fmt::format("guild_id = {}", guild_id);
+			BaseGuildsRepository::DeleteOne(*m_db, guild_id);
+			BaseGuildRanksRepository::DeleteWhere(*m_db, where_filter);
+			BaseGuildPermissionsRepository::DeleteWhere(*m_db, where_filter);
+			BaseGuildMembersRepository::DeleteWhere(*m_db, where_filter);
+			LogGuilds("Deleted guild [{}] from the database", guild_id);
+		}
 	}
-
-	//clear out old `guilds` entry
-	std::string query = StringFormat("DELETE FROM guilds WHERE id=%lu", (unsigned long)guild_id);
-	QueryWithLogging(query, "clearing old guild record");
-
-	//clear out old `guild_ranks` entries
-	query = StringFormat("DELETE FROM guild_ranks WHERE guild_id=%lu", (unsigned long)guild_id);
-	QueryWithLogging(query, "clearing old guild_ranks records");
-
-	//clear out people belonging to this guild.
-	query = StringFormat("DELETE FROM guild_members WHERE guild_id=%lu", (unsigned long)guild_id);
-	QueryWithLogging(query, "clearing chars in guild");
-
-	// Delete the guild bank
-	query = StringFormat("DELETE FROM guild_bank WHERE guildid=%lu", (unsigned long)guild_id);
-	QueryWithLogging(query, "deleting guild bank");
-
- 	//clear out permissions belonging to this guild.
-	query = StringFormat("DELETE FROM guild_permissions WHERE guild_id=%lu", (unsigned long)guild_id);
-	QueryWithLogging(query, "clearing permissions in guild");
-
-	LogGuilds("Deleted guild [{}] from the database", guild_id);
-
-	return(true);
+	return true;
 }
 
-bool BaseGuildManager::DBRenameGuild(uint32 guild_id, const char* name) {
+bool BaseGuildManager::DBRenameGuild(uint32 guild_id, std::string new_name) 
+{
 	if(m_db == nullptr) {
 		LogGuilds("Requested to rename guild [{}] when we have no database object", guild_id);
 		return false;
 	}
 
-	std::map<uint32, GuildInfo *>::const_iterator res;
-	res = m_guilds.find(guild_id);
-	if(res == m_guilds.end())
-		return false;
-	GuildInfo *info = res->second;
-
-	//escape our strings.
-	uint32 len = strlen(name);
-	auto esc = new char[len * 2 + 1];
-	m_db->DoEscapeString(esc, name, len);
-
-	//insert the new `guilds` entry
-	std::string query = StringFormat("UPDATE guilds SET name='%s' WHERE id=%d", esc, guild_id);
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		LogGuilds("Error renaming guild [{}] [{}]: [{}]", guild_id, query.c_str(), results.Success());
-		safe_delete_array(esc);
+	auto in = GetGuildByGuildID(guild_id);
+	if (!in) {
+		LogGuilds("Request to rename guild id [{}] though guild could not be found", guild_id);
 		return false;
 	}
-	safe_delete_array(esc);
 
-	LogGuilds("Renamed guild [{}] ([{}]) to [{}] in database", info->name.c_str(), guild_id, name);
-
-	info->name = name;	//update our local record.
-
-	return true;
+	auto old_name = in->name;
+	in->name = new_name;
+	BaseGuildsRepository::Guilds out;
+	out.id = guild_id;
+	GOUT(channel);
+	GOUT(name);
+	GOUT(url);
+	GOUT(motd);
+	GOUT(motd_setter);
+	GOUT(leader);
+	GOUT(minstatus);
+	if (BaseGuildsRepository::UpdateOne(*m_db, out)) {
+		LogGuilds("Renamed guild id [{}] ([{}]) to [{}] in database", guild_id, old_name.c_str(), in->name.c_str());
+		return true;
+	}
+	return false;
 }
 
-bool BaseGuildManager::DBSetGuildLeader(uint32 guild_id, uint32 leader) {
-	if(m_db == nullptr) {
-		LogGuilds("Requested to set the leader for guild [{}] when we have no database object", guild_id);
+bool BaseGuildManager::DBSetGuildLeader(uint32 guild_id, uint32 leader) 
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to appoint new guild leader for guild [{}] when we have no database object", guild_id);
 		return false;
 	}
 
-	std::map<uint32, GuildInfo *>::const_iterator res;
-	res = m_guilds.find(guild_id);
-	if(res == m_guilds.end())
-		return false;
-	GuildInfo *info = res->second;
-
-	//insert the new `guilds` entry
-    std::string query = StringFormat("UPDATE guilds SET leader='%d' WHERE id=%d",leader, guild_id);
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
+	auto in = GetGuildByGuildID(guild_id);
+	if (!in) {
+		LogGuilds("Request to appoint new guild leader for guild id [{}] though guild could not be found", guild_id);
 		return false;
 	}
 
-	//set the old leader to officer
-	if(!DBSetGuildRank(info->leader, GUILD_OFFICER))
+	auto old_leader = in->leader;
+	in->leader = leader;
+	BaseGuildsRepository::Guilds out;
+	out.id = guild_id;
+	GOUT(channel);
+	GOUT(name);
+	GOUT(url);
+	GOUT(motd);
+	GOUT(motd_setter);
+	GOUT(leader);
+	GOUT(minstatus);
+	if (!BaseGuildsRepository::UpdateOne(*m_db, out)) {
+		LogGuilds("Could not make character id [{}] the leader for guild id [{}] in database", leader, guild_id);
 		return false;
-	//set the new leader to leader
-	if(!DBSetGuildRank(leader, GUILD_LEADER))
+	}
+
+	if (!DBSetGuildRank(in->leader, GUILD_OFFICER) && !DBSetGuildRank(out.leader, GUILD_LEADER)) {
 		return false;
+	}
 
 	LogGuilds("Set guild leader for guild [{}] to [{}] in the database", guild_id, leader);
 
-	info->leader = leader;	//update our local record.
-
 	return true;
 }
 
-bool BaseGuildManager::DBSetGuildMOTD(uint32 guild_id, const char* motd, const char *setter) {
-	if(m_db == nullptr) {
-		LogGuilds("Requested to set the MOTD for guild [{}] when we have no database object", guild_id);
-		return(false);
-	}
-
-	std::map<uint32, GuildInfo *>::const_iterator res;
-	res = m_guilds.find(guild_id);
-	if(res == m_guilds.end())
-		return(false);
-	GuildInfo *info = res->second;
-
-	//escape our strings.
-	uint32 len = strlen(motd);
-	uint32 len2 = strlen(setter);
-	auto esc = new char[len * 2 + 1];
-	auto esc_set = new char[len2 * 2 + 1];
-	m_db->DoEscapeString(esc, motd, len);
-	m_db->DoEscapeString(esc_set, setter, len2);
-
-	//insert the new `guilds` entry
-	std::string query = StringFormat("UPDATE guilds SET motd='%s',motd_setter='%s' WHERE id=%d", esc, esc_set, guild_id);
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		safe_delete_array(esc);
-		safe_delete_array(esc_set);
-		return false;
-	}
-	safe_delete_array(esc);
-	safe_delete_array(esc_set);
-
-	LogGuilds("Set MOTD for guild [{}] in the database", guild_id);
-
-	info->motd = motd;	//update our local record.
-	info->motd_setter = setter;	//update our local record.
-
-	return true;
-}
-
-bool BaseGuildManager::DBSetGuildURL(uint32 GuildID, const char* URL)
+bool BaseGuildManager::DBSetGuildMOTD(uint32 guild_id, std::string motd, std::string setter) 
 {
-	if(m_db == nullptr)
-		return false;
-
-	auto res = m_guilds.find(GuildID);
-	if(res == m_guilds.end())
-		return false;
-
-	GuildInfo *info = res->second;
-
-	//escape our strings.
-	uint32 len = strlen(URL);
-	auto esc = new char[len * 2 + 1];
-	m_db->DoEscapeString(esc, URL, len);
-
-    std::string query = StringFormat("UPDATE guilds SET url='%s' WHERE id=%d", esc, GuildID);
-	auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		safe_delete_array(esc);
-		return(false);
-	}
-	safe_delete_array(esc);
-
-	LogGuilds("Set URL for guild [{}] in the database", GuildID);
-
-	info->url = URL;	//update our local record.
-
-	return true;
-}
-
-bool BaseGuildManager::DBSetGuildChannel(uint32 GuildID, const char* Channel)
-{
-	if(m_db == nullptr)
-		return(false);
-
-	auto res = m_guilds.find(GuildID);
-
-	if(res == m_guilds.end())
-		return(false);
-
-	GuildInfo *info = res->second;
-
-	//escape our strings.
-	uint32 len = strlen(Channel);
-	auto esc = new char[len * 2 + 1];
-	m_db->DoEscapeString(esc, Channel, len);
-
-    std::string query = StringFormat("UPDATE guilds SET channel='%s' WHERE id=%d", esc, GuildID);
-    auto results = m_db->QueryDatabase(query);
-
-	if (!results.Success())
-	{
-		safe_delete_array(esc);
-		return(false);
-	}
-	safe_delete_array(esc);
-
-	LogGuilds("Set Channel for guild [{}] in the database", GuildID);
-
-	info->channel = Channel;	//update our local record.
-
-	return(true);
-}
-
-bool BaseGuildManager::DBSetGuild(uint32 charid, uint32 guild_id, uint8 rank) {
 	if(m_db == nullptr) {
-		LogGuilds("Requested to set char to guild [{}] when we have no database object", guild_id);
+		LogGuilds("Requested to set the MOTD for guild [{}] however there is no database object", guild_id);
 		return(false);
 	}
 
-	std::string query;
+	auto in = GetGuildByGuildID(guild_id);
+	if (!in) {
+		LogGuilds("Request to rename guild id [{}] though guild could not be found", guild_id);
+		return false;
+	}
 
-	if(guild_id != GUILD_NONE) {
-        query = StringFormat("REPLACE INTO guild_members (char_id,guild_id,`rank`,public_note) VALUES(%d,%d,%d,'')", charid, guild_id, rank);
-        auto results = m_db->QueryDatabase(query);
+	in->motd = motd;
+	in->motd_setter = setter;
+	BaseGuildsRepository::Guilds out;
+	out.id = guild_id;
+	GOUT(channel);
+	GOUT(name);
+	GOUT(url);
+	GOUT(motd);
+	GOUT(motd_setter);
+	GOUT(leader);
+	GOUT(minstatus);
+	if (BaseGuildsRepository::UpdateOne(*m_db, out)) {
+		LogGuilds("Updated the motd for guild id [{}] in database", guild_id);
+		return true;
+	}
+	return false;
+}
 
-		if (!results.Success()) {
-			return false;
-		}
+bool BaseGuildManager::DBSetGuildURL(uint32 guild_id, std::string URL)
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set the URL for guild [{}] however there is no database object", guild_id);
+		return(false);
+	}
 
-	} else {
-        query = StringFormat("DELETE FROM guild_members WHERE char_id=%d", charid);
-        auto results = m_db->QueryDatabase(query);
-        if (!results.Success())
-		{
-			return false;
-		}
-    }
-	LogGuilds("Set char [{}] to guild [{}] and rank [{}] in the database", charid, guild_id, rank);
+	auto in = GetGuildByGuildID(guild_id);
+	if (!in) {
+		LogGuilds("Request to update url for guild id [{}] though guild could not be found", guild_id);
+		return false;
+	}
+
+	in->url = URL;
+	BaseGuildsRepository::Guilds out;
+	out.id = guild_id;
+	GOUT(channel);
+	GOUT(name);
+	GOUT(url);
+	GOUT(motd);
+	GOUT(motd_setter);
+	GOUT(leader);
+	GOUT(minstatus);
+	if (BaseGuildsRepository::UpdateOne(*m_db, out)) {
+		LogGuilds("Updated the url for guild id [{}] in database", guild_id);
+		return true;
+	}
+	return false;
+}
+
+bool BaseGuildManager::DBSetGuildChannel(uint32 guild_id, std::string Channel)
+{
+	if (m_db == nullptr) {
+		LogGuilds("Requested to set the Channel for guild [{}] however there is no database object", guild_id);
+		return(false);
+	}
+
+	auto in = GetGuildByGuildID(guild_id);
+	if (!in) {
+		LogGuilds("Request to update channel message for guild id [{}] though guild could not be found", guild_id);
+		return false;
+	}
+
+	in->channel = Channel;
+	BaseGuildsRepository::Guilds out;
+	out.id = guild_id;
+	GOUT(channel);
+	GOUT(name);
+	GOUT(url);
+	GOUT(motd);
+	GOUT(motd_setter);
+	GOUT(leader);
+	GOUT(minstatus);
+	if (BaseGuildsRepository::UpdateOne(*m_db, out)) {
+		LogGuilds("Updated the channel message for guild id [{}] in database", guild_id);
+		return true;
+	}
+	return false;
+}
+
+bool BaseGuildManager::DBSetGuild(uint32 char_id, uint32 guild_id, uint8 rank) 
+{
+	if(m_db == nullptr) {
+		LogGuilds("Requested to set char [{}] to guild [{}] when we have no database object", char_id, guild_id);
+		return false;
+	}
+
+	BaseGuildMembersRepository::GuildMembers out;
+	out.alt = 0;
+	out.banker = 0;
+	out.char_id = char_id;
+	out.guild_id = guild_id;
+	out.last_tribute = 0;
+	out.public_note = "";
+	out.rank = rank;
+	out.total_tribute = 0;
+	out.tribute_enable = 0;
+	auto member = GuildMembersRepository::ReplaceOne(*m_db, out);
+	if (!member) {
+		LogGuilds("Error adding character id [{}] to guild id [{}]", char_id, guild_id);
+		return false;		
+	}
+
+	LogGuilds("Set char [{}] to guild [{}] and rank [{}] in the database", char_id, guild_id, rank);
 	return true;
 }
 
-bool BaseGuildManager::DBSetGuildRank(uint32 charid, uint8 rank) {
-	std::string query = StringFormat("UPDATE guild_members SET `rank`=%d WHERE char_id=%d", rank, charid);
-	return(QueryWithLogging(query, "setting a guild member's rank"));
+bool BaseGuildManager::DBSetGuildRank(uint32 char_id, uint8 rank_id) 
+{
+	if (!GuildMembersRepository::UpdateMemberRank(*m_db, char_id, rank_id)) {
+		return false;
+	}
+	return true;
 }
 
 bool BaseGuildManager::DBSetBankerFlag(uint32 charid, bool is_banker) {
@@ -931,7 +931,7 @@ bool BaseGuildManager::GetCharInfo(uint32 char_id, CharGuildInfo &into) {
 	if (!results.Success()) {
 		return false;
 	}
-
+					
     if (results.RowCount() == 0)
         return false;
 
@@ -1077,18 +1077,9 @@ uint32 BaseGuildManager::FindGuildByLeader(uint32 leader) const {
 }
 
 //returns the rank to be sent to the client for display purposes, given their eqemu rank.
-uint8 BaseGuildManager::GetDisplayedRank(uint32 guild_id, uint8 rank, uint32 char_id) const {
-	
+uint8 BaseGuildManager::GetDisplayedRank(uint32 guild_id, uint8 rank, uint32 char_id) const 
+{
 	return rank;
-	//std::map<uint32, GuildInfo *>::const_iterator res;
-	//res = m_guilds.find(guild_id);
-	//if(res == m_guilds.end())
-	//	return(3);	//invalid guild rank
-	//if (res->second->ranks[rank].permissions[GUILD_WARPEACE] || res->second->leader_char_id == char_id)
-	//	return(2);	//leader rank
-	//else if (res->second->ranks[rank].permissions[GUILD_INVITE] || res->second->ranks[rank].permissions[GUILD_REMOVE] || res->second->ranks[rank].permissions[GUILD_MOTD])
-	//	return(1);	//officer rank
-	//return(0);	//member rank
 }
 
 bool BaseGuildManager::CheckGMStatus(uint32 guild_id, uint8 status) const {
@@ -1127,7 +1118,7 @@ bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction 
 	}
 
 //	bool granted = res->second->ranks[rank].permissions[act];
-	bool granted = (res->second->functions[act] >> (8 - rank)) & 1;
+	bool granted = (res->second->functions[act].perm_value >> (8 - rank)) & 1;
 
 
 	//LogGuilds("Check permission on guild [{}] ([{}]) and rank [{}] ([{}]) for action [{}] ([{}]): [{}]",
