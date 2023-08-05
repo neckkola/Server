@@ -8360,7 +8360,8 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 		return;
 	}
 
-	if(!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_EDIT_PUBLIC_NOTES)) 
+	if(!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_EDIT_PUBLIC_NOTES) ||
+		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() <= GUILD_OFFICER))
 	{
 		Message(Chat::Red, "You do not have access to update public guild notes.");
 		return;
@@ -8381,7 +8382,7 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 	return;
 }
 
-void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
+void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 {
 	LogGuilds("Received OP_GuildRemove");
 
@@ -8390,16 +8391,18 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket *app)
 		return;
 	}
 	GuildCommand_Struct* gc = (GuildCommand_Struct*)app->pBuffer;
-	if (!IsInAGuild())
+	if (!IsInAGuild()) {
 		Message(Chat::Red, "Error: You aren't in a guild!");
-	// we can always remove ourself, otherwise, our rank needs remove permissions
+	}
 	else if ((strcasecmp(gc->othername, GetName()) != 0 &&
 		!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_REMOVE)) ||
-		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER) && 
-		strcasecmp(gc->othername, GetName()) != 0)
+		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER) &&
+		strcasecmp(gc->othername, GetName()) != 0) {
 		Message(Chat::Red, "You don't have permission to remove guild members.");
-	else if (!worldserver.Connected())
+	}
+	else if (!worldserver.Connected()) {
 		Message(Chat::Red, "Error: World server disconnected");
+	}
 	else {
 		uint32 char_id;
 		Client* client = entity_list.GetClientByName(gc->othername);

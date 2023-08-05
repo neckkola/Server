@@ -95,7 +95,7 @@ public:
 				"REPLACE INTO {} ({}) VALUES{}",
 				TableName(),
 				ColumnsRaw(),
-				Strings::Implode(", ", insert_chunks)
+					Strings::Implode(", ", insert_chunks)
 			)
 		);
 
