@@ -52,8 +52,7 @@ public:
 	{
 		std::vector<std::string> v;
 
-		std::vector<std::string> columns = { "perm_id", "guild_id", "permission" };
-
+		v.push_back(std::to_string(e.id));
 		v.push_back(std::to_string(e.perm_id));
 		v.push_back(std::to_string(e.guild_id));
 		v.push_back(std::to_string(e.permission));
@@ -62,7 +61,8 @@ public:
 			fmt::format(
 				"REPLACE INTO {} ({}) VALUES({})",
 				TableName(),
-				Strings::Implode(", ", columns),
+				ColumnsRaw(),
+//				Strings::Implode(", ", columns),
 				Strings::Implode(", ", v)
 			)
 		);
@@ -76,11 +76,11 @@ public:
 	)
 	{
 		std::vector<std::string> insert_chunks;
-		std::vector<std::string> columns = { "perm_id", "guild_id", "permission" };
 
 		for (auto& e : entries) {
 			std::vector<std::string> v;
 
+			v.push_back(std::to_string(e.id));
 			v.push_back(std::to_string(e.perm_id));
 			v.push_back(std::to_string(e.guild_id));
 			v.push_back(std::to_string(e.permission));
@@ -94,7 +94,7 @@ public:
 			fmt::format(
 				"REPLACE INTO {} ({}) VALUES{}",
 				TableName(),
-				Strings::Implode(", ", columns),
+				ColumnsRaw(),
 				Strings::Implode(", ", insert_chunks)
 			)
 		);

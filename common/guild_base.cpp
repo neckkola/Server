@@ -113,6 +113,7 @@ bool BaseGuildManager::LoadGuilds() {
 		_CreateGuild(g.id, g.name.c_str(), g.leader, g.minstatus, g.motd.c_str(), g.motd_setter.c_str(), g.channel.c_str(), g.url.c_str());
 	}
 	
+	bool store_to_db = false;
 	for (auto g : m_guilds) {
 		auto where_filter = fmt::format("guild_id = '{}'", g.first);
 		auto g_ranks = BaseGuildRanksRepository::GetWhere(*m_db, where_filter);
@@ -122,6 +123,9 @@ bool BaseGuildManager::LoadGuilds() {
 
 		where_filter = fmt::format("guild_id = '{}'", g.first);
 		auto g_permissions = BaseGuildPermissionsRepository::GetWhere(*m_db, where_filter);
+		if (g_permissions.size() < GUILD_MAX_FUNCTIONS) {
+			store_to_db = true;
+		}
 		for (auto const& p : g_permissions) {
 			g.second->functions[p.perm_id].id = p.id;
 			g.second->functions[p.perm_id].guild_id = p.guild_id;
@@ -129,6 +133,11 @@ bool BaseGuildManager::LoadGuilds() {
 			g.second->functions[p.perm_id].perm_value = p.permission;
 		}
 		LogGuilds("Loaded guild id [{}]", g.first);
+		if (store_to_db) {
+			LogGuilds("Found missing permissions for guild id [{}].  Setting missing to default values.", g.first);
+			_StoreGuildDB(g.first);
+			store_to_db = false;
+		}
 	}
 	LogGuilds("Completed loading {} guilds.", guilds.size());
 	return true;
@@ -199,6 +208,7 @@ BaseGuildManager::GuildInfo* BaseGuildManager::_CreateGuild(uint32 guild_id, std
 	}
 
 	for (auto p : default_permissions) {
+		info->functions[p.id].id = 0;
 		info->functions[p.id].guild_id = guild_id;
 		info->functions[p.id].perm_id = p.id;
 		info->functions[p.id].perm_value = p.value;
@@ -259,6 +269,7 @@ bool BaseGuildManager::_StoreGuildDB(uint32 guild_id)
 		std::vector<BaseGuildPermissionsRepository::GuildPermissions> out;
 		BaseGuildPermissionsRepository::GuildPermissions gp;
 		for (int i = 1; i <= GUILD_MAX_FUNCTIONS; i++) {
+			gp.id = in->functions[i].id;
 			gp.guild_id = in->functions[i].guild_id;
 			gp.perm_id = in->functions[i].perm_id;
 			gp.permission = in->functions[i].perm_value;
