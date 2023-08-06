@@ -7562,7 +7562,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 		}
 
 		const EQ::ItemData* CursorItem = CursorItemInst->GetItem();
-
+		
 		if (!CursorItem->NoDrop || CursorItemInst->IsAttuned())
 		{
 			Allowed = false;
@@ -8134,43 +8134,39 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 
 void Client::Handle_OP_GuildLeader(const EQApplicationPacket *app)
 {
-	LogGuilds("Received OP_GuildLeader");
-
-	if (app->size < 2) {
-		LogGuilds("Invalid length [{}] on OP_GuildLeader", app->size);
+	if (app->size != sizeof(GuildMakeLeader_Struct)) {
+		LogError("Received OP_Handle_GuildLeader packet of size {} which should be {}", app->size, sizeof(GuildMakeLeader_Struct));
 		return;
 	}
 
-	app->pBuffer[app->size - 1] = 0;
-	GuildMakeLeader* gml = (GuildMakeLeader*)app->pBuffer;
-	if (!IsInAGuild())
-		Message(Chat::Red, "Error: You aren't in a guild!");
-	else if (GuildRank() != GUILD_LEADER)
-		Message(Chat::Red, "Error: You aren't the guild leader!");
-	else if (!worldserver.Connected())
-		Message(Chat::Red, "Error: World server disconnected");
-	else {
-
-		//NOTE: we could do cross-zone lookups here...
-
-		Client* newleader = entity_list.GetClientByName(gml->target);
-		if (newleader) {
-
-			LogGuilds("Transfering leadership of [{}] ([{}]) to [{}] ([{}])",
-				guild_mgr.GetGuildName(GuildID()), GuildID(),
-				newleader->GetName(), newleader->CharacterID());
-
-			if (guild_mgr.SetGuildLeader(GuildID(), newleader->CharacterID())) {
-				Message(Chat::White, "Successfully Transfered Leadership to %s.", gml->target);
-				newleader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
-			}
-			else
-				Message(Chat::Red, "Could not change leadership at this time.");
-		}
-		else
-			Message(Chat::Red, "Failed to change leader, could not find target.");
+	GuildMakeLeader_Struct* gcl = (GuildMakeLeader_Struct*)app->pBuffer;
+	auto new_leader = entity_list.GetClientByName(gcl->new_leader);
+	if (!new_leader) {
+		Message(Chat::Red, "Both players must be in the same zone to transfer guild leadership.");
+		return;
 	}
-	//	SendGuildMembers(GuildID(), true);
+
+	if (GuildRank() != GUILD_LEADER) {
+		Message(Chat::Red, "You must be the guild leader to reassign guild leadership.");
+		return;
+	}
+
+	if (guild_mgr.SetGuildLeader(GuildID(), new_leader->CharacterID())) {
+		Message(Chat::White, "Successfully Transfered Leadership to %s.", new_leader->GetCleanName());
+		new_leader->Message(Chat::Yellow, "%s has transfered the guild leadership into your hands.", GetName());
+		LogGuilds("Transfering leadership of [{}] ([{}]) to [{}] ([{}])", 
+			guild_mgr.GetGuildName(GuildID()), 
+			GuildID(),
+			new_leader->GetCleanName(),
+			new_leader->CharacterID()								
+		);
+	}
+	else
+	{
+		Message(Chat::Red, "Could not change leadership at this time.");
+		LogGuilds("Tranfer of guild leadership for guild id {} failed.", GuildID());
+	}
+
 	return;
 }
 
@@ -8361,7 +8357,7 @@ void Client::Handle_OP_GuildPublicNote(const EQApplicationPacket *app)
 	}
 
 	if(!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_EDIT_PUBLIC_NOTES) ||
-		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() <= GUILD_OFFICER))
+		(ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER))
 	{
 		Message(Chat::Red, "You do not have access to update public guild notes.");
 		return;
@@ -8435,7 +8431,7 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 				guild_mgr.GetGuildName(GuildID()), GuildID());
 		}
 
-		if (!guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
+		if (guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
 			auto outapp = new EQApplicationPacket(OP_GuildManageRemove, sizeof(GuildManageRemove_Struct));
 			GuildManageRemove_Struct* gm = (GuildManageRemove_Struct*)outapp->pBuffer;
 			gm->guildeqid = GuildID();

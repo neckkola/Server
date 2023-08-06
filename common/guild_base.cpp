@@ -326,14 +326,16 @@ uint32 BaseGuildManager::CreateGuild(std::string name, uint32 leader_char_id)
 
 	return guild_id;
 }
-
-bool BaseGuildManager::DeleteGuild(uint32 guild_id) {
-	if(!DBDeleteGuild(guild_id))
-		return(false);
-
+	
+bool BaseGuildManager::DeleteGuild(uint32 guild_id) 
+{
 	SendGuildDelete(guild_id);
+	
+	if (!DBDeleteGuild(guild_id)) {
+		return false;
+	}
 
-	return(true);
+	return true;
 }
 
 bool BaseGuildManager::RenameGuild(uint32 guild_id, std::string name) {
@@ -345,7 +347,8 @@ bool BaseGuildManager::RenameGuild(uint32 guild_id, std::string name) {
 	return(true);
 }
 
-bool BaseGuildManager::SetGuildLeader(uint32 guild_id, uint32 leader_char_id) {
+bool BaseGuildManager::SetGuildLeader(uint32 guild_id, uint32 leader_char_id) 
+{
 	//get old leader first.
 	std::map<uint32, GuildInfo *>::const_iterator res;
 	res = m_guilds.find(guild_id);
@@ -393,9 +396,11 @@ bool BaseGuildManager::SetGuildChannel(uint32 GuildID, std::string Channel)
 	return(true);
 }
 
-bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank) {
-	if(rank > GUILD_MAX_RANK && guild_id != GUILD_NONE)
-		return(false);
+bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank) 
+{
+	if (rank > GUILD_MAX_RANK) {
+		return false;
+	}
 
 	//lookup their old guild, if they had one.
 	uint32 old_guild = GUILD_NONE;
@@ -404,12 +409,14 @@ bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank) {
 		old_guild = gci.guild_id;
 	}
 
-	if(!DBSetGuild(charid, guild_id, rank))
-		return(false);
+	if (!DBSetGuild(charid, guild_id, rank)) {
+		return false;
+	}
 
+	SendGuildRefresh(guild_id, false, false, false, false);
 	SendCharRefresh(old_guild, guild_id, charid);
 
-	return(true);
+	return true;
 }
 
 //changes rank, but not guild.
@@ -610,10 +617,15 @@ bool BaseGuildManager::DBSetGuildLeader(uint32 guild_id, uint32 leader)
 		return false;
 	}
 
-	if (!DBSetGuildRank(in->leader, GUILD_OFFICER) && !DBSetGuildRank(out.leader, GUILD_LEADER)) {
+	if (!DBSetGuildRank(old_leader, GUILD_OFFICER))
+	{
 		return false;
 	}
-
+	
+	if (!DBSetGuildRank(out.leader, GUILD_LEADER)) {
+		return false;
+	}
+	
 	LogGuilds("Set guild leader for guild [{}] to [{}] in the database", guild_id, leader);
 
 	return true;
@@ -715,6 +727,16 @@ bool BaseGuildManager::DBSetGuild(uint32 char_id, uint32 guild_id, uint8 rank)
 	if(m_db == nullptr) {
 		LogGuilds("Requested to set char [{}] to guild [{}] when we have no database object", char_id, guild_id);
 		return false;
+	}
+	if (guild_id == GUILD_NONE) {
+		if (!GuildMembersRepository::DeleteOne(*m_db, char_id)) {
+			LogError("Request to remove a character id {} from guild_members who is not in a guild {}.", char_id, guild_id);
+				return false;
+		}
+		else {
+			LogGuilds("Removed character id {} from guild id {}", char_id, guild_id);
+				return true;
+		}
 	}
 
 	BaseGuildMembersRepository::GuildMembers out;
