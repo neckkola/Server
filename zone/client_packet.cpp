@@ -7807,9 +7807,11 @@ void Client::Handle_OP_GuildDelete(const EQApplicationPacket *app)
 {
 	LogGuilds("Received OP_GuildDelete");
 
-	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID()))
+	if (!IsInAGuild() || !guild_mgr.IsGuildLeader(GuildID(), CharacterID())) {
 		Message(Chat::Red, "You are not a guild leader or not in a guild.");
-	else {
+	}
+	else 
+	{
 		LogGuilds("Deleting guild [{}] ([{}])", guild_mgr.GetGuildName(GuildID()), GuildID());
 		if (!guild_mgr.DeleteGuild(GuildID()))
 			Message(Chat::Red, "Guild delete failed.");
@@ -8118,6 +8120,8 @@ void Client::Handle_OP_GuildInviteAccept(const EQApplicationPacket *app)
 		}
 		c_invitee->guild_id = guild_id;
 		c_invitee->guildrank = response;
+		SendAppearancePacket(AT_GuildID, guild_id,true, false, c_invitee, false);
+		SendAppearancePacket(AT_GuildRank, response, true, false, c_invitee, false);
 		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 			SendGuildRankNames();
 			entity_list.SendAllGuildTitleDisplay(GuildID());
@@ -8409,7 +8413,8 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 				return;
 			}
 			char_id = client->CharacterID();
-
+			client->guild_id = GUILD_NONE;
+			client->guildrank = 0;
 			LogGuilds("Removing [{}] ([{}]) from guild [{}] ([{}])",
 				client->GetName(), client->CharacterID(),
 				guild_mgr.GetGuildName(GuildID()), GuildID());
@@ -8432,13 +8437,13 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 		}
 
 		if (guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
-			auto outapp = new EQApplicationPacket(OP_GuildManageRemove, sizeof(GuildManageRemove_Struct));
-			GuildManageRemove_Struct* gm = (GuildManageRemove_Struct*)outapp->pBuffer;
-			gm->guildeqid = GuildID();
-			strcpy(gm->member, gc->othername);
+			//auto outapp = new EQApplicationPacket(OP_GuildRemove, sizeof(GuildRemoveStruct));
+			//GuildRemoveStruct* gm = (GuildRemoveStruct*)outapp->pBuffer;
+			//gm->uildeqid = GuildID();
+			//strcpy(gm->member, gc->othername);
 			Message(Chat::White, "%s successfully removed from your guild.", gc->othername);
-			entity_list.QueueClientsGuild(this, outapp, false, GuildID());
-			safe_delete(outapp);
+			//entity_list.QueueClientsGuild(this, outapp, false, GuildID());
+			//safe_delete(outapp);
 		}
 		//else
 		//	Message(Chat::Red, "Unable to remove %s from your guild.", gc->othername);

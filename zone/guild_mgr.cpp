@@ -18,7 +18,7 @@
 
 #include "../common/servertalk.h"
 #include "../common/strings.h"
-
+#include "string_ids.h"
 #include "client.h"
 #include "guild_mgr.h"
 #include "worldserver.h"
@@ -555,19 +555,19 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 		}
 	
 		ServerGuildID_Struct* s = (ServerGuildID_Struct*)pack->pBuffer;
-
+		
 		LogGuilds("Received guild delete from world for guild [{}]", s->guild_id);
+		
+		auto clients = entity_list.GetClientList();
+		for (auto& c : clients) {
+			if (c.second->GuildID() == s->guild_id) {
+				c.second->RefreshGuildInfo();
+				c.second->SendGuildMembers();
+				c.second->MessageString(Chat::Guild, GUILD_DISBANDED);
+			}
+		}
 
-		//clear all the guild tags.
-		entity_list.RefreshAllGuildInfo(s->guild_id);
-
-		//remove the guild data from the local guild manager
-		guild_mgr.LocalDeleteGuild(s->guild_id);
-
-		//if we stop forcing guild list to send on guild create, we need to do this:
-		//in the case that we delete a guild and add a new one.
-		//entity_list.SendGuildList();
-
+		LoadGuilds();
 		break;
 	}
 

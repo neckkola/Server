@@ -329,12 +329,11 @@ uint32 BaseGuildManager::CreateGuild(std::string name, uint32 leader_char_id)
 	
 bool BaseGuildManager::DeleteGuild(uint32 guild_id) 
 {
-	SendGuildDelete(guild_id);
-	
 	if (!DBDeleteGuild(guild_id)) {
 		return false;
 	}
 
+	SendGuildDelete(guild_id);
 	return true;
 }
 

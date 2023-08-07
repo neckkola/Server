@@ -108,7 +108,8 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		break;
 	}
 
-	case ServerOP_DeleteGuild: {
+	case ServerOP_DeleteGuild: 
+	{
 		if(pack->size != sizeof(ServerGuildID_Struct)) {
 			LogGuilds("Received ServerOP_DeleteGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildID_Struct));
 			return;
@@ -120,10 +121,11 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		zoneserver_list.SendPacket(pack);
 
 		//preform a local refresh.
-		if(!LocalDeleteGuild(s->guild_id)) {
-			LogGuilds("Unable to preform local delete on guild [{}]", s->guild_id);
-			//can we do anything?
-		}
+		//if(!LocalDeleteGuild(s->guild_id)) {
+		//	LogGuilds("Unable to preform local delete on guild [{}]", s->guild_id);
+		//	//can we do anything?
+		//}
+		LoadGuilds();
 
 		break;
 	}

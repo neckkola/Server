@@ -537,7 +537,8 @@ void command_guild(Client *c, const Seperator *sep)
 	}
 	else if (is_test) 
 	{
-	auto guild = guild_mgr.GetGuildByGuildID(Strings::ToUnsignedInt(sep->arg[2]));
+	auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
 	if (guild) {
 		c->Message(Chat::Yellow, fmt::format("Guild ID:         {}.", sep->arg[2]).c_str());
 		c->Message(Chat::Yellow, fmt::format("Guild Name:       {}.", guild->name.c_str()).c_str());
@@ -561,7 +562,14 @@ void command_guild(Client *c, const Seperator *sep)
 			guild->functions[i].perm_value
 			).c_str());
 		}
-	}		
+	}	
+	for (auto& c : entity_list.GetClientList()) {
+		if (c.second->GuildID() == guild_id) {
+			c.second->Message(Chat::Yellow, fmt::format("PlayerName:        {}.", c.second->GetCleanName()).c_str());
+			c.second->Message(Chat::Yellow, fmt::format("Guild ID:          {}.", c.second->GuildID()).c_str());
+			c.second->Message(Chat::Yellow, fmt::format("Guild Rank:        {}.", c.second->GuildRank()).c_str());
+		}
+	}
 	}
 }
 
