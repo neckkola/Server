@@ -90,14 +90,11 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	}
 
 	case ServerOP_GuildCharRefresh:
-	case ServerOP_GuildCharRefresh2: {
-//		if(pack->size != sizeof(ServerGuildCharRefresh_Struct)) {
-//			LogGuilds("Received ServerOP_RefreshGuild of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildCharRefresh_Struct));
-//			return;
-//		}
+	{
 		ServerGuildCharRefresh_Struct *s = (ServerGuildCharRefresh_Struct *) pack->pBuffer;
 		LogGuilds("Received and broadcasting guild member refresh for char [{}] to all zones with members of guild [{}]", s->char_id, s->guild_id);
 
+		RefreshGuild(s->guild_id);
 		//preform the local update
 		client_list.UpdateClientGuild(s->char_id, s->guild_id);
 
@@ -120,11 +117,6 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		//broadcast this packet to all zones.
 		zoneserver_list.SendPacket(pack);
 
-		//preform a local refresh.
-		//if(!LocalDeleteGuild(s->guild_id)) {
-		//	LogGuilds("Unable to preform local delete on guild [{}]", s->guild_id);
-		//	//can we do anything?
-		//}
 		LoadGuilds();
 
 		break;
@@ -136,6 +128,8 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 			LogGuilds("Received ServerOP_GuildMemberUpdate of incorrect size [{}], expected [{}]", pack->size, sizeof(ServerGuildMemberUpdate_Struct));
 			return;
 		}
+		ServerGuildID_Struct* s = (ServerGuildID_Struct*)pack->pBuffer;
+		RefreshGuild(s->guild_id);
 
 		zoneserver_list.SendPacket(pack);
 
@@ -149,6 +143,7 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		}
 
 		ServerGuildPermissionUpdate_Struct* sg = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
+		RefreshGuild(sg->GuildID);
 
 		LogGuilds("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {}",
 			sg->GuildID,
@@ -157,15 +152,6 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		);
 
 		auto res = m_guilds.find(sg->GuildID);
-
-		//for (int i = 0; i < 31; i++) {
-		//	LogGuilds("Current wguild_mgr settings: guild [{}] function id {} with value of {}",
-		//		guild_mgr.GetGuildNameByID(sg->GuildID),
-		//		i,
-		//		res->second->functions[i]
-		//	);
-
-		//}
 
 		if (sg->FunctionValue) {
 			res->second->functions[sg->FunctionID].perm_value |= (1UL << (8 - sg->Rank));
@@ -181,6 +167,7 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	case ServerOP_GuildRankNameChange:
 	{
 		ServerGuildRankNameChange* rnc = (ServerGuildRankNameChange*)pack->pBuffer;
+		RefreshGuild(rnc->guild_id);
 
 		LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
 			rnc->guild_id,
@@ -198,8 +185,11 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	}
 }
 
-WorldGuildManager::GuildInfo WorldGuildManager::GetGuildJson(int guild_id) 
+WorldGuildManager::GuildInfo* WorldGuildManager::GetGuildJson(int guild_id) 
 {
 	auto guild = m_guilds.find(guild_id);
-	return *guild->second;
+	if (guild != m_guilds.end()) {
+		return guild->second;
+	}
+	return nullptr;
 }

@@ -8415,6 +8415,7 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 			char_id = client->CharacterID();
 			client->guild_id = GUILD_NONE;
 			client->guildrank = 0;
+			client->SendGuildMOTD();
 			LogGuilds("Removing [{}] ([{}]) from guild [{}] ([{}])",
 				client->GetName(), client->CharacterID(),
 				guild_mgr.GetGuildName(GuildID()), GuildID());
@@ -8437,18 +8438,9 @@ void Client::Handle_OP_GuildRemove(const EQApplicationPacket* app)
 		}
 
 		if (guild_mgr.SetGuild(char_id, GUILD_NONE, 0)) {
-			//auto outapp = new EQApplicationPacket(OP_GuildRemove, sizeof(GuildRemoveStruct));
-			//GuildRemoveStruct* gm = (GuildRemoveStruct*)outapp->pBuffer;
-			//gm->uildeqid = GuildID();
-			//strcpy(gm->member, gc->othername);
 			Message(Chat::White, "%s successfully removed from your guild.", gc->othername);
-			//entity_list.QueueClientsGuild(this, outapp, false, GuildID());
-			//safe_delete(outapp);
 		}
-		//else
-		//	Message(Chat::Red, "Unable to remove %s from your guild.", gc->othername);
 	}
-	//	SendGuildMembers(GuildID(), true);
 	return;
 }
 

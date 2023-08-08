@@ -18,15 +18,10 @@
 
 #include "guild_base.h"
 #include "database.h"
-#include "../common/repositories/base/base_guilds_repository.h"
 #include "../common/repositories/guilds_repository.h"
-#include "../common/repositories/base/base_guild_ranks_repository.h"
 #include "../common/repositories/guild_ranks_repository.h"
-#include "../common/repositories/base/base_guild_permissions_repository.h"
 #include "../common/repositories/guild_permissions_repository.h"
-#include "../common/repositories/base/base_guild_members_repository.h"
 #include "../common/repositories/guild_members_repository.h"
-#include "../common/repositories/base/base_guild_bank_repository.h"
 #include "../common/repositories/guild_bank_repository.h"
 
 
@@ -418,7 +413,6 @@ bool BaseGuildManager::SetGuild(uint32 charid, uint32 guild_id, uint8 rank)
 	return true;
 }
 
-//changes rank, but not guild.
 bool BaseGuildManager::SetGuildRank(uint32 charid, uint8 rank) {
 	if(rank > GUILD_MAX_RANK)
 		return(false);
@@ -426,7 +420,9 @@ bool BaseGuildManager::SetGuildRank(uint32 charid, uint8 rank) {
 	if(!DBSetGuildRank(charid, rank))
 		return(false);
 
-	//SendCharRefresh(GUILD_NONE, 0, charid);
+	auto guild_id = GetGuildIDByCharacterID(charid);
+	
+	SendGuildRefresh(guild_id,false, false, false, false);
 
 	return(true);
 }
