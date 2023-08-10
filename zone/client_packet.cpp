@@ -531,16 +531,6 @@ void Client::CompleteConnect()
 
 	if (IsInAGuild()) {
 		uint8 rank = GuildRank();
-		//Function moved to patches/uf.cpp with SendAppearancePacket
-		//if (ClientVersion() < EQ::versions::ClientVersion::RoF)
-		//{
-		//	switch (rank) {
-		//	case 8:case 7:case 6:case 5:case 4: { rank = 0; break; }	// GUILD_MEMBER	0
-		//	case 3:case 2:						{ rank = 1; break; }	// GUILD_OFFICER 1
-		//	case 1:								{ rank = 2; break; }	// GUILD_LEADER	2
-		//	default: { break; }											// GUILD_NONE
-		//	}
-		//}
 		SendAppearancePacket(AT_GuildID, GuildID(), false);
 		SendAppearancePacket(AT_GuildRank, rank, false);
 	}
@@ -823,7 +813,7 @@ void Client::CompleteConnect()
 			).c_str()
 		);
 	}
-
+	
 	SendRewards();
 	SendAltCurrencies();
 	database.LoadAltCurrencyValues(CharacterID(), alternate_currency);
@@ -1389,29 +1379,10 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	}
 	else {
 		m_pp.guild_id = GuildID();
-		uint8 rank = guild_mgr.GetDisplayedRank(GuildID(), GuildRank(), CharacterID());
-		// FIXME: RoF guild rank
-		//if (ClientVersion() < EQ::versions::ClientVersion::RoF) {
-		//	switch (rank) {
-		//	case 8:
-		//	case 7:
-		//	case 6:
-		//	case 5:
-		//		rank = 0;
-		//		break;
-		//	case 4:
-		//	case 3:
-		//	case 2:
-		//		rank = 1;
-		//		break;
-		//	case 1:
-		//		rank = 2;
-		//		break;
-		//	default:
-		//		break;
-		//	}
-		//}
-		m_pp.guildrank = rank;
+		CharGuildInfo cgi;
+		if (guild_mgr.GetCharInfo(CharacterID(), cgi)) {
+			m_pp.guildrank = cgi.rank;
+		}
 		if (zone->GetZoneID() == Zones::GUILDHALL) {
 			GuildBanker =  (guild_mgr.IsGuildLeader(GuildID(), CharacterID()) || 
 							guild_mgr.GetBankerFlag(CharacterID()) ||
@@ -8550,7 +8521,7 @@ void Client::Handle_OP_GuildUpdateURLAndChannel(const EQApplicationPacket* app)
 			return;
 		}
 		auto rank = gup->payload.rank_name.rank;
-		auto rank_name = gup->payload.rank_name.rank_name;
+		std::string rank_name(gup->payload.rank_name.rank_name);
 
 		guild_mgr.UpdateRankName(guild_id, rank, rank_name);
 		guild_mgr.SendRankName(guild_id, rank, rank_name);

@@ -143,7 +143,6 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 		}
 
 		ServerGuildPermissionUpdate_Struct* sg = (ServerGuildPermissionUpdate_Struct*)pack->pBuffer;
-		RefreshGuild(sg->GuildID);
 
 		LogGuilds("World Received ServerOP_GuildPermissionUpdate for guild [{}] function id {} with value of {}",
 			sg->GuildID,
@@ -167,12 +166,14 @@ void WorldGuildManager::ProcessZonePacket(ServerPacket *pack) {
 	case ServerOP_GuildRankNameChange:
 	{
 		ServerGuildRankNameChange* rnc = (ServerGuildRankNameChange*)pack->pBuffer;
-		RefreshGuild(rnc->guild_id);
+
+		auto guild = GetGuildByGuildID(rnc->guild_id);
+		guild->rank_names[rnc->rank] = rnc->rank_name;
 
 		LogGuilds("World Received ServerOP_GuildRankNameChange from zone for guild [{}] rank id {} with new name of {}",
 			rnc->guild_id,
 			rnc->rank,
-			rnc->rank_name
+			rnc->rank_name.c_str()
 		);
 
 		zoneserver_list.SendPacket(pack);

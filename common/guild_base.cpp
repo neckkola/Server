@@ -1145,15 +1145,7 @@ bool BaseGuildManager::CheckPermission(uint32 guild_id, uint8 rank, GuildAction 
 		return(false);	//invalid guild
 	}
 
-//	bool granted = res->second->ranks[rank].permissions[act];
 	bool granted = (res->second->functions[act].perm_value >> (8 - rank)) & 1;
-
-
-	//LogGuilds("Check permission on guild [{}] ([{}]) and rank [{}] ([{}]) for action [{}] ([{}]): [{}]",
-	//	res->second->name, guild_id,
-	//	res->second->ranks[rank].name, rank,
-	//	GuildActionNames[act], act,
-	//	granted?"granted":"denied");
 
 	return(granted);
 }

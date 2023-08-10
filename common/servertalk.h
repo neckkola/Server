@@ -1036,7 +1036,7 @@ struct ServerGuildRankNameChange
 {
 	uint32		guild_id;
 	uint32		rank;
-	char		rank_name[76];
+	std::string	rank_name;
 };
 
 struct SpawnPlayerCorpse_Struct {
