@@ -1276,3 +1276,10 @@ bool BaseGuildManager::GetGuildBankerStatus(uint32 guild_id, uint32 guild_rank)
 	}
 	return false;
 }
+
+std::vector<BaseGuildMembersRepository::GuildMembers> BaseGuildManager::GetGuildMembers(uint32 guild_id) 
+{
+	std::string where_filter = fmt::format("`guild_id` = '{}'", guild_id);
+	auto guild_members = GuildMembersRepository::GetWhere(*m_db, where_filter);
+	return guild_members;
+}
