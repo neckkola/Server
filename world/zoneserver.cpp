@@ -1550,23 +1550,25 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				cle->SetGuildTributeOptIn(in->tribute_toggle ? true : false);
 			}
 			
-			ServerPacket* out = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
-			GuildTributeMemberToggle* data = (GuildTributeMemberToggle*)out->pBuffer;
+			if (guild) {
+				ServerPacket* out = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
+				GuildTributeMemberToggle* data = (GuildTributeMemberToggle*)out->pBuffer;
 
-			data->char_id = in->char_id;
-			data->command = in->command;
-			data->tribute_toggle = in->tribute_toggle;
-			data->no_donations = in->no_donations;
-			data->guild_id = in->guild_id;
-			strncpy(data->player_name, in->player_name, strlen(in->player_name));
-			data->time_remaining = guild->tribute.timer.GetRemainingTime();
+				data->char_id = in->char_id;
+				data->command = in->command;
+				data->tribute_toggle = in->tribute_toggle;
+				data->no_donations = in->no_donations;
+				data->guild_id = in->guild_id;
+				strncpy(data->player_name, in->player_name, strlen(in->player_name));
+				data->time_remaining = guild->tribute.timer.GetRemainingTime();
 
-			for (auto const& z : zoneserver_list.getZoneServerList()) {
-				if (z.get()->GetZoneID() > 0) {
-					z.get()->SendPacket(out);
+				for (auto const& z : zoneserver_list.getZoneServerList()) {
+					if (z.get()->GetZoneID() > 0) {
+						z.get()->SendPacket(out);
+					}
 				}
+				safe_delete(out);
 			}
-			safe_delete(out);
 			break;
 		}
 		case ServerOP_RequestGuildActiveTributes:
@@ -1640,26 +1642,28 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			GuildTributeUpdate* in = (GuildTributeUpdate*)pack->pBuffer;
 
 			auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
-			guild->tribute.favor = in->favor;
+			if (guild) {
+				guild->tribute.favor = in->favor;
 
-			guild_mgr.SendGuildTributeFavorAndTimer(in->guild_id, guild->tribute.favor, guild->tribute.timer.GetRemainingTime());
+				guild_mgr.SendGuildTributeFavorAndTimer(in->guild_id, guild->tribute.favor, guild->tribute.timer.GetRemainingTime());
 
-			ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
-			GuildTributeUpdate* out = (GuildTributeUpdate*)sp->pBuffer;
-			
-			out->guild_id = in->guild_id;
-			strncpy(out->player_name, in->player_name, strlen(in->player_name));
-			out->member_favor = in->member_favor;
-			out->member_enabled = in->member_enabled ? true : false;
-			out->member_time = in->member_time;
+				ServerPacket* sp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
+				GuildTributeUpdate* out = (GuildTributeUpdate*)sp->pBuffer;
 
-			for (auto const& z : zoneserver_list.getZoneServerList()) {
-				auto r = z.get();
-				if (r->GetZoneID() > 0) {
-					r->SendPacket(sp);
+				out->guild_id = in->guild_id;
+				strncpy(out->player_name, in->player_name, strlen(in->player_name));
+				out->member_favor = in->member_favor;
+				out->member_enabled = in->member_enabled ? true : false;
+				out->member_time = in->member_time;
+
+				for (auto const& z : zoneserver_list.getZoneServerList()) {
+					auto r = z.get();
+					if (r->GetZoneID() > 0) {
+						r->SendPacket(sp);
+					}
 				}
+				safe_delete(sp);
 			}
-
 			break;
 		}
 		default: {

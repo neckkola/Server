@@ -310,21 +310,23 @@ uint32 WorldGuildManager::GetGuildTributeCost(uint32 guild_id)
 	auto total_cost = 0;
 
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	if (guild) {
 
-	TributeData& d1 = tribute_list[guild->tribute.id_1];
-	TributeData& d2 = tribute_list[guild->tribute.id_2];
-	
-	uint32 cost_id1 = d1.tiers[guild->tribute.id_1_tier].cost;
-	uint32 cost_id2 = d2.tiers[guild->tribute.id_2_tier].cost;
-	uint32 level_id1 = d2.tiers[guild->tribute.id_1_tier].level;
-	uint32 level_id2 = d2.tiers[guild->tribute.id_2_tier].level;
+		TributeData& d1 = tribute_list[guild->tribute.id_1];
+		TributeData& d2 = tribute_list[guild->tribute.id_2];
 
-	for (auto const& m : guild_members) {
-		if (m.second->level() >= level_id1) {
-			total_cost += cost_id1;
-		}
-		if (m.second->level() >= level_id2) {
-			total_cost += cost_id2;
+		uint32 cost_id1 = d1.tiers[guild->tribute.id_1_tier].cost;
+		uint32 cost_id2 = d2.tiers[guild->tribute.id_2_tier].cost;
+		uint32 level_id1 = d2.tiers[guild->tribute.id_1_tier].level;
+		uint32 level_id2 = d2.tiers[guild->tribute.id_2_tier].level;
+
+		for (auto const& m : guild_members) {
+			if (m.second->level() >= level_id1) {
+				total_cost += cost_id1;
+			}
+			if (m.second->level() >= level_id2) {
+				total_cost += cost_id2;
+			}
 		}
 	}
 	return total_cost;

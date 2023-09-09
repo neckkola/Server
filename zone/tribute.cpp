@@ -439,7 +439,7 @@ void Client::DoGuildTributeUpdate()
 	LogTribute("DoGuildTributeUpdate");
 	auto guild = guild_mgr.GetGuildByGuildID(GuildID());
 	
-	if (guild->tribute.enabled && GuildTributeOptIn()) {
+	if (guild && guild->tribute.enabled && GuildTributeOptIn()) {
 		TributeData& d1 = tribute_list[guild->tribute.id_1];
 		uint32 item_id1 = d1.tiers[guild->tribute.id_1_tier].tribute_item_id;
 		TributeData& d2 = tribute_list[guild->tribute.id_2];
@@ -520,16 +520,17 @@ void Client::SendGuildActiveTributes(uint32 guild_id)
 void Client::SendGuildFavorAndTimer(uint32 guild_id)
 {
 	auto guild = guild_mgr.GetGuildByGuildID(guild_id);
+	if (guild) {
+		auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+		GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
 
-	auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
-	GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
+		gtsa->guild_favor = guild->tribute.favor;
+		gtsa->tribute_timer = guild->tribute.time_remaining;
+		gtsa->trophy_timer = 0; //not yet implemented
 
-	gtsa->guild_favor	= guild->tribute.favor;
-	gtsa->tribute_timer = guild->tribute.time_remaining;
-	gtsa->trophy_timer	= 0; //not yet implemented
-
-	QueuePacket(outapp);
-	safe_delete(outapp);
+		QueuePacket(outapp);
+		safe_delete(outapp);
+	}
 }
 
 void Client::SendGuildTributeOptInToggle(const GuildTributeMemberToggle* in)

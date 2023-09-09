@@ -2389,20 +2389,21 @@ void Client::RecordPossibleHack(const std::string& message)
 void Client::SendGuildTributeFavorAndTimer(uint32 favor, uint32 time_remaining) 
 {
 	auto guild = guild_mgr.GetGuildByGuildID(GetCLE()->GuildID());
-	guild->tribute.favor = favor;
-	guild->tribute.time_remaining = time_remaining;
+	if (guild) {
+		guild->tribute.favor = favor;
+		guild->tribute.time_remaining = time_remaining;
 
-	auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
-	GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
+		auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+		GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
 
-	gtsa->guild_id = GetCLE()->GuildID();
-	gtsa->guild_favor = guild->tribute.favor;
-	gtsa->tribute_timer = guild->tribute.time_remaining;
-	gtsa->trophy_timer = 0; //not yet implemented
+		gtsa->guild_id = GetCLE()->GuildID();
+		gtsa->guild_favor = guild->tribute.favor;
+		gtsa->tribute_timer = guild->tribute.time_remaining;
+		gtsa->trophy_timer = 0; //not yet implemented
 
-	QueuePacket(outapp);
-	safe_delete(outapp);
-
+		QueuePacket(outapp);
+		safe_delete(outapp);
+	}
 }
 
 void Client::SendGuildTributeOptInToggle(const GuildTributeMemberToggle* in)

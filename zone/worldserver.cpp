@@ -3425,10 +3425,12 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		safe_delete(outapp);
 
 		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
-		guild->tribute.time_remaining = in->time_remaining;
+		if (guild) {
+			guild->tribute.time_remaining = in->time_remaining;
+		}
 
 		auto client = entity_list.GetClientByCharID(in->char_id);
-		if (client) {
+		if (guild && client) {
 			client->SetGuildTributeOptIn(in->tribute_toggle ? true : false);
 
 			EQApplicationPacket* outapp = new EQApplicationPacket(OP_GuildTributeToggleReply, sizeof(GuildTributeSendActive_Struct));
@@ -3456,19 +3458,21 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		GuildTributeFavorTimer_Struct* in = (GuildTributeFavorTimer_Struct*)pack->pBuffer;
 
 		auto guild = guild_mgr.GetGuildByGuildID(in->guild_id);
-		guild->tribute.favor = in->guild_favor;
-		guild->tribute.time_remaining = in->tribute_timer;
+		if (guild) {
+			guild->tribute.favor = in->guild_favor;
+			guild->tribute.time_remaining = in->tribute_timer;
 
-		auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
-		GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
-		
-		gtsa->guild_id = in->guild_id;
-		gtsa->guild_favor = guild->tribute.favor;
-		gtsa->tribute_timer = guild->tribute.time_remaining;
-		gtsa->trophy_timer = 0; //not yet implemented
+			auto outapp = new EQApplicationPacket(OP_GuildTributeFavorAndTimer, sizeof(GuildTributeFavorTimer_Struct));
+			GuildTributeFavorTimer_Struct* gtsa = (GuildTributeFavorTimer_Struct*)outapp->pBuffer;
 
-		entity_list.QueueClientsGuild(outapp, in->guild_id);
-		safe_delete(outapp);
+			gtsa->guild_id = in->guild_id;
+			gtsa->guild_favor = guild->tribute.favor;
+			gtsa->tribute_timer = guild->tribute.time_remaining;
+			gtsa->trophy_timer = 0; //not yet implemented
+
+			entity_list.QueueClientsGuild(outapp, in->guild_id);
+			safe_delete(outapp);
+		}
 		break;
 	}
 	case ServerOP_RequestGuildActiveTributes:
