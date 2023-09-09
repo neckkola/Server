@@ -591,16 +591,24 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 
 			LogGuilds("Received guild delete from world for guild [{}]", s->guild_id);
 
+			auto guild = GetGuildByGuildID(s->guild_id);
+
 			auto clients = entity_list.GetClientList();
 			for (auto& c : clients) {
 				if (c.second->GuildID() == s->guild_id) {
+					c.second->SendGuildActiveTributes(c.second->GuildID());
 					c.second->RefreshGuildInfo();
 					c.second->SendGuildMembers();
 					c.second->MessageString(Chat::Guild, GUILD_DISBANDED);
 				}
 			}
 
-			LoadGuilds();
+			auto res = m_guilds.find(s->guild_id);
+			if (res != m_guilds.end()) {
+				delete res->second;
+				m_guilds.erase(res);
+			}
+//			LoadGuilds();
 			break;
 		}
 	}
