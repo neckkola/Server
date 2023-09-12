@@ -407,8 +407,7 @@ void Client::SendGuildTributes()
 			gtas->ability.tiers[ti].level = htonl(t.second.tiers[ti].level);
 		}
 		strcpy(gtas->ability.name, t.second.name.data());
-		QueuePacket(outapp);
-		safe_delete(outapp);
+		FastQueuePacket(&outapp);
 	}
 }
 
@@ -453,10 +452,16 @@ void Client::DoGuildTributeUpdate()
 				return;
 			}
 			auto inst_level = d1.tiers[guild->tribute.id_1_tier].level;
+			if (m_inv[EQ::invslot::GUILD_TRIBUTE_BEGIN]) {
+				LogInfo("Guild Tribute DELETE Item in Slot 450");
+				DeleteItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN);
+			}
+
 			if (GetLevel() >= inst_level) {
 				PutItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN, *inst);
 				SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN, inst, ItemPacketGuildTribute);
 			}
+
 			safe_delete(inst);
 		}
 
@@ -468,11 +473,16 @@ void Client::DoGuildTributeUpdate()
 				return;
 			}
 			auto inst_level = d2.tiers[guild->tribute.id_2_tier].level;
+			if (m_inv[EQ::invslot::GUILD_TRIBUTE_BEGIN + 1]) {
+				DeleteItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1);
+				LogInfo("Guild Tribute DELETE Item in Slot 451");
+			}
+
 			if (GetLevel() >= inst_level) {
 				PutItemInInventory(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1, *inst);
-//				SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1, inst, ItemPacketTributeItem);
 				SendItemPacket(EQ::invslot::GUILD_TRIBUTE_BEGIN + 1, inst, ItemPacketGuildTribute);
 			}
+
 			safe_delete(inst);
 		}
 	}
