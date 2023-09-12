@@ -390,7 +390,7 @@ void Client::SendGuildTributes()
 {
 	for (auto const& t : tribute_list) {
 		if (!t.second.is_guild)
-			continue;	//skip guild tributes here
+			continue;	//skip non guild tributes here
 
 		//guild tribute has an unknown uint32 at its begining, guild ID?
 		int len = t.second.name.length() + 1;
@@ -398,9 +398,15 @@ void Client::SendGuildTributes()
 		EQApplicationPacket* outapp = new EQApplicationPacket(OP_SendGuildTributes, sizeof(GuildTributeAbility_Struct) + len);
 		GuildTributeAbility_Struct* gtas = (GuildTributeAbility_Struct*)outapp->pBuffer;
 
+		auto tier_count = t.second.tier_count;
 		for (int ti = 0; ti < t.second.tier_count; ti++) {
+			if (RuleB(Guild, UseCharacterMaxLevelForGuildTributes) && t.second.tiers[ti].level > RuleI(Character, MaxLevel)) {
+				tier_count -= 1;
+				continue;
+			}
 			gtas->guild_id = GuildID();
-			gtas->ability.tier_count = htonl(t.second.tier_count);
+//			gtas->ability.tier_count = htonl(t.second.tier_count);
+			gtas->ability.tier_count = htonl(tier_count);
 			gtas->ability.tribute_id = htonl(t.first);
 			gtas->ability.tiers[ti].cost = htonl(t.second.tiers[ti].cost);
 			gtas->ability.tiers[ti].tribute_item_id = htonl(t.second.tiers[ti].tribute_item_id);
