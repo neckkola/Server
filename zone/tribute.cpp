@@ -405,7 +405,6 @@ void Client::SendGuildTributes()
 				continue;
 			}
 			gtas->guild_id = GuildID();
-//			gtas->ability.tier_count = htonl(t.second.tier_count);
 			gtas->ability.tier_count = htonl(tier_count);
 			gtas->ability.tribute_id = htonl(t.first);
 			gtas->ability.tiers[ti].cost = htonl(t.second.tiers[ti].cost);
@@ -617,24 +616,6 @@ void Client::SendGuildTributeDonatePlatReply(GuildTributeDonatePlatRequest_Struc
 
 }
 
-//void Client::SendGuildFavorUpdateToWorld(uint32 favor, uint32 donations) 
-//{
-//	ServerPacket* sout = new ServerPacket(ServerOP_GuildTributeOptInToggle, sizeof(GuildTributeMemberToggle));
-//	GuildTributeMemberToggle* out = (GuildTributeMemberToggle*)sout->pBuffer;
-//
-//	out->guild_id = GuildID();
-//	out->char_id = gci.char_id;
-//	strncpy(out->player_name, in->player, strlen(in->player));
-//	out->tribute_toggle = in->tribute_toggle;
-//	out->command = in->command;
-//
-//	//SendGuildTributeOptInToggle(out);
-//	worldserver.SendPacket(sout);
-//
-//	safe_delete(sout);
-//
-//}
-/*
 
 64.37.149.6:1353 == server
 66.90.221.245:3173 == client

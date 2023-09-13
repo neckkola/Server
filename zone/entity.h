@@ -404,6 +404,7 @@ public:
 	void	ExpeditionWarning(uint32 minutes_left);
 	void    SendToGuildTitleDisplay(Client* c);
 	void    SendAllGuildTitleDisplay(uint32 guild_id);
+	void    UpdateGuildTributes(uint32 guild_id);
 
 	void	RemoveFromTargets(Mob* mob, bool RemoveFromXTargets = false);
 	void	RemoveFromTargetsFadingMemories(Mob* spell_target, bool RemoveFromXTargets = false, uint32 max_level = 0);

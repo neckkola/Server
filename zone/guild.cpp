@@ -420,6 +420,15 @@ void Client::SetGuildID(uint32 guild_id)
 {
 	guild_id = guild_id;
 }
+
+void EntityList::UpdateGuildTributes(uint32 guild_id) {
+	for (auto const& c : entity_list.GetClientList()) {
+		if (c.second->GuildID() == guild_id) {
+			c.second->DoGuildTributeUpdate();
+		}
+	}
+}
+
 /*
 void EntityList::SendGuildJoin(GuildJoin_Struct* gj){
 	LinkedListIterator<Client*> iterator(client_list);
