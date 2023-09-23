@@ -377,6 +377,7 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	SetBotPrecombat(false);
 
 	AI_Init();
+
 }
 
 Client::~Client() {
@@ -386,8 +387,10 @@ Client::~Client() {
 		Bot::ProcessBotOwnerRefDelete(this);
 	}
 
-	if(IsInAGuild())
+	if (IsInAGuild()) {
+		guild_mgr.DBSetMemberOnline(CharacterID(), false);
 		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+	}
 
 	Mob* horse = entity_list.GetMob(CastToClient()->GetHorseId());
 	if (horse)
@@ -528,6 +531,7 @@ void Client::SendZoneInPackets()
 	safe_delete(outapp);
 
 	if (IsInAGuild()) {
+		guild_mgr.DBSetMemberOnline(CharacterID(), true);
 		SendGuildMembers();
 		SendGuildURL();
 		SendGuildChannel();
@@ -730,7 +734,7 @@ bool Client::Save(uint8 iCommitNow) {
 			SetNextInvSnapshot(RuleI(Character, InvSnapshotMinRetryM));
 		}
 	}
-
+	
 	database.SaveCharacterData(this, &m_pp, &m_epp); /* Save Character Data */
 
 	return true;
