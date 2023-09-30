@@ -1318,6 +1318,7 @@ namespace RoF2
 		buffer++;
 
 		// Guild ID
+		*((uint32*)buffer) = htonl(emu->guild_id);
 		buffer += sizeof(uint32);
 
 		//add member count.
@@ -1364,16 +1365,8 @@ namespace RoF2
 				PutFieldN(last_tribute);
 				e->unknown_one = htonl(1);
 				SlideStructString(public_note, emu_note);
-				if (emu_e->online) {
-					e->zoneinstance = htons(1);
-					e->zone_id = htons(emu_e->zone_id);
-				}
-				else {
-					e->zoneinstance = 0;
-					e->zone_id = 0;
-				}
-//				e->zoneinstance = htons(e->zoneinstance);
-//				e->zone_id = htons(emu_e->zone_id);
+				e->zoneinstance = htons(emu_e->zoneinstance);
+				e->zone_id = htons(emu_e->zone_id);
 				e->unknown_one2 = htonl(0);
 				e->unknown04 = 0;
 
