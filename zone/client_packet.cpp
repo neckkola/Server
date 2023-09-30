@@ -16537,8 +16537,17 @@ void Client::Handle_OP_GuildTributeDonateItem(const EQApplicationPacket* app)
 			DeleteItemInInventory(in->Slot, 0, false, true);
 		}
 
-		//DeleteItemInInventory(in->Slot, in->quanity, false, true);
 		SendGuildTributeDonateItemReply(in, favor);
+
+		if (RuleB(QueryServ, PlayerLogGuildTributeItemDonations)) {
+		auto event_desc = fmt::format("Guild Item Donation :: {} donated item id {} for {} favor in zone {}\.",
+			GetName(),
+			inst->GetID(),
+			favor,
+			GetZoneID()
+			);
+			QServ->PlayerLogEvent(Player_Log_Guild_Tribute_Item_Donation, CharacterID(), event_desc);
+		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
@@ -16575,6 +16584,16 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 
 		TakePlatinum(quanity, false);
 		SendGuildTributeDonatePlatReply(in, favor);
+
+		if (RuleB(QueryServ, PlayerLogGuildTributePlatDonations)) {
+			auto event_desc = fmt::format("Guild Platinum Donation :: {} donated {} platinum for {} favor in zone {}\.",
+				GetName(),
+				quanity,
+				favor,
+				GetZoneID()
+			);
+			QServ->PlayerLogEvent(Player_Log_Guild_Tribute_Plat_Donation, CharacterID(), event_desc);
+		}
 
 		auto outapp = new ServerPacket(ServerOP_GuildTributeUpdateDonations, sizeof(GuildTributeUpdate));
 		GuildTributeUpdate* out = (GuildTributeUpdate*)outapp->pBuffer;
