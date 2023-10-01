@@ -16610,7 +16610,8 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 
 void Client::Handle_OP_GuildOpenGuildWindow(const EQApplicationPacket* app)
 {
-	auto pack =	new ServerPacket(ServerOP_RequestOnlineGuildMembers2, sizeof(ServerRequestOnlineGuildMembers_Struct));
+	//currently disabled, though could be used to send the guild member list when the Guild Window is opened.
+	auto pack =	new ServerPacket(ServerOP_RequestOnlineGuildMembers, sizeof(ServerRequestOnlineGuildMembers_Struct));
 
 	ServerRequestOnlineGuildMembers_Struct* srogms = (ServerRequestOnlineGuildMembers_Struct*)pack->pBuffer;
 
