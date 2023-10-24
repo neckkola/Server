@@ -638,10 +638,10 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 			strn0cpy(gmus->MemberName, sgmus->MemberName, sizeof(gmus->MemberName));
 			gmus->ZoneID = sgmus->ZoneID;
 			if (sgmus->ZoneID == 0) {
-				gmus->InstanceID = 0;	// If offline, set to be offline.  
+				gmus->InstanceID = 0;	// If online, set to be online.  I don't think we care what Instance they are in, for the Guild Management Window.
 			}
 			else {
-				gmus->InstanceID = 1;	// If online, set to be online.  
+				gmus->InstanceID = 1;	// If online, set to be online.  I don't think we care what Instance they are in, for the Guild Management Window.
 			}
 			gmus->LastSeen = sgmus->LastSeen;
 
@@ -686,27 +686,30 @@ void ZoneGuildManager::ProcessWorldPacket(ServerPacket *pack)
 		}
 		break;
 	}
-	case ServerOP_GuildSendMemberList:
+	case ServerOP_OnlineGuildMembersResponse2:
 	{
 		if (is_zone_loaded)
 		{
+//			std::vector<online> members{};
+//			members.resize(pack->size / sizeof(online));
+//			memcpy(&members[0], pack->pBuffer, pack->size);
+			
 			for (auto const& c : entity_list.GetClientList()) {
 				uint32 len;
-				uint8* data = guild_mgr.MakeGuildMembersUsingDB(c.second->GuildID(), c.second->GetName(), len);
-				if (data == nullptr) {
+				uint8* data = guild_mgr.MakeGuildMembers2(c.second->GuildID(), c.second->GetName(), len);
+				if (data == nullptr)
 					return;	//invalid guild, shouldent happen.
-				}
 
 				auto outapp = new EQApplicationPacket(OP_GuildMemberList);
 				outapp->size = len;
 				outapp->pBuffer = data;
+				data = nullptr;
 
 				LogGuilds("Sending OP_GuildMemberList2 of length [{}]", outapp->size);
 
 				c.second->FastQueuePacket(&outapp);
 			}
 		}
-		break;
 	}
 	case ServerOP_LFGuildUpdate:
 	{
@@ -1770,11 +1773,25 @@ BaseGuildManager::GuildInfo* ZoneGuildManager::GetGuildByGuildID(uint32 guild_id
 	return nullptr;
 }
 
-uint8* ZoneGuildManager::MakeGuildMembersUsingDB(uint32 guild_id, const char* prefix_name, uint32& length)
+uint8* ZoneGuildManager::MakeGuildMembers2(uint32 guild_id, const char* prefix_name, uint32& length)
 {
-	std::vector<online> g_members{};
-	auto IsCharOnline = [&](uint32 char_id) {
-		for (auto const& c : g_members) {
+	struct online2 {
+		int16  zone_id;
+		uint32 char_id;
+	};
+
+	//auto IsCharOnline = [&](std::string& name) {
+	//	for (auto const& c : on) {
+	//		if (name.compare(c.name) == 0) {
+	//			return true;
+	//		}
+	//	}
+	//	return false;
+	//};
+
+	std::vector<online2> members2{};
+	auto IsCharOnline2 = [&](uint32 char_id) {
+		for (auto const& c : members2) {
 			if (char_id == c.char_id) {
 				return true;
 			}
@@ -1788,10 +1805,10 @@ uint8* ZoneGuildManager::MakeGuildMembersUsingDB(uint32 guild_id, const char* pr
 		return 0;
 	}
 
-	online o{};
+	online2 o{};
 	for (auto r : results) {
-		o.char_id = Strings::ToUnsignedInt(r[0]);
-		g_members.push_back(o);
+		o.char_id = Strings::ToInt(r[0]);
+		members2.push_back(o);
 	}
 	
 	uint8* retbuffer;
@@ -1880,7 +1897,7 @@ uint8* ZoneGuildManager::MakeGuildMembersUsingDB(uint32 guild_id, const char* pr
 		PutField(total_tribute);
 		PutField(last_tribute);
 		SlideStructString(note_buf, ci->public_note);
-		if (IsCharOnline(ci->char_id)) {
+		if (IsCharOnline2(ci->char_id)) {
 			e->zoneinstance = 1;
 			e->zone_id = ci->zone_id;
 		}
@@ -1888,6 +1905,14 @@ uint8* ZoneGuildManager::MakeGuildMembersUsingDB(uint32 guild_id, const char* pr
 			e->zoneinstance = 0;
 			e->zone_id = 0;
 		}
+		//if (IsCharOnline(ci->char_name)) {
+		//	e->zoneinstance = 1;
+		//	e->zone_id = ci->zone_id;
+		//}
+		//else {
+		//	e->zoneinstance = 0;
+		//	e->zone_id = 0;
+		//}
 
 #undef SlideStructString
 #undef PutFieldN

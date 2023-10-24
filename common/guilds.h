@@ -82,7 +82,7 @@ typedef enum {
 
 struct online {
 	uint16 zone_id;
-	uint32 char_id;
+	char name[64];
 };
 
 #endif

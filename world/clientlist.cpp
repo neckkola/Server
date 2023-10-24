@@ -1787,40 +1787,45 @@ std::map<uint32, ClientListEntry*> ClientList::GetGuildClientList(uint32 guild_i
 	return guild_members;
 }
 
-void ClientList::SendGuildMemberList(uint32 FromID, uint32 GuildID)
+void ClientList::SendOnlineGuildMembers2(uint32 FromID, uint32 GuildID)
 {
-	//std::vector<online> online_members{};
+	struct online {
+		int16	zone_id;
+		char	player[64];
+	};
 
-	//ClientListEntry* from = FindCLEByCharacterID(FromID);
+	std::vector<online> online_members{};
 
-	//if (!from)
-	//{
-	//	LogInfo("Invalid client. FromID=[{}] GuildID=[{}]", FromID, GuildID);
-	//	return;
-	//}
+	ClientListEntry* from = FindCLEByCharacterID(FromID);
 
-	//LinkedListIterator<ClientListEntry*> Iterator(clientlist);
+	if (!from)
+	{
+		LogInfo("Invalid client. FromID=[{}] GuildID=[{}]", FromID, GuildID);
+		return;
+	}
 
-	//Iterator.Reset();
+	LinkedListIterator<ClientListEntry*> Iterator(clientlist);
 
-	//while (Iterator.MoreElements())
-	//{
-	//	ClientListEntry* CLE = Iterator.GetData();
+	Iterator.Reset();
 
-	//	if (CLE && (CLE->GuildID() == GuildID))
-	//	{
-	//		online o;
-	//		strncpy(o.name, CLE->name(), 64);
-	//		o.zone_id = CLE->zone();
-	//		online_members.push_back(o);
-	//	}
-	//	Iterator.Advance();
-	//}
+	while (Iterator.MoreElements())
+	{
+		ClientListEntry* CLE = Iterator.GetData();
 
-	//auto size = online_members.size() * sizeof(online);
-	auto pack = new ServerPacket(ServerOP_GuildSendMemberList);
+		if (CLE && (CLE->GuildID() == GuildID))
+		{
+			online o;
+			strncpy(o.player, CLE->name(), 64);
+			o.zone_id = CLE->zone();
+			online_members.push_back(o);
+		}
+		Iterator.Advance();
+	}
+
+	auto size = online_members.size() * sizeof(online);
+	auto pack = new ServerPacket(ServerOP_OnlineGuildMembersResponse2, size);
 	
-	//memcpy(pack->pBuffer, online_members.data(), size);
+	memcpy(pack->pBuffer, online_members.data(), size);
 
 	//zoneserver_list.SendPacket(from->zone(), from->instance(), pack);
 	zoneserver_list.SendPacket(pack);
