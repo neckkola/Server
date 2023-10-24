@@ -80,9 +80,5 @@ typedef enum {
 	GUILD_ACTION_MEMBERS_DEMOTE_SELF	= 30,
 } GuildAction;
 
-struct online {
-	uint16 zone_id;
-	char name[64];
-};
 
 #endif

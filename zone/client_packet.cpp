@@ -262,7 +262,6 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_GuildTributeToggleReq] = &Client::Handle_OP_GuildTributeToggle;
 	ConnectedOpcodes[OP_GuildTributeDonateItem] = &Client::Handle_OP_GuildTributeDonateItem;
 	ConnectedOpcodes[OP_GuildTributeDonatePlat] = &Client::Handle_OP_GuildTributeDonatePlat;
-	ConnectedOpcodes[OP_GuildOpenGuildWindow] = &Client::Handle_OP_GuildOpenGuildWindow;
 	ConnectedOpcodes[OP_Heartbeat] = &Client::Handle_OP_Heartbeat;
 	ConnectedOpcodes[OP_Hide] = &Client::Handle_OP_Hide;
 	ConnectedOpcodes[OP_HideCorpse] = &Client::Handle_OP_HideCorpse;
@@ -16608,16 +16607,3 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket* app)
 	}
 }
 
-void Client::Handle_OP_GuildOpenGuildWindow(const EQApplicationPacket* app)
-{
-	auto pack =	new ServerPacket(ServerOP_RequestOnlineGuildMembers2, sizeof(ServerRequestOnlineGuildMembers_Struct));
-
-	ServerRequestOnlineGuildMembers_Struct* srogms = (ServerRequestOnlineGuildMembers_Struct*)pack->pBuffer;
-
-	srogms->FromID = CharacterID();
-	srogms->GuildID = GuildID();
-
-	//worldserver.SendPacket(pack);
-
-	safe_delete(pack);
-}

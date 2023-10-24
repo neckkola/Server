@@ -101,8 +101,6 @@
 #define ServerOP_RequestGuildActiveTributes		  0x0075
 #define ServerOP_RequestGuildFavorAndTimer		  0x0076
 #define ServerOP_GuildTributeUpdateDonations      0x0077
-#define ServerOP_RequestOnlineGuildMembers2	      0x0078
-#define ServerOP_OnlineGuildMembersResponse2      0x0079
 
 #define ServerOP_RaidAdd			0x0100 //in use
 #define ServerOP_RaidRemove			0x0101 //in use

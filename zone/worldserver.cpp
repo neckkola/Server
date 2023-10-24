@@ -750,7 +750,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		break;
 	}
 	case ServerOP_OnlineGuildMembersResponse:
-	case ServerOP_OnlineGuildMembersResponse2:
 	case ServerOP_RefreshGuild:
 	case ServerOP_DeleteGuild:
 	case ServerOP_GuildCharRefresh:
