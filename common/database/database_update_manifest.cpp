@@ -5303,6 +5303,52 @@ CREATE TABLE guild_tributes (
   PRIMARY KEY (guild_id) USING BTREE
 ) ENGINE=InnoDB;
 )"
+    },
+    ManifestEntry{
+        .version = 9258,
+        .description = "2023_11_24_trader_updates_for_rof2.sql",
+        .check = "SHOW COLUMNS FROM `trader` LIKE 'entity_id'",
+        .condition = "empty",
+        .match = "",
+        .sql = R"(ALTER TABLE `trader`
+		ADD COLUMN `entity_id` INT UNSIGNED NOT NULL DEFAULT '0' AFTER `slot_id`;
+		)"
+    },
+    ManifestEntry{
+        .version = 9259,
+        .description = "2023_12_03_parcel_implementation.sql",
+        .check = "SHOW TABLES LIKE 'parcels'",
+        .condition = "empty",
+        .match = "",
+        .sql = R"(CREATE TABLE `parcels` (
+`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			`char_id` INT UNSIGNED NOT NULL DEFAULT 0,
+			`serial_id` INT UNSIGNED NOT NULL DEFAULT 0,
+			`from_name` VARCHAR(64) NULL DEFAULT NULL,
+			`from_note` VARCHAR(1024) NULL DEFAULT NULL,
+			`sent_date` DATETIME NULL DEFAULT NULL,
+			PRIMARY KEY (`id`)
+			)
+			COLLATE = 'latin1_swedish_ci';
+		CREATE TABLE `parcel_merchants` (
+			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+			`merchant_id` INT UNSIGNED NOT NULL DEFAULT '0',
+			`enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+			PRIMARY KEY (`id`)
+			)
+			COLLATE='latin1_swedish_ci';
+		CREATE TABLE `buyer_trade_items` (
+			`id` INT(11) NOT NULL AUTO_INCREMENT,
+			`char_id` INT(11) NOT NULL DEFAULT '0',
+			`slot_id` INT(11) NOT NULL DEFAULT '0',
+			`item_id` INT(11) NOT NULL DEFAULT '0',
+			`item_qty` INT(11) NOT NULL DEFAULT '0',
+			`Item_icon` INT(11) NOT NULL DEFAULT '0',
+			`item_name` VARCHAR(64) NOT NULL DEFAULT '0' COLLATE 'latin1_swedish_ci',
+			PRIMARY KEY (`id`) USING BTREE
+		)
+		COLLATE='latin1_swedish_ci';
+		)"
     }
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{

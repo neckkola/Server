@@ -73,6 +73,11 @@ int Lua_Packet::GetOpcode() {
 	return static_cast<int>(self->GetOpcode());
 }
 
+int Lua_Packet::GetProtocolOpcode() {
+	Lua_Safe_Call_Int();
+	return static_cast<int>(self->GetProtocolOpcode());
+}
+
 void Lua_Packet::SetOpcode(int op) {
 	Lua_Safe_Call_Void();
 	self->SetOpcodeBypass(static_cast<uint16>(op));
@@ -81,11 +86,6 @@ void Lua_Packet::SetOpcode(int op) {
 int Lua_Packet::GetRawOpcode() {
 	Lua_Safe_Call_Int();
 	return static_cast<int>(self->GetOpcodeBypass());
-}
-
-int Lua_Packet::GetProtocolOpcode() {
-	Lua_Safe_Call_Int();
-	return static_cast<int>(self->GetProtocolOpcode());
 }
 
 void Lua_Packet::SetRawOpcode(int op) {

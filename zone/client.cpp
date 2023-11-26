@@ -405,8 +405,10 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if(Trader)
+	if (Trader) {
 		database.DeleteTraderItem(CharacterID());
+		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_RemoveTraderFromBazaarWindow);
+	}
 
 	if(Buyer)
 		ToggleBuyerMode(false);

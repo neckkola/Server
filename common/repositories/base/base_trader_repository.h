@@ -14,7 +14,10 @@
 
 #include "../../database.h"
 #include "../../strings.h"
+#include "../rulesys.h"
+//#include "../misc_functions.h"
 #include <ctime>
+
 
 class BaseTraderRepository {
 public:
@@ -25,6 +28,7 @@ public:
 		int32_t  charges;
 		uint32_t item_cost;
 		uint8_t  slot_id;
+		uint32_t entity_id;
 	};
 
 	static std::string PrimaryKey()
@@ -41,6 +45,7 @@ public:
 			"charges",
 			"item_cost",
 			"slot_id",
+			"entity_id",
 		};
 	}
 
@@ -53,6 +58,7 @@ public:
 			"charges",
 			"item_cost",
 			"slot_id",
+			"entity_id",
 		};
 	}
 
@@ -99,6 +105,7 @@ public:
 		e.charges      = 0;
 		e.item_cost    = 0;
 		e.slot_id      = 0;
+		e.entity_id    = 0;
 
 		return e;
 	}
@@ -135,12 +142,13 @@ public:
 		if (results.RowCount() == 1) {
 			Trader e{};
 
-			e.char_id      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
-			e.item_id      = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.serialnumber = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.charges      = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_cost    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.slot_id      = row[5] ? static_cast<uint8_t>(strtoul(row[5], nullptr, 10)) : 0;
+			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
+			e.charges      = static_cast<int32_t>(atoi(row[3]));
+			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			return e;
 		}
@@ -180,6 +188,7 @@ public:
 		v.push_back(columns[3] + " = " + std::to_string(e.charges));
 		v.push_back(columns[4] + " = " + std::to_string(e.item_cost));
 		v.push_back(columns[5] + " = " + std::to_string(e.slot_id));
+		v.push_back(columns[6] + " = " + std::to_string(e.entity_id));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -207,6 +216,7 @@ public:
 		v.push_back(std::to_string(e.charges));
 		v.push_back(std::to_string(e.item_cost));
 		v.push_back(std::to_string(e.slot_id));
+		v.push_back(std::to_string(e.entity_id));
 
 		auto results = db.QueryDatabase(
 			fmt::format(
@@ -242,6 +252,7 @@ public:
 			v.push_back(std::to_string(e.charges));
 			v.push_back(std::to_string(e.item_cost));
 			v.push_back(std::to_string(e.slot_id));
+			v.push_back(std::to_string(e.entity_id));
 
 			insert_chunks.push_back("(" + Strings::Implode(",", v) + ")");
 		}
@@ -275,12 +286,13 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			Trader e{};
 
-			e.char_id      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
-			e.item_id      = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.serialnumber = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.charges      = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_cost    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.slot_id      = row[5] ? static_cast<uint8_t>(strtoul(row[5], nullptr, 10)) : 0;
+			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
+			e.charges      = static_cast<int32_t>(atoi(row[3]));
+			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			all_entries.push_back(e);
 		}
@@ -305,12 +317,13 @@ public:
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			Trader e{};
 
-			e.char_id      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
-			e.item_id      = row[1] ? static_cast<uint32_t>(strtoul(row[1], nullptr, 10)) : 0;
-			e.serialnumber = row[2] ? static_cast<uint32_t>(strtoul(row[2], nullptr, 10)) : 0;
-			e.charges      = row[3] ? static_cast<int32_t>(atoi(row[3])) : 0;
-			e.item_cost    = row[4] ? static_cast<uint32_t>(strtoul(row[4], nullptr, 10)) : 0;
-			e.slot_id      = row[5] ? static_cast<uint8_t>(strtoul(row[5], nullptr, 10)) : 0;
+			e.char_id      = static_cast<uint32_t>(strtoul(row[0], nullptr, 10));
+			e.item_id      = static_cast<uint32_t>(strtoul(row[1], nullptr, 10));
+			e.serialnumber = static_cast<uint32_t>(strtoul(row[2], nullptr, 10));
+			e.charges      = static_cast<int32_t>(atoi(row[3]));
+			e.item_cost    = static_cast<uint32_t>(strtoul(row[4], nullptr, 10));
+			e.slot_id      = static_cast<uint8_t>(strtoul(row[5], nullptr, 10));
+			e.entity_id    = static_cast<uint32_t>(strtoul(row[6], nullptr, 10));
 
 			all_entries.push_back(e);
 		}

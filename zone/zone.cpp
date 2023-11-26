@@ -64,6 +64,7 @@
 #include "../common/repositories/ldon_trap_templates_repository.h"
 #include "../common/repositories/respawn_times_repository.h"
 #include "../common/repositories/npc_emotes_repository.h"
+#include "../common/repositories/buyer_repository.h"
 #include "../common/serverinfo.h"
 #include "../common/repositories/merc_stance_entries_repository.h"
 
@@ -1185,7 +1186,7 @@ bool Zone::Init(bool is_static) {
 	//clear trader items if we are loading the bazaar
 	if (strncasecmp(short_name, "bazaar", 6) == 0) {
 		database.DeleteTraderItem(0);
-		database.DeleteBuyLines(0);
+		BuyerRepository::ClearBuyerTables(database);
 	}
 
 	LoadLDoNTraps();

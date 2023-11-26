@@ -603,6 +603,72 @@ void command_guild(Client* c, const Seperator* sep)
 			c->SendGuildMembersList();
 		}
 	}
+	else if (is_test) {
+		BaseParcelsRepository::Parcels p{};
+		p.char_id = 44;
+		p.from_name = "Rola2";
+		p.from_note = "THis is a note";
+		p.sent_date = time(nullptr);
+
+
+		int arg1, arg2, arg3 = 0;
+		arg1 = Strings::ToInt(sep->arg[2]);
+		arg2 = Strings::ToInt(sep->arg[3]);
+		arg3 = Strings::ToInt(sep->arg[4]);
+		auto arg4 = Strings::ToInt(sep->arg[5]);
+		auto arg5 = Strings::ToInt(sep->arg[6]);
+
+		switch (arg1) {
+		case 1:
+		{
+			//#guild test 1 itemid merchant_slot charges
+			// arg2 itemid
+			// arg3 merchant slot
+			// arg4 charges
+			p.id = arg3;
+			p.serial_id = arg2;
+			auto item = database.GetItem(arg2);
+			if (item) {
+				auto inst = database.CreateItem(item, arg4);
+				if (inst) {
+					auto item_price = static_cast<uint32>(item->Price * RuleR(Merchant, SellCostMod) * item->SellRate);
+					inst->SetCharges(arg4);
+					inst->SetMerchantCount(arg5);
+					inst->SetMerchantSlot(arg3);
+		
+
+					c->SendParcelPacket(inst, p);
+					safe_delete(inst);
+				}
+			}
+			break;
+		}
+		case 2:
+		{
+			//#guild test 1 itemid merchant_slot charges
+			// arg2 itemid
+			// arg3 merchant slot
+			// arg4 charges
+			p.id = arg3;
+			p.serial_id = arg2;
+			auto item = database.GetItem(arg2);
+			if (item) {
+				auto inst = database.CreateItem(item, arg4);
+				if (inst) {
+					auto item_price = static_cast<uint32>(item->Price * RuleR(Merchant, SellCostMod) * item->SellRate);
+					inst->SetCharges(arg4);
+					inst->SetMerchantCount(arg5);
+					inst->SetMerchantSlot(arg3);
+
+					inst->Clear();
+					c->SendParcelPacket(inst, p);
+					safe_delete(inst);
+				}
+			}
+			break;
+		}
+		}
+	}
 }
 
 void SendGuildSubCommands(Client* c)

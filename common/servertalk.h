@@ -134,6 +134,8 @@
 #define ServerOP_RaidMOTD			0x0113
 #define ServerOP_RaidNote           0x0114
 
+#define ServerOP_RoF2Trader			0x0120
+
 #define ServerOP_InstanceUpdateTime			0x014F
 #define ServerOP_AdventureRequest			0x0150
 #define ServerOP_AdventureRequestAccept		0x0151
@@ -1921,6 +1923,13 @@ struct ServerOP_GuildMessage_Struct {
     char   url[2048]{0};
 };
 
+struct ServerRoF2Trader_Struct {
+	uint32	action;
+	uint32	zone_id;
+	uint32	trader_id;
+	uint32	entity_id;
+	char	trader_name[64];
+};
 #pragma pack()
 
 #endif
