@@ -125,7 +125,8 @@
 #define FAIL_DISARM_DETECTED_TRAP	370		//You fail to disarm the detected trap.
 #define LOOT_LORE_ERROR				371		//You cannot loot this Lore Item. You already have one.
 #define PICK_LORE					379		//You cannot pick up a lore item you already possess.
-#define POISON_TOO_HIGH				382		// This poison is too high level for you to apply.
+#define POISON_TOO_HIGH				382		//This poison is too high level for you to apply.
+#define TAUNT_TOO_FAR				386		//You are too far away from your target to taunt.
 #define CORPSE_TOO_FAR				389		//The corpse is too far away to summon.
 #define CONSENT_DENIED				390		//You do not have consent to summon that corpse.
 #define DISCIPLINE_RDY				393		//You are ready to use a new discipline now.
@@ -139,6 +140,7 @@
 #define SONG_NEEDS_BRASS			408		//You need to play a brass instrument for this song
 #define AA_GAIN_ABILITY				410		//You have gained the ability "%T1" at a cost of %2 ability %T3.
 #define AA_IMPROVE					411		//You have improved %T1 %2 at a cost of %3 ability %T4.
+#define TAUNT_SUCCESS				412		//You taunt %1 to ignore others and attack you!
 #define AA_REUSE_MSG				413		//You can use the ability %B1(1) again in %2 hour(s) %3 minute(s) %4 seconds.
 #define AA_REUSE_MSG2				414		//You can use the ability %B1(1) again in %2 minute(s) %3 seconds.
 #define YOU_HEALED					419		//%1 has healed you for %2 points of damage.
@@ -170,7 +172,11 @@
 #define PET_REPORT_HP				488		//I have %1 percent of my hit points left.
 #define PET_NO_TAUNT				489		//No longer taunting attackers, Master.
 #define PET_DO_TAUNT				490		//Taunting attackers as normal, Master.
-#define CORPSE_DECAY1				495		//This corpse will decay in %1 minute(s) %2 seconds.
+#define CORPSE_REZ_TIME_HOUR        491     //This corpse's resurrection time will expire in %1 hour(s) %2 minute(s) %3 seconds.
+#define CORPSE_REZ_TIME_MINUTE      492     //This corpse's resurrection time will expire in %1 minute(s) %2 seconds.
+#define CORPSE_DECAY_TIME_DAY       493     //This corpse will decay in %1 day(s) %2 hour(s) %3 minute(s) %4 seconds.
+#define CORPSE_DECAY_TIME_HOUR      494     //This corpse will decay in %1 hour(s) %2 minute(s) %3 seconds.
+#define CORPSE_DECAY_TIME_MINUTE    495		//This corpse will decay in %1 minute(s) %2 seconds.
 #define DISC_LEVEL_ERROR			503		//You must be a level %1 ... to use this discipline.
 #define DISCIPLINE_CANUSEIN			504		//You can use a new discipline in %1 minutes %2 seconds.
 #define PVP_ON						552		//You are now player kill and follow the ways of Discord.

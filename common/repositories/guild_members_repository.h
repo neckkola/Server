@@ -204,7 +204,7 @@ public:
 
 	static int UpdateBankerFlag(Database &db, uint32 char_id, bool status)
 	{
-		const auto guild_members = GetWhere(db, fmt::format("char_id = '{}'", char_id));
+		const auto guild_members = GetWhere(db, fmt::format("char_id = {}", char_id));
 		if (guild_members.empty()) {
 			return 0;
 		}
@@ -217,7 +217,7 @@ public:
 
 	static int UpdateAltFlag(Database &db, uint32 char_id, bool status)
 	{
-		const auto guild_members = GetWhere(db, fmt::format("char_id = '{}'", char_id));
+		const auto guild_members = GetWhere(db, fmt::format("char_id = {}", char_id));
 		if (guild_members.empty()) {
 			return 0;
 		}

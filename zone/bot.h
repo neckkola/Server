@@ -131,7 +131,7 @@ public:
 	Bot(uint32 botID, uint32 botOwnerCharacterID, uint32 botSpellsID, double totalPlayTime, uint32 lastZoneId, NPCType *npcTypeData, int32 expansion_bitmask);
 
 	//abstract virtual override function implementations requird by base abstract class
-	bool Death(Mob* killerMob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill) override;
+	bool Death(Mob* killer_mob, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, KilledByTypes killed_by = KilledByTypes::Killed_NPC) override;
 	void Damage(Mob* from, int64 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1,
 		bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None) override;
 
@@ -386,8 +386,8 @@ public:
 	bool CheckDataBucket(std::string bucket_name, const std::string& bucket_value, uint8 bucket_comparison);
 
 	// Bot Equipment & Inventory Class Methods
-	void BotTradeAddItem(const EQ::ItemInstance* inst, uint16 slot_id, std::string* error_message, bool save_to_database = true);
-	void EquipBot(std::string* error_message);
+	void BotTradeAddItem(const EQ::ItemInstance* inst, uint16 slot_id, bool save_to_database = true);
+	void EquipBot();
 	bool CheckLoreConflict(const EQ::ItemData* item);
 	void UpdateEquipmentLight() override
 		{
@@ -704,7 +704,8 @@ public:
 		uint32 attack
 	);
 	void BotRemoveEquipItem(uint16 slot_id);
-	void RemoveBotItemBySlot(uint16 slot_id, std::string* error_message);
+	void RemoveBotItemBySlot(uint16 slot_id
+);
 	void AddBotItem(
 		uint16 slot_id,
 		uint32 item_id,
@@ -938,7 +939,7 @@ private:
 	void SetReturningFlag(bool flag = true) { m_returning_flag = flag; }
 
 	// Private "Inventory" Methods
-	void GetBotItems(EQ::InventoryProfile &inv, std::string* error_message);
+	void GetBotItems(EQ::InventoryProfile &inv);
 	void BotAddEquipItem(uint16 slot_id, uint32 item_id);
 
 	// Private "Pet" Methods

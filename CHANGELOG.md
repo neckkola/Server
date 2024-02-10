@@ -1,3 +1,152 @@
+## [22.44.0] - 2/10/2024
+
+### Base Data
+
+* Remove from shared memory and simplify ([#4045](https://github.com/EQEmu/Server/pull/4045)) @Kinglykrab 2024-02-05
+
+### Bot Commands
+
+* Separate Bot Commands into Individual Files ([#4035](https://github.com/EQEmu/Server/pull/4035)) @Kinglykrab 2024-02-01
+
+### Code
+
+* Convert Quest Ornament Methods to Repositories ([#4048](https://github.com/EQEmu/Server/pull/4048)) @Kinglykrab 2024-02-10
+* Remove redundant check in Object::HandleCombine ([#4041](https://github.com/EQEmu/Server/pull/4041)) @joligario 2024-02-03
+
+### Commands
+
+* Add #show special_abilities ([#4043](https://github.com/EQEmu/Server/pull/4043)) @Kinglykrab 2024-02-05
+
+### Crash Reporting
+
+* Update Spire to use SSL ([#4055](https://github.com/EQEmu/Server/pull/4055)) @Akkadius 2024-02-10
+
+### Database
+
+* Correct manifest migration entries that should be content ([#4047](https://github.com/EQEmu/Server/pull/4047)) @Akkadius 2024-02-05
+
+### Deprecation
+
+* Remove eqemu_server.pl script and ties to server ([#4049](https://github.com/EQEmu/Server/pull/4049)) @Akkadius 2024-02-10
+
+### Feature
+
+* Add RoF2 Guild features ([#3699](https://github.com/EQEmu/Server/pull/3699)) @neckkola 2024-02-10
+* Add optional `is_forced` parameter to Zone::Repop ([#4046](https://github.com/EQEmu/Server/pull/4046)) @Kinglykrab 2024-02-05
+* Add support to crosszone/worldwide spells to affect bot pets ([#4036](https://github.com/EQEmu/Server/pull/4036)) @Kinglykrab 2024-02-01
+* Classic Taunt (Pre 2006) style of taunt ([#3942](https://github.com/EQEmu/Server/pull/3942)) @fryguy503 2024-02-10
+* Corpse Overhaul ([#3938](https://github.com/EQEmu/Server/pull/3938)) @fryguy503 2024-02-08
+
+### Fixes
+
+* Fix Bot Non-Melee Damage Messages ([#4038](https://github.com/EQEmu/Server/pull/4038)) @Kinglykrab 2024-02-01
+* Fix Froglok Starting Languages ([#4050](https://github.com/EQEmu/Server/pull/4050)) @Kinglykrab 2024-02-09
+* Fix Issue with Bot Dual wield ([#4037](https://github.com/EQEmu/Server/pull/4037)) @Kinglykrab 2024-02-01
+* Fix for potential crash of DS damage on death ([#4040](https://github.com/EQEmu/Server/pull/4040)) @nytmyr 2024-02-03
+
+### GM Commands
+
+* Fix typo in #rules help. ([#4042](https://github.com/EQEmu/Server/pull/4042)) @noudess 2024-02-04
+
+### Loot
+
+* Remove from shared memory, simplification ([#3988](https://github.com/EQEmu/Server/pull/3988)) @Akkadius 2024-02-05
+
+### Objects
+
+* Add `fix_z` column to ground spawns ([#3992](https://github.com/EQEmu/Server/pull/3992)) @Kinglykrab 2024-02-01
+
+### Quest API
+
+* Add GetAAEXPPercentage() and GetEXPPercentage() to Perl/Lua ([#4044](https://github.com/EQEmu/Server/pull/4044)) @Kinglykrab 2024-02-04
+
+### Quests
+
+* Cleanup Quest Parser Logic ([#4025](https://github.com/EQEmu/Server/pull/4025)) @Kinglykrab 2024-02-06
+
+### Tasks
+
+* Avoid removing client tasks from memory on load ([#4052](https://github.com/EQEmu/Server/pull/4052)) @hgtw 2024-02-10
+* Send active elements in task select packet ([#4051](https://github.com/EQEmu/Server/pull/4051)) @hgtw 2024-02-10
+
+## [22.43.3] - 1/30/2024
+
+### API
+
+* Add lock_status method to world API ([#4028](https://github.com/EQEmu/Server/pull/4028)) @Akkadius 2024-01-29
+
+### Alternate Currency
+
+* Convert Load of Alternate Currencies to Repositories ([#3993](https://github.com/EQEmu/Server/pull/3993)) @Kinglykrab 2024-01-29
+
+### Beacon
+
+* Cleanup Beacons Code ([#4024](https://github.com/EQEmu/Server/pull/4024)) @Kinglykrab 2024-01-29
+
+### Bots
+
+* Convert Bot Database Methods to Repositories ([#4023](https://github.com/EQEmu/Server/pull/4023)) @Kinglykrab 2024-01-29
+* Missing boolean returns on DeletePetStats and SaveInspectMessage ([#4031](https://github.com/EQEmu/Server/pull/4031)) @joligario 2024-01-30
+
+### Code
+
+* Add Raid Loot Type Constants ([#4022](https://github.com/EQEmu/Server/pull/4022)) @Kinglykrab 2024-01-29
+* Cleanup cross-zone/world-wide OPCode handling ([#4003](https://github.com/EQEmu/Server/pull/4003)) @Kinglykrab 2024-01-29
+
+### Commands
+
+* Cleanup #petitems Command ([#4005](https://github.com/EQEmu/Server/pull/4005)) @Kinglykrab 2024-01-29
+
+### Crash Fix
+
+* Fix Possible Crash in HateList::Find ([#4027](https://github.com/EQEmu/Server/pull/4027)) @Kinglykrab 2024-01-28
+
+### Fixes
+
+* Fix NPC After Death Emotes ([#4021](https://github.com/EQEmu/Server/pull/4021)) @Kinglykrab 2024-01-29
+* Fix database loading routines ([#4030](https://github.com/EQEmu/Server/pull/4030)) @Akkadius 2024-01-29
+* Fix issue in character_corpses Repository Query ([#4029](https://github.com/EQEmu/Server/pull/4029)) @Kinglykrab 2024-01-29
+* Limit Pet Taunt Distance ([#4018](https://github.com/EQEmu/Server/pull/4018)) @fryguy503 2024-01-26
+* Limit Player Taunt Distance ([#4019](https://github.com/EQEmu/Server/pull/4019)) @fryguy503 2024-01-26
+* Patch for recent change to DEATH ([#4032](https://github.com/EQEmu/Server/pull/4032)) @noudess 2024-01-30
+* spawn_conditions map was being emptied by mistake ([#4033](https://github.com/EQEmu/Server/pull/4033)) @noudess 2024-01-30
+
+### Grids
+
+* Convert Grid/Grid Entries to Repositories ([#4011](https://github.com/EQEmu/Server/pull/4011)) @Kinglykrab 2024-01-29
+
+### Mercenaries
+
+* Add expansion settings update to Mercs:Enable ([#4001](https://github.com/EQEmu/Server/pull/4001)) @Kinglykrab 2024-01-29
+
+### Merchants
+
+* Convert Merchant Load to Repositories ([#4007](https://github.com/EQEmu/Server/pull/4007)) @Kinglykrab 2024-01-29
+
+### Pets
+
+* Convert Load of Pets Beastlord Data to Repositories ([#3995](https://github.com/EQEmu/Server/pull/3995)) @Kinglykrab 2024-01-29
+
+### Quests
+
+* Use separate variable for quest idle override. ([#4026](https://github.com/EQEmu/Server/pull/4026)) @noudess 2024-01-27
+
+### Rules
+
+* Add rules for cross-zone/world-wide casts to affect Bots/Mercenaries/Pets ([#4002](https://github.com/EQEmu/Server/pull/4002)) @Kinglykrab 2024-01-29
+
+### Spawn2
+
+* Convert Spawn2 Methods to Repositories ([#4014](https://github.com/EQEmu/Server/pull/4014)) @Kinglykrab 2024-01-29
+
+### Traps
+
+* Convert Load/Set of Traps to Repositories ([#3994](https://github.com/EQEmu/Server/pull/3994)) @Kinglykrab 2024-01-29
+
+### Zone
+
+* Convert Fishing/Foraging to Repositories ([#4008](https://github.com/EQEmu/Server/pull/4008)) @Kinglykrab 2024-01-30
+
 ## [22.43.2] - 1/25/2024
 
 ### Bots

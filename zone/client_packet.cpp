@@ -19,7 +19,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/eqemu_logsys.h"
 #include "../common/opcodemgr.h"
 #include "../common/raid.h"
-#include "../common/rulesys.h"
 
 #include <iomanip>
 #include <iostream>
@@ -756,15 +755,7 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	if (ClientVersion() == EQ::versions::ClientVersion::RoF2) 
-	{
-		SendBulkBazaarTraders();
-		SendBulkTraderStatus();
-		entity_list.SendTraders(this);
-	}
-	else {
-		entity_list.SendTraders(this);
-	}
+	entity_list.SendTraders(this);
 
 	Mob *pet = GetPet();
 	if (pet) {
@@ -3915,9 +3906,8 @@ void Client::Handle_OP_BazaarSearch(const EQApplicationPacket *app)
 
 		BazaarSearch_Struct* bss = (BazaarSearch_Struct*)app->pBuffer;
 
-		SendBazaarResults(bss->trader_id, bss->_class, bss->race, bss->item_stat, bss->slot, bss->type,
-			bss->name, bss->min_cost * 1000, bss->max_cost * 1000, bss->min_level, bss->max_level, bss->prestige,
-			bss->augment, bss->max_results,bss->search_scope);
+		SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
+			bss->Name, bss->MinPrice * 1000, bss->MaxPrice * 1000);
 	}
 	else if (app->size == sizeof(BazaarWelcome_Struct)) {
 
@@ -5309,28 +5299,87 @@ void Client::Handle_OP_ConsiderCorpse(const EQApplicationPacket *app)
 		}
 	}
 
-	uint32 decay_time = t->GetDecayTime();
-	if (decay_time) {
-		const std::string& time_string = Strings::SecondsToTime(decay_time, true);
-		Message(
-			Chat::NPCQuestSay,
-			fmt::format(
-				"This corpse will decay in {}.",
-				Strings::ToLower(time_string)
-			).c_str()
-		);
-
-		if (t->IsPlayerCorpse()) {
-			Message(
+	uint32 days, hours, minutes, seconds, remaining_time = 0;
+	if (t && t->IsNPCCorpse()) {
+		remaining_time = t->GetDecayTime();
+		if (remaining_time != 0) {
+			seconds = (remaining_time / 1000) % 60;
+			minutes = (remaining_time / 60000) % 60;
+			MessageString(
 				Chat::NPCQuestSay,
-				fmt::format(
-					"This corpse {} be resurrected.",
-					t->IsRezzed() ? "cannot" : "can"
-				).c_str()
+				CORPSE_DECAY_TIME_MINUTE,
+				std::to_string(minutes).c_str(),
+				std::to_string(seconds).c_str()
 			);
+		} else {
+			MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
 		}
-	} else {
-		MessageString(Chat::NPCQuestSay, CORPSE_DECAY_NOW);
+	} else if (t && t->IsPlayerCorpse()) {
+		remaining_time = t->GetRemainingRezTime();
+		if (!t->IsRezzed()) {
+			if (remaining_time > 0) {
+				seconds = (remaining_time / 1000) % 60;
+				minutes = (remaining_time / 60000) % 60;
+				hours   = (remaining_time / 3600000) % 24;
+				if (hours) {
+					MessageString(
+						Chat::White,
+						CORPSE_REZ_TIME_HOUR,
+						std::to_string(hours).c_str(),
+						std::to_string(minutes).c_str(),
+						std::to_string(seconds).c_str()
+					);
+				} else {
+					MessageString(
+						Chat::White,
+						CORPSE_REZ_TIME_MINUTE,
+						std::to_string(minutes).c_str(),
+						std::to_string(seconds).c_str()
+					);
+				}
+				hours = 0;
+			} else {
+				MessageString(Chat::White, CORPSE_TOO_OLD);
+			}
+		} else {
+			Message(Chat::White, "This corpse has already accepted a resurrection.");
+		}
+
+		remaining_time = t->GetDecayTime();
+		if (remaining_time != 0) {
+			seconds = (remaining_time / 1000) % 60;
+			minutes = (remaining_time / 60000) % 60;
+			hours   = (remaining_time / 3600000) % 24;
+			days    = remaining_time / 86400000;
+
+			if (days) {
+				MessageString(
+					Chat::White,
+					CORPSE_DECAY_TIME_DAY,
+					std::to_string(days).c_str(),
+					std::to_string(hours).c_str(),
+					std::to_string(minutes).c_str(),
+					std::to_string(seconds).c_str()
+				);
+			} else if (hours) {
+				MessageString(
+					Chat::White,
+					CORPSE_DECAY_TIME_HOUR,
+					std::to_string(hours).c_str(),
+					std::to_string(minutes).c_str(),
+					std::to_string(seconds).c_str()
+				);
+			} else {
+				MessageString(
+					Chat::White,
+					CORPSE_DECAY_TIME_MINUTE,
+					std::to_string(minutes).c_str(),
+					std::to_string(seconds).c_str()
+				);
+			}
+		} else {
+			MessageString(Chat::White, CORPSE_DECAY_NOW);
+		}
 	}
 }
 
@@ -8121,7 +8170,7 @@ void Client::Handle_OP_GuildInvite(const EQApplicationPacket *app)
 		Message(Chat::Red, "Error: You are not in a guild!");
 		return;
 	}
-	
+
 	if (!guild_mgr.CheckPermission(GuildID(), GuildRank(), GUILD_ACTION_MEMBERS_INVITE) ||
 			 (ClientVersion() < EQ::versions::ClientVersion::RoF && GuildRank() > GUILD_OFFICER)) {
 		Message(Chat::Red, "Invalid rank.");
@@ -10217,7 +10266,7 @@ void Client::Handle_OP_LootItem(const EQApplicationPacket *app)
 		return;
 	}
 
-	entity->CastToCorpse()->LootItem(this, app);
+	entity->CastToCorpse()->LootCorpseItem(this, app);
 }
 
 void Client::Handle_OP_LootRequest(const EQApplicationPacket *app)
@@ -14364,10 +14413,6 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		return;
 
 	merchantid = tmp->CastToNPC()->MerchantType;
-	int tabs_to_display = SellBuyRecover;
-	if (RuleB(World, EnableParcelMerchants)) {
-		tabs_to_display = SellBuyRecoverParcel; 
-	}
 
 	int action = 1;
 	if (merchantid == 0) {
@@ -14377,8 +14422,6 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 		mco->playerid = 0;
 		mco->command = 1;		//open...
 		mco->rate = 1.0;
-		mco->tab_display = tabs_to_display;
-		mco->unknown02 = 2592000;
 		QueuePacket(outapp);
 		safe_delete(outapp);
 		return;
@@ -14416,24 +14459,16 @@ void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 	if (RuleB(Merchant, UsePriceMod)) {
 		mco->rate = 1 / ((RuleR(Merchant, BuyCostMod))*Client::CalcPriceMod(tmp, true)); // works
 	}
-	else {
+	else
 		mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
-	}
-
-	mco->tab_display = tabs_to_display;
-	mco->unknown02 = 2592000;
 
 	outapp->priority = 6;
 	QueuePacket(outapp);
 	safe_delete(outapp);
 
-	if (action == 1) {
+	if (action == 1)
 		BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
-	}
 
-	if (tabs_to_display == SellBuyRecoverParcel) {
-		SendBulkParcels(merchantid);
-	}
 	return;
 }
 
@@ -15079,6 +15114,11 @@ void Client::Handle_OP_Taunt(const EQApplicationPacket *app)
 		return;
 	}
 
+	if (DistanceSquared(GetPosition(), GetTarget()->GetPosition()) > (RuleI(Skills, MaximumTauntDistance) * (RuleI(Skills, MaximumTauntDistance)))) {
+		MessageString(Chat::TooFarAway, TAUNT_TOO_FAR);
+		return;
+	}
+
 	Taunt(GetTarget()->CastToNPC(), false);
 	return;
 }
@@ -15411,7 +15451,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			for (uint32 i = 0; i < max_items; i++) {
 				if (database.GetItem(gis->Items[i])) {
 					database.SaveTraderItem(CharacterID(), gis->Items[i], gis->SerialNumber[i],
-						gis->Charges[i], ints->ItemCost[i], i, GetID());
+						gis->Charges[i], ints->ItemCost[i], i);
 
 					auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
 					if (inst)
@@ -15438,7 +15478,8 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			}
 		}
 		else {
-			LogTrading("Unknown TraderStruct code of: [{}]\n", ints->Code);
+			LogTrading("Unknown TraderStruct code of: [{}]\n",
+				ints->Code);
 
 			LogError("Unknown TraderStruct code of: [{}]\n", ints->Code);
 		}
@@ -15643,43 +15684,16 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 		// Customer has purchased an item from the Trader
 
 		TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
-		auto Trader = entity_list.GetClientByID(tbs->TraderID);
 
-		switch (tbs->Method) {
-		case ByVendor:
+		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID))
 		{
-			if (Trader)
-			{
-				BuyTraderItem(tbs, Trader, app);
-				LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-					tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
-			}
-			break;
+			BuyTraderItem(tbs, Trader, app);
+			LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
+				tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
 		}
-		case ByParcel:
+		else
 		{
-			if (!RuleB(World, EnableParcelMerchants)) {
-				LogTrading("Bazaar purchase attempt by parcel delivery though 'World:EnableParcelMerchants' not enabled.");
-				Message(Chat::Yellow, "The parcel delivey system is not enabled on this server.  Please visit the vendor directly.");
-				return;
-			}
-			BuyTraderItemByParcel(tbs, app);
-			break;
-		}
-		case ByDirectToInventory:
-		{
-			if (!RuleB(World, EnableDirectToInventoryDelivery)) {
-				LogTrading("Bazaar purchase attempt by direct inventory delivery though 'World:EnableDirectToInventoryDelivery' not enabled.");
-				Message(Chat::Yellow, "Direct inventory delivey is not enabled on this server.  Please visit the vendor directly.");
-				return;
-			}
-			BuyTraderItemByDirectToInventory(tbs);
-			break;
-		}
-		default:
-		{
-			LogTrading("OP_TraderShop: Unknown Buy Method [{}]\.", tbs->Method);
-		}
+			LogTrading("OP_TraderShop: Null Client Pointer");
 		}
 	}
 	else if (app->size == 4)
@@ -16914,7 +16928,7 @@ void Client::Handle_OP_GuildTributeOptInOut(const EQApplicationPacket *app)
 	out->char_id        = gci.char_id;
 	out->tribute_toggle = in->tribute_toggle;
 	out->command        = in->command;
-	strncpy(out->player_name, in->player, strlen(in->player));
+	strn0cpy(out->player_name, in->player, sizeof(out->player_name));
 
 	worldserver.SendPacket(sout);
 	safe_delete(sout)

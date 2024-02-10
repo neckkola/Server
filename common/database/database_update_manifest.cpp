@@ -4844,7 +4844,7 @@ UPDATE data_buckets SET bot_id = SUBSTRING_INDEX(SUBSTRING_INDEX( `key`, '-', 2 
 			ADD COLUMN `marked_npc_3_zone_id` INT UNSIGNED NOT NULL DEFAULT '0' AFTER `marked_npc_3_entity_id`,
 			ADD COLUMN `marked_npc_3_instance_id` INT UNSIGNED NOT NULL DEFAULT '0' AFTER `marked_npc_3_zone_id`;
 		)"
-    },
+	},
 	ManifestEntry{
 		.version = 9235,
 		.description = "2023_07_31_character_stats_record.sql",
@@ -5241,10 +5241,52 @@ DROP TABLE IF EXISTS item_tick
 		.sql = R"(
 ALTER TABLE `spawngroup`
 MODIFY COLUMN `name` varchar(200) CHARACTER SET latin1 COLLATE latin1_swedish_ci NOT NULL DEFAULT '' AFTER `id`;
-)"
+)",
+		.content_schema_update = true
 	},
 	ManifestEntry{
 		.version = 9257,
+		.description = "2024_01_16_ground_spawns_fix_z.sql",
+		.check = "SHOW COLUMNS FROM `ground_spawns` LIKE `fix_z`",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `ground_spawns`
+ADD COLUMN `fix_z` tinyint(1) UNSIGNED NOT NULL DEFAULT 1 AFTER `respawn_timer`;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9258,
+		.description = "2024_02_04_base_data.sql",
+		.check = "SHOW COLUMNS FROM `base_data` LIKE `hp_regen`",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `base_data`
+CHANGE COLUMN `unk1` `hp_regen` double NOT NULL AFTER `end`,
+CHANGE COLUMN `unk2` `end_regen` double NOT NULL AFTER `hp_regen`,
+MODIFY COLUMN `level` tinyint(3) UNSIGNED NOT NULL FIRST,
+MODIFY COLUMN `class` tinyint(2) UNSIGNED NOT NULL AFTER `level`;
+)",
+		.content_schema_update = true
+	},
+	ManifestEntry{
+		.version = 9259,
+		.description = "2024_01_13_corpse_rez_overhaul.sql",
+		.check = "SHOW COLUMNS FROM `character_corpses` LIKE 'rez_time'",
+		.condition = "empty",
+		.match = "",
+		.sql = R"(
+ALTER TABLE `character_corpses`
+ADD COLUMN `rez_time` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `wc_9`,
+ADD COLUMN `gm_exp` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `rez_time`,
+ADD COLUMN `killed_by` int(11) UNSIGNED NOT NULL DEFAULT 0 AFTER `gm_exp`,
+ADD COLUMN `rezzable` tinyint(1) UNSIGNED NOT NULL DEFAULT 0 AFTER `killed_by`;
+)"
+	},
+	ManifestEntry{
+		.version = 9260,
 		.description = "2023_11_11_guild_features.sql",
 		.check = "SHOW TABLES LIKE 'guild_permissions'",
 		.condition = "empty",
@@ -5303,53 +5345,7 @@ CREATE TABLE guild_tributes (
   PRIMARY KEY (guild_id) USING BTREE
 ) ENGINE=InnoDB;
 )"
-    },
-    ManifestEntry{
-        .version = 9258,
-        .description = "2023_11_24_trader_updates_for_rof2.sql",
-        .check = "SHOW COLUMNS FROM `trader` LIKE 'entity_id'",
-        .condition = "empty",
-        .match = "",
-        .sql = R"(ALTER TABLE `trader`
-		ADD COLUMN `entity_id` INT UNSIGNED NOT NULL DEFAULT '0' AFTER `slot_id`;
-		)"
-    },
-    ManifestEntry{
-        .version = 9259,
-        .description = "2023_12_03_parcel_implementation.sql",
-        .check = "SHOW TABLES LIKE 'parcels'",
-        .condition = "empty",
-        .match = "",
-        .sql = R"(CREATE TABLE `parcels` (
-`id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-			`char_id` INT UNSIGNED NOT NULL DEFAULT 0,
-			`serial_id` INT UNSIGNED NOT NULL DEFAULT 0,
-			`from_name` VARCHAR(64) NULL DEFAULT NULL,
-			`from_note` VARCHAR(1024) NULL DEFAULT NULL,
-			`sent_date` DATETIME NULL DEFAULT NULL,
-			PRIMARY KEY (`id`)
-			)
-			COLLATE = 'latin1_swedish_ci';
-		CREATE TABLE `parcel_merchants` (
-			`id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-			`merchant_id` INT UNSIGNED NOT NULL DEFAULT '0',
-			`enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-			PRIMARY KEY (`id`)
-			)
-			COLLATE='latin1_swedish_ci';
-		CREATE TABLE `buyer_trade_items` (
-			`id` INT(11) NOT NULL AUTO_INCREMENT,
-			`char_id` INT(11) NOT NULL DEFAULT '0',
-			`slot_id` INT(11) NOT NULL DEFAULT '0',
-			`item_id` INT(11) NOT NULL DEFAULT '0',
-			`item_qty` INT(11) NOT NULL DEFAULT '0',
-			`Item_icon` INT(11) NOT NULL DEFAULT '0',
-			`item_name` VARCHAR(64) NOT NULL DEFAULT '0' COLLATE 'latin1_swedish_ci',
-			PRIMARY KEY (`id`) USING BTREE
-		)
-		COLLATE='latin1_swedish_ci';
-		)"
-    }
+	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,

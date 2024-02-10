@@ -65,7 +65,7 @@ public:
 			fmt::format(
 				"UPDATE `{}` SET `is_buried` = 1 WHERE `is_buried` = 0 AND (UNIX_TIMESTAMP() - UNIX_TIMESTAMP(time_of_death)) > {} AND time_of_death != 0",
 				TableName(),
-				RuleI(Character, CorpseDecayTimeMS) / 1000
+				RuleI(Character, CorpseDecayTime) / 1000
 			)
 		);
 
@@ -141,7 +141,7 @@ public:
 	{
 		db.QueryDatabase(
 			fmt::format(
-				"UPDATE `{}` SET `zone_id` = {}, `instance_id` = 0, `x` = {:.2f}, `y` = {:.2f}, `z` = {:.2f}`, `heading` = {:.2f}, `was_at_graveyard` = 1 WHERE `instance_id` = {}",
+				"UPDATE `{}` SET `zone_id` = {}, `instance_id` = 0, `x` = {:.2f}, `y` = {:.2f}, `z` = {:.2f}, `heading` = {:.2f}, `was_at_graveyard` = 1 WHERE `instance_id` = {}",
 				TableName(),
 				graveyard_zone_id,
 				position.x,
@@ -163,7 +163,7 @@ public:
 	{
 		db.QueryDatabase(
 			fmt::format(
-				"UPDATE `{}` SET `zone_id` = {}, `instance_id` = {}, `x` = {:.2f}, `y` = {:.2f}, `z` = {:.2f}`, `heading` = {:.2f}, `was_at_graveyard` = 1 WHERE `{}` = {}",
+				"UPDATE `{}` SET `zone_id` = {}, `instance_id` = {}, `x` = {:.2f}, `y` = {:.2f}, `z` = {:.2f}, `heading` = {:.2f}, `was_at_graveyard` = 1 WHERE `{}` = {}",
 				TableName(),
 				zone_id,
 				instance_id,
