@@ -324,8 +324,6 @@ RULE_INT(World, MaximumQuestErrors, 30, "Changes the maximum number of quest err
 RULE_INT(World, BootHour, 0, "Sets the in-game hour world will set when it first boots. 0-24 are valid options, where 0 disables this rule")
 RULE_BOOL(World, UseItemLinksForKeyRing, false, "Uses item links for Key Ring Listing instead of item name")
 RULE_BOOL(World, UseOldShadowKnightClassExport, true, "Disable to have Shadowknight show as Shadow Knight (live-like)")
-RULE_BOOL(World, EnableParcelMerchants, false, "Enable or Disable Parcel Merchants.  Requires RoF+ Clients.")
-RULE_BOOL(World, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory. Requires RoF+ Clients.")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Zone)
@@ -947,6 +945,15 @@ RULE_BOOL(Items, DisableNoRent, false, "Enable this to disable No Rent Items")
 RULE_BOOL(Items, DisableNoTransfer, false, "Enable this to disable No Transfer Items")
 RULE_BOOL(Items, DisablePotionBelt, false, "Enable this to disable Potion Belt Items")
 RULE_BOOL(Items, DisableSpellFocusEffects, false, "Enable this to disable Spell Focus Effects on Items")
+RULE_CATEGORY_END()
+
+RULE_CATEGORY(Parcel)
+RULE_BOOL(Parcel, EnableParcelMerchants, true, "Enable or Disable Parcel Merchants.  Requires RoF+ Clients.")
+RULE_BOOL(Parcel, EnableDirectToInventoryDelivery, false, "Enable or Disable RoF2 bazaar purchases to be delivered directly to the buyer's inventory.")
+RULE_BOOL(Parcel, DeleteOnDuplicate, false, "Delete retrieved item if it creates a lore conflict.")
+RULE_INT(Parcel, ParcelDeliveryDelay, 30000, "Sets the time that a player must wait between sending parcels.")
+RULE_INT(Parcel, ParcelMaxItems, 50, "The maximum number of parcels a player is allowed to have in their mailbox.")
+RULE_INT(Parcel, ParcelPruneDelay, 30, "The number of days after which a parcel is deleted. Items are lost!")
 RULE_CATEGORY_END()
 
 #undef RULE_CATEGORY

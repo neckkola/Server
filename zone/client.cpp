@@ -180,7 +180,8 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
   mob_close_scan_timer(6000),
   position_update_timer(10000),
   consent_throttle_timer(2000),
-  tmSitting(0)
+  tmSitting(0),
+  parcel_timer(RuleI(Parcel, ParcelDeliveryDelay))
 {
 	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
 		SetFilter(client_filter, FilterShow);
@@ -197,11 +198,11 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	ip = eqs->GetRemoteIP();
 	port = ntohs(eqs->GetRemotePort());
 	client_state = CLIENT_CONNECTING;
-	Trader=false;
-	Buyer = false;
 	Haste = 0;
-	CustomerID = 0;
-	TraderID = 0;
+    trader               = false;
+    buyer                = false;
+    customer_id          = 0;
+    trader_id            = 0;
 	TrackingID = 0;
 	WID = 0;
 	account_id = 0;
@@ -375,6 +376,14 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	bot_owner_options[booBuffCounter] = false;
 	bot_owner_options[booMonkWuMessage] = false;
 
+	parcel_platinum         = 0;
+    parcel_gold             = 0;
+    parcel_silver           = 0;
+    parcel_copper           = 0;
+    parcel_count            = 0;
+    parcel_enabled          = true;
+    parcel_merchant_engaged = false;
+
 	SetBotPulling(false);
 	SetBotPrecombat(false);
 
@@ -406,12 +415,12 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if (Trader) {
+	if (IsTrader()) {
 		database.DeleteTraderItem(CharacterID());
-		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_RemoveTraderFromBazaarWindow);
+		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_BazaarWindowRemoveTrader);
 	}
 
-	if(Buyer)
+	if(IsBuyer())
 		ToggleBuyerMode(false);
 
 	if(conn_state != ClientConnectFinished) {
@@ -2145,14 +2154,17 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	Mob::FillSpawnStruct(ns, ForWho);
 
 	// Populate client-specific spawn information
-	ns->spawn.afk		= AFK;
-	ns->spawn.lfg		= LFG; // afk and lfg are cleared on zoning on live
-	ns->spawn.anon		= m_pp.anon;
-	ns->spawn.gm		= GetGM() ? 1 : 0;
-	ns->spawn.guildID	= GuildID();
-//	ns->spawn.linkdead	= IsLD() ? 1 : 0;
-//	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
-	ns->spawn.show_name = true;
+    ns->spawn.afk     = AFK;
+    ns->spawn.lfg     = LFG; // afk and lfg are cleared on zoning on live
+    ns->spawn.anon    = m_pp.anon;
+    ns->spawn.gm      = GetGM() ? 1 : 0;
+    ns->spawn.guildID = GuildID();
+    //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
+    //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
+    ns->spawn.show_name = true;
+    ns->spawn.trader    = IsTrader();
+    ns->spawn.buyer     = IsBuyer();
+    ns->spawn.offline   = false;
 
 	strcpy(ns->spawn.title, m_pp.title);
 	strcpy(ns->spawn.suffix, m_pp.suffix);
@@ -11650,8 +11662,8 @@ void Client::SendPath(Mob* target)
 		RuleB(Bazaar, EnableWarpToTrader) &&
 		target->IsClient() &&
 		(
-			target->CastToClient()->Trader ||
-			target->CastToClient()->Buyer
+			target->CastToClient()->IsTrader() ||
+			target->CastToClient()->IsBuyer()
 		)
 		) {
 		Message(

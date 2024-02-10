@@ -37,6 +37,7 @@
 #include "../races.h"
 #include "../raid.h"
 #include "../../zone/trading.h"
+#include "../../zone/parcels.h"
 
 #include <iostream>
 #include <sstream>
@@ -77,6 +78,30 @@ namespace RoF2
 	static inline int ServerToRoF2BuffSlot(int index);
 	static inline int RoF2ToServerBuffSlot(int index);
 
+	struct test2
+	{
+		uint32 test2_item1;
+		std::string test2_string;
+		double test2_double;
+		template<class Archive>
+		void serialize(Archive &archive)
+		{
+			archive(CEREAL_NVP(test2_item1), CEREAL_NVP(test2_string), CEREAL_NVP(test2_double));
+		}
+
+	};
+	struct test
+	{
+		uint32 item1;
+		uint32 item2;
+		std::vector<test2> vector;
+
+		template<class Archive>
+		void serialize(Archive &archive)
+		{
+			archive(CEREAL_NVP(item1), CEREAL_NVP(item2), CEREAL_NVP(vector));
+		}
+	};
 	void Register(EQStreamIdentifier &into)
 	{
 		//create our opcode manager if we havent already
@@ -520,68 +545,66 @@ namespace RoF2
 
 	ENCODE(OP_BecomeTrader)
 	{
-		EQApplicationPacket* inapp = *p;
-		*p = nullptr;
-		unsigned char* __emu_buffer = inapp->pBuffer;
-		BecomeTrader_Struct* in = (BecomeTrader_Struct*)__emu_buffer;
+        EQApplicationPacket *inapp  = *p;
+        *p                          = nullptr;
+        unsigned char *__emu_buffer = inapp->pBuffer;
+        auto           in           = (RoF2_BecomeTrader_Struct *)__emu_buffer;
 
-		switch (in->Code) 
+		switch (in->action) 
 		{
-		case 0x0:
+		case BazaarTrader_Off:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+			auto emu = (RoF2_BecomeTrader_Struct*)__emu_buffer;
 
 			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+            auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-			eq->code = 0;
-			eq->id = emu->ID;
+            eq->action = BazaarTrader_Off;
+			eq->id = emu->entity_id;
 
 			dest->FastQueuePacket(&outapp);
 			break;
 		}
-		case 0x1:
+		case BazaarTrader_StartTraderMode:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+            auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
 
-			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+            auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+            auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-			eq->code = 1;
-			eq->id = emu->ID;
+            eq->action = BazaarTrader_StartTraderMode;
+            eq->id     = emu->entity_id;
 
-			dest->FastQueuePacket(&outapp);
-			break;
+            dest->FastQueuePacket(&outapp);
+            break;
 		}
-		case 0x18:
+		case BazaarTrader_BazaarWindowAddTrader:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+            auto emu      = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            auto outapp   = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowAddTrader_Struct));
+            auto eq       = (structs::BazaarWindowAddTrader_Struct *)outapp->pBuffer;
 
-			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
-			structs::BazaarTrader_Struct* eq = (structs::BazaarTrader_Struct*)outapp->pBuffer;
-
-			eq->action		= structs::BazaarSendAddTrader;
-			eq->entity_id	= emu->ID;
-			eq->trader_id	= emu->ID;
-			eq->zone_id		= emu->Unknown072;
-			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
-
+			eq->action    = emu->action;
+            eq->entity_id = emu->entity_id;
+            eq->trader_id = emu->trader_id;
+            eq->zone_id   = emu->zone_id;
+            strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+            
 			dest->FastQueuePacket(&outapp);
-			break;
+            break;
 		}
-		case 0x19:
-		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+        case BazaarTrader_BazaarWindowRemoveTrader:
+        {
+            auto emu    = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowRemoveTrader_Struct));
+            auto eq     = (structs::BazaarWindowRemoveTrader_Struct *)outapp->pBuffer;
 
-			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+            eq->action    = emu->action;
+            eq->trader_id = emu->trader_id;
 
-			eq->id = structs::BazaarSendRemoveTrader;
-			eq->code = emu->ID;
-			
-			dest->FastQueuePacket(&outapp);
-			break;
-		}
+            dest->FastQueuePacket(&outapp);
+            break;
+        }
 		}
 		safe_delete(inapp);
 	}
@@ -1819,33 +1842,62 @@ namespace RoF2
 		{
 		case ItemPacketParcel:
 		{
-			// deconstruct the packet
-			auto bufptr = __emu_buffer;
-			auto p_size = in->size;
-			bufptr = bufptr + p_size - 4;
-			auto serial_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
-			bufptr = bufptr - p_size;
-			auto packet_type = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
-			char* serial = new char[serial_length];
-			memcpy(serial, bufptr, serial_length); bufptr += serial_length;
-			auto date_sent = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
-			auto player_name_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
-			char* player_name = new char[player_name_length];
-			memcpy(player_name, bufptr, player_name_length); bufptr += player_name_length;
-			auto note_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
-			char* note = new char[note_length];
-			memcpy(note, bufptr, note_length); bufptr += note_length;
+                // deconstruct the packet
+                //auto bufptr        = __emu_buffer;
+                //auto p_size        = in->size;
+                //bufptr             = bufptr + p_size - 4;
+                //auto serial_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+                //bufptr             = bufptr - p_size;
+                //auto  packet_type  = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+                //char *serial       = new char[serial_length];
+                //memcpy(serial, bufptr, serial_length);
+                //bufptr += serial_length;
+                //auto  date_sent          = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+                //auto  player_name_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+                //char *player_name        = new char[player_name_length];
+                //memcpy(player_name, bufptr, player_name_length);
+                //bufptr += player_name_length;
+                //auto  note_length = VARSTRUCT_DECODE_TYPE(uint32, bufptr);
+                //char *note        = new char[note_length];
+                //memcpy(note, bufptr, note_length);
+                //bufptr += note_length;
 
-			EQ::InternalSerializedItem_Struct* int_struct = (EQ::InternalSerializedItem_Struct*)(&__emu_buffer[4]);
+				ParcelMessaging_Struct       pms {};
+                EQ::Util::MemoryStreamReader ss(reinterpret_cast<char *>(in->pBuffer), in->size);
+                cereal::BinaryInputArchive   ar(ss);
+                ar(pms);
+
+                uint32 serial_length      = pms.serialized_item.length();
+                uint32 packet_type        = pms.packet_type;
+                uint32 date_sent          = pms.sent_time;
+                uint32 player_name_length = pms.player_name.length();
+                uint32 note_length        = pms.note.length();
+                char  *serial             = new char[serial_length];
+                char  *player_name        = new char[player_name_length];
+                char  *note               = new char[note_length];
+
+
+                strncpy(player_name, pms.player_name.c_str(), player_name_length);
+                strncpy(note, pms.note.c_str(), note_length);
+                strncpy(serial, pms.serialized_item.c_str(), serial_length);
+
+				
+				//EQ::InternalSerializedItem_Struct *int_struct = (EQ::InternalSerializedItem_Struct *)(&__emu_buffer[4]);
+				auto *int_struct = (EQ::InternalSerializedItem_Struct *)pms.serialized_item.data();
+
+				EQ::OutBuffer myob;
+				EQ::OutBuffer::pos_type my_last_pos = myob.tellp();
 
 			EQ::OutBuffer ob;
 			EQ::OutBuffer::pos_type last_pos = ob.tellp();
 
-			ob.write((const char*)__emu_buffer, 4);
+			//ob.write((const char *)__emu_buffer, 4);
+			ob.write(reinterpret_cast<const char *>(&pms.packet_type), 4);
 
-			SerializeItem(ob, (const EQ::ItemInstance*)int_struct->inst, int_struct->slot_id, 0, ItemPacketParcel);
+			//SerializeItem(ob, (const EQ::ItemInstance *)int_struct->inst, int_struct->slot_id, 0, ItemPacketParcel);
+			SerializeItem(ob, (const EQ::ItemInstance *)int_struct->inst, pms.slot_id, 0, ItemPacketParcel);
 			if (ob.tellp() == last_pos) {
-				LogNetcode("RoF2::ENCODE(OP_ItemPacket) Serialization failed on item slot [{}]", int_struct->slot_id);
+				LogNetcode("RoF2::ENCODE(OP_ItemPacket) Serialization failed on item slot [{}]", pms.slot_id);
 				delete in;
 				return;
 			}
@@ -3852,6 +3904,15 @@ namespace RoF2
 
 	ENCODE(OP_Trader)
 	{
+		//test Test {};
+		//auto data = (*p)->pBuffer;
+		////EQ::Util::MemoryStreamReader rt(reinterpret_cast<char*>(data), (*p)->size);
+		//std::istringstream rt(reinterpret_cast<char *>(data), (*p)->size);
+		//cereal::BinaryInputArchive ar(rt);
+		//ar(Test);
+
+
+
 		if ((*p)->size == sizeof(ClickTrader_Struct))
 		{
 			ENCODE_LENGTH_EXACT(ClickTrader_Struct);
@@ -3879,10 +3940,10 @@ namespace RoF2
 			ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
 			SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			eq->Code = emu->Code;
+			eq->Code     = emu->action;
+            eq->TraderID = emu->trader_id;
 			//strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
 			//snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", 0);
-			eq->TraderID = emu->TraderID;
 			//eq->Stacksize = 0;
 			//eq->Price = 0;
 
@@ -4029,16 +4090,16 @@ namespace RoF2
 
 			FINISH_ENCODE();
 		}
-		else if (psize == sizeof(BecomeTrader_Struct))
+		else if (psize == sizeof(RoF2_BecomeTrader_Struct))
 		{
-			ENCODE_LENGTH_EXACT(BecomeTrader_Struct);
-			SETUP_DIRECT_ENCODE(BecomeTrader_Struct, structs::BazaarTrader_Struct);
+			ENCODE_LENGTH_EXACT(RoF2_BecomeTrader_Struct);
+			SETUP_DIRECT_ENCODE(RoF2_BecomeTrader_Struct, structs::BazaarTrader_Struct);
 
 			eq->action = structs::BazaarSendAddTrader;
-			eq->entity_id = emu->ID;
-			eq->trader_id = emu->ID;
-			eq->zone_id = emu->Unknown072;
-			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
+			eq->entity_id = emu->entity_id;
+			eq->trader_id = emu->trader_id;
+			eq->zone_id = emu->zone_id;
+			strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
 
 			FINISH_ENCODE();
 		}
@@ -4388,22 +4449,21 @@ namespace RoF2
 			}
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, emu->NPC); // 0 PC, 1 NPC etc
 
-			structs::Spawn_Struct_Bitfields *Bitfields = (structs::Spawn_Struct_Bitfields*)Buffer;
-
-			Bitfields->gender = emu->gender;
-			Bitfields->ispet = emu->is_pet;
-			Bitfields->afk = emu->afk;
-			Bitfields->anon = emu->anon;
-			Bitfields->gm = emu->gm;
-			Bitfields->sneak = 0;
-			Bitfields->lfg = emu->lfg;
-			Bitfields->invis = emu->invis;
-			Bitfields->linkdead = 0;
-			Bitfields->showhelm = emu->showhelm;
-			Bitfields->trader = 0;
-			Bitfields->targetable = 1;
-			Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
-			Bitfields->showname = ShowName;
+			structs::Spawn_Struct_Bitfields *Bitfields = (structs::Spawn_Struct_Bitfields *)Buffer;
+            Bitfields->gender                          = emu->gender;
+            Bitfields->ispet                           = emu->is_pet;
+            Bitfields->afk                             = emu->afk;
+            Bitfields->anon                            = emu->anon;
+            Bitfields->gm                              = emu->gm;
+            Bitfields->sneak                           = 0;
+            Bitfields->lfg                             = emu->lfg;
+            Bitfields->invis                           = emu->invis;
+            Bitfields->linkdead                        = 0;
+            Bitfields->showhelm                        = emu->showhelm;
+            Bitfields->trader                          = emu->trader ? 1 : 0;
+            Bitfields->targetable                      = 1;
+            Bitfields->targetable_with_hotkey          = emu->targetable_with_hotkey ? 1 : 0;
+            Bitfields->showname                        = ShowName;
 
 			if (emu->DestructibleObject)
 			{
@@ -4786,18 +4846,19 @@ namespace RoF2
 
 	DECODE(OP_BazaarSearch)
 	{
-		char *Buffer = (char *)__packet->pBuffer;
+        char *Buffer = (char *)__packet->pBuffer;
+        uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+        if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::BazaarClickInspect_Struct)))
+        {
+            return;
+        }
 
-		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::BazaarClickInspect_Struct)))
-			return;
+        SETUP_DIRECT_DECODE(BazaarInspect_Struct, structs::BazaarClickInspect_Struct);
 
-		SETUP_DIRECT_DECODE(BazaarInspect_Struct, structs::BazaarClickInspect_Struct);
+        emu->ItemID = Strings::ToUnsignedBigInt(eq->serial_number);
 
-		emu->ItemID = Strings::ToUnsignedBigInt(eq->serial_number);
-
-		FINISH_DIRECT_DECODE();
+        FINISH_DIRECT_DECODE();
 	}
 
 	DECODE(OP_BlockedBuffs)
@@ -5784,6 +5845,21 @@ namespace RoF2
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_ShopSendParcel)
+    {
+        DECODE_LENGTH_EXACT(structs::Parcel_Struct);
+        SETUP_DIRECT_DECODE(Parcel_Struct, structs::Parcel_Struct);
+
+        IN(npc_id);
+        IN(quantity);
+		IN(money_flag);
+        emu->item_slot = RoF2ToServerTypelessSlot(eq->inventory_slot, invtype::typePossessions);
+        strn0cpy(emu->send_to, eq->send_to, sizeof(emu->send_to));
+        strn0cpy(emu->note, eq->note, sizeof(emu->note));
+
+        FINISH_DIRECT_DECODE();
+    }
+
 	DECODE(OP_ShopPlayerBuy)
 	{
 		DECODE_LENGTH_EXACT(structs::Merchant_Sell_Struct);
@@ -5835,8 +5911,8 @@ namespace RoF2
 			DECODE_LENGTH_EXACT(structs::Trader_ShowItems_Struct);
 			SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			emu->Code = eq->Code;
-			emu->TraderID = eq->TraderID;
+			emu->action    = eq->Code;
+            emu->trader_id = eq->TraderID;
 
 			FINISH_DIRECT_DECODE();
 		}
@@ -6075,7 +6151,12 @@ namespace RoF2
 
 		//sprintf(hdr.unknown000, "06e0002Y1W00");
 
-		snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", item->ID);
+		if(packet_type == ItemPacketParcel) {
+			strn0cpy(hdr.unknown000, fmt::format("{:03}PAR{:010}\0", inst->GetMerchantSlot(), item->ID).c_str(), sizeof(hdr.unknown000));
+		}
+		else {
+			snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", item->ID);
+		}
 
 		hdr.stacksize = (inst->IsStackable() ? ((inst->GetCharges() > 1000) ? 0xFFFFFFFF : inst->GetCharges()) : 1);
 		hdr.unknown004 = 0;
@@ -6098,7 +6179,7 @@ namespace RoF2
 		hdr.merchant_slot = (inst->GetMerchantSlot() ? inst->GetMerchantCount() : 1);
 		hdr.scaled_value = (inst->IsScaling() ? (inst->GetExp() / 100) : 0);
 		hdr.instance_id = (inst->GetMerchantSlot() ? inst->GetMerchantSlot() : inst->GetSerialNumber());
-		hdr.unknown028 = 0;
+		hdr.parcel_item_id = packet_type == ItemPacketParcel ? inst->GetID() : 0;
 		hdr.last_cast_time = inst->GetRecastTimestamp();
 		hdr.charges = (inst->IsStackable() ? (item->MaxCharges ? 1 : 0) : ((inst->GetCharges() > 254) ? 0xFFFFFFFF : inst->GetCharges()));
 		hdr.inst_nodrop = (inst->IsAttuned() ? 1 : 0);
@@ -6163,9 +6244,16 @@ namespace RoF2
 
 		ob.write((const char*)&hdrf, sizeof(RoF2::structs::ItemSerializationHeaderFinish));
 
-		if (strlen(item->Name) > 0)
-			ob.write(item->Name, strlen(item->Name));
-		ob.write("\0", 1);
+		if (strlen(item->Name) > 0) {
+            if (item->ID == PARCEL_MONEY_ITEM_ID) {
+				auto money = inst->DetermineMoneyStringForParcels(inst->GetCharges());
+                ob.write(money.c_str(), money.length());
+            }
+            else {
+                ob.write(item->Name, strlen(item->Name));
+            }
+            ob.write("\0", 1);
+        }
 
 		if (strlen(item->Lore) > 0)
 			ob.write(item->Lore, strlen(item->Lore));
@@ -6180,7 +6268,13 @@ namespace RoF2
 		RoF2::structs::ItemBodyStruct ibs;
 		memset(&ibs, 0, sizeof(RoF2::structs::ItemBodyStruct));
 
-		ibs.id = item->ID;
+		if(item->ID == 22292) {
+			ibs.id = inst->GetSerialNumber();
+		}
+		else {
+			ibs.id = item->ID;
+		}
+
 		ibs.weight = item->Weight;
 		ibs.norent = item->NoRent;
 		ibs.nodrop = item->NoDrop;

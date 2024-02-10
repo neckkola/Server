@@ -3843,6 +3843,84 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		}
 		break;
 	}
+    case ServerOP_RoF2Trader:
+    {
+        auto data = (ServerRoF2Trader_Struct *)pack->pBuffer;
+
+        for (auto const &c : entity_list.GetClientList())
+        {
+            if (c.second->ClientVersion() >= EQ::versions::ClientVersion::RoF2)
+            {
+                auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(RoF2_BecomeTrader_Struct));
+                auto out    = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
+                if (data->action == BazaarTrader_StartTraderMode)
+                {
+                    out->action = BazaarTrader_BazaarWindowAddTrader;
+                } else
+                {
+                    out->action = BazaarTrader_BazaarWindowRemoveTrader;
+                }
+                
+				out->trader_id = data->trader_id;
+                out->entity_id = data->entity_id;
+                out->zone_id   = data->zone_id;
+                strn0cpy(out->trader_name, data->trader_name, sizeof(out->trader_name));
+
+				c.second->QueuePacket(outapp);
+                safe_delete(outapp);
+            }
+            if (zone && zone->GetZoneID() == Zones::BAZAAR)
+            {
+                if (data->action == BazaarTrader_StartTraderMode)
+                {
+                    c.second->SendBecomeTraderPacket(BazaarTrader_StartTraderMode, data->entity_id, data->trader_name);
+                } else
+                {
+                    c.second->SendBecomeTraderPacket(BazaarTrader_Off, data->entity_id, data->trader_name);
+                }
+            }
+        }
+        break;
+    }
+	case ServerOP_ParcelDelivery:
+	{
+		auto in = (Parcel_Struct *)pack->pBuffer;
+
+		if(strlen(in->send_to) == 0) {
+			LogError("ServerOP_ParcelDelivery pack received with incorrect character_name of {}.", in->send_to);
+			return;
+		}
+
+		for(auto const &c : entity_list.GetClientList()) {
+			if(strcasecmp(c.second->GetCleanName(), in->send_to) == 0) {
+				c.second->MessageString(Chat::Yellow, PARCEL_DELIVERY_ARRIVED);
+				c.second->SendParcelStatus();
+				if(c.second->GetEngagedWithParcelMerchant()) {
+					c.second->SendParcel(*in);
+				}
+				return;
+			}
+		}
+		
+		break;
+	}
+	case ServerOP_ParcelPrune:
+	{
+		for(auto const &c : entity_list.GetClientList()) {
+			if(c.second->GetEngagedWithParcelMerchant()) {
+				c.second->Message(Chat::Red, "Parcel pruning routine just ran.  Please re-open the Merchant Window.");
+
+				c.second->SetEngagedWithParcelMerchant(false);
+				c.second->DoParcelCancel();
+
+				auto out = new EQApplicationPacket(OP_ShopEndConfirm);
+				c.second->QueuePacket(out);
+				safe_delete(out);
+				return;
+			}
+		}
+		break;
+	}
 	default: {
 		LogInfo("Unknown ZS Opcode [{}] size [{}]", (int)pack->opcode, pack->size);
 		break;

@@ -22,5 +22,13 @@
 #include "../common/repositories/parcels_repository.h"
 #include "../common/repositories/parcel_merchants_repository.h"
 
+#define PARCEL_SEND_ITEMS    0
+#define PARCEL_SEND_MONEY    1
+#define PARCEL_MONEY_ITEM_ID 22292 // item id of copper coin
+#define PARCEL_MAX_ITEMS     RuleI(Parcel, ParcelMaxItems)
+#define PARCEL_LIMIT         PARCEL_MAX_ITEMS + 5
+#define PARCEL_BEGIN_SLOT    1
+#define PARCEL_END_SLOT      PARCEL_MAX_ITEMS
+
 #endif
 

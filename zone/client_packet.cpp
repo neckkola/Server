@@ -69,6 +69,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/character_stats_record_repository.h"
 #include "dialogue_window.h"
+#include "parcels.h"
 
 extern QueryServ* QServ;
 extern Zone* zone;
@@ -365,6 +366,8 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_Save] = &Client::Handle_OP_Save;
 	ConnectedOpcodes[OP_SaveOnZoneReq] = &Client::Handle_OP_SaveOnZoneReq;
 	ConnectedOpcodes[OP_SelectTribute] = &Client::Handle_OP_SelectTribute;
+    ConnectedOpcodes[OP_ShopSendParcel] = &Client::Handle_OP_ShopSendParcel;
+	ConnectedOpcodes[OP_ShopRetrieveParcel] = &Client::Handle_OP_ShopRetrieveParcel;
 
 	// Use or Ignore sense heading based on rule.
 	bool train = RuleB(Skills, TrainSenseHeading);
@@ -755,8 +758,6 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	entity_list.SendTraders(this);
-
 	Mob *pet = GetPet();
 	if (pet) {
 		pet->SendPetBuffsToClient();
@@ -813,6 +814,11 @@ void Client::CompleteConnect()
 				CharacterID()
 			)
 		);
+
+		if(ClientVersion() == EQ::versions::ClientVersion::RoF2) {
+			SendParcelStatus();
+		}
+
 	}
 
 	if (zone && zone->GetInstanceTimer()) {
@@ -844,6 +850,13 @@ void Client::CompleteConnect()
 
 	if (zone->GetZoneID() == Zones::GUILDHALL && GuildBanks)
 		GuildBanks->SendGuildBank(this);
+
+	if (GetZoneID() == Zones::BAZAAR && ClientVersion() <= EQ::versions::ClientVersion::UF) {
+		SendActiveTraders();
+	}
+	else {
+		SendBulkBazaarTraders();
+	}
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::SoD)
 		entity_list.SendFindableNPCList(this);
@@ -3751,7 +3764,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_BuyerModeOn:
 	{
-		if (!Trader) {
+		if (!IsTrader()) {
 			ToggleBuyerMode(true);
 		}
 		else {
@@ -3904,10 +3917,12 @@ void Client::Handle_OP_BazaarSearch(const EQApplicationPacket *app)
 
 	if (app->size == sizeof(BazaarSearch_Struct)) {
 
-		BazaarSearch_Struct* bss = (BazaarSearch_Struct*)app->pBuffer;
+		auto   bss       = (BazaarSearch_Struct *)app->pBuffer;
+		uint32 trader_id = DetermineTraderID(bss);
 
-		SendBazaarResults(bss->TraderID, bss->Class_, bss->Race, bss->ItemStat, bss->Slot, bss->Type,
-			bss->Name, bss->MinPrice * 1000, bss->MaxPrice * 1000);
+        SendBazaarResults(trader_id, bss->_class, bss->race, bss->item_stat, bss->slot, bss->type, bss->name,
+                          bss->min_cost * 1000, bss->max_cost * 1000, bss->min_level, bss->max_level, bss->prestige,
+                          bss->augment, bss->max_results, bss->search_scope);
 	}
 	else if (app->size == sizeof(BazaarWelcome_Struct)) {
 
@@ -4301,6 +4316,12 @@ void Client::Handle_OP_CancelTrade(const EQApplicationPacket *app)
 		LogError("Wrong size: OP_CancelTrade, size=[{}], expected [{}]", app->size, sizeof(CancelTrade_Struct));
 		return;
 	}
+
+	if(RuleB(Parcel, EnableParcelMerchants)) {
+		DoParcelCancel();
+		SetEngagedWithParcelMerchant(false);
+	}
+
 	Mob* with = trade->With();
 	if (with && with->IsClient()) {
 		CancelTrade_Struct* msg = (CancelTrade_Struct*)app->pBuffer;
@@ -4924,7 +4945,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 
 	if (cy != m_Position.y || cx != m_Position.x) {
 		// End trader mode if we move
-		if (Trader) {
+		if (IsTrader()) {
 			Trader_EndTrader();
 		}
 
@@ -13846,9 +13867,14 @@ void Client::Handle_OP_Shielding(const EQApplicationPacket *app)
 
 void Client::Handle_OP_ShopEnd(const EQApplicationPacket *app)
 {
+	if(RuleB(Parcel, EnableParcelMerchants)) {
+		DoParcelCancel();
+		SetEngagedWithParcelMerchant(false);
+	}
+
 	EQApplicationPacket empty(OP_ShopEndConfirm);
-	QueuePacket(&empty);
-	return;
+    QueuePacket(&empty);
+    return;
 }
 
 void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
@@ -14392,84 +14418,103 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 
 void Client::Handle_OP_ShopRequest(const EQApplicationPacket *app)
 {
-	if (app->size != sizeof(Merchant_Click_Struct)) {
-		LogError("Wrong size: OP_ShopRequest, size=[{}], expected [{}]", app->size, sizeof(Merchant_Click_Struct));
-		return;
-	}
+    if (app->size != sizeof(Merchant_Click_Struct)) {
+        LogError("Wrong size: OP_ShopRequest, size=[{}], expected [{}]", app->size, sizeof(Merchant_Click_Struct));
+        return;
+    }
 
-	Merchant_Click_Struct* mc = (Merchant_Click_Struct*)app->pBuffer;
+    auto mc = (Merchant_Click_Struct *)app->pBuffer;
 
-	// Send back opcode OP_ShopRequest - tells client to open merchant window.
-	//EQApplicationPacket* outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
-	//Merchant_Click_Struct* mco=(Merchant_Click_Struct*)outapp->pBuffer;
-	int merchantid = 0;
-	Mob* tmp = entity_list.GetMob(mc->npcid);
+    // Send back opcode OP_ShopRequest - tells client to open merchant window.
+    // EQApplicationPacket* outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
+    // Merchant_Click_Struct* mco=(Merchant_Click_Struct*)outapp->pBuffer;
+    int  merchantid      = 0;
+    int  tabs_to_display = None;
+    auto tmp             = entity_list.GetMob(mc->npcid);
 
-	if (tmp == 0 || !tmp->IsNPC() || tmp->GetClass() != Class::Merchant)
-		return;
+    if (tmp == 0 || !tmp->IsNPC() || tmp->GetClass() != Class::Merchant) {
+        return;
+    }
 
-	//you have to be somewhat close to them to be properly using them
-	if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2)
-		return;
+    // you have to be somewhat close to them to be properly using them
+    if (DistanceSquared(m_Position, tmp->GetPosition()) > USE_NPC_RANGE2) {
+        return;
+    }
 
-	merchantid = tmp->CastToNPC()->MerchantType;
+    merchantid = tmp->CastToNPC()->MerchantType;
+    if (tmp->CastToNPC()->GetParcelMerchant()) {
+        tabs_to_display = SellBuyParcel;
+    }
+    else {
+        tabs_to_display = SellBuy;
+    }
 
-	int action = 1;
-	if (merchantid == 0) {
-		auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
-		Merchant_Click_Struct* mco = (Merchant_Click_Struct*)outapp->pBuffer;
-		mco->npcid = mc->npcid;
-		mco->playerid = 0;
-		mco->command = 1;		//open...
-		mco->rate = 1.0;
-		QueuePacket(outapp);
-		safe_delete(outapp);
-		return;
-	}
-	if (tmp->IsEngaged()) {
-		MessageString(Chat::White, MERCHANT_BUSY);
-		action = 0;
-	}
-	if (GetFeigned() || IsInvisible())
-	{
-		Message(Chat::White, "You cannot use a merchant right now.");
-		action = 0;
-	}
-	int primaryfaction = tmp->CastToNPC()->GetPrimaryFaction();
-	int factionlvl = GetFactionLevel(CharacterID(), tmp->CastToNPC()->GetNPCTypeID(), GetRace(), GetClass(), GetDeity(), primaryfaction, tmp);
-	if (factionlvl >= 7) {
-		MerchantRejectMessage(tmp, primaryfaction);
-		action = 0;
-	}
+    int action = MerchantActions::Open;
+    if (merchantid == 0) {
+        auto                   outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
+        Merchant_Click_Struct *mco    = (Merchant_Click_Struct *)outapp->pBuffer;
+        mco->npcid                    = mc->npcid;
+        mco->playerid                 = 0;
+        mco->command                  = MerchantActions::Open;
+        mco->rate                     = 1.0;
+        mco->tab_display              = tabs_to_display;
 
-	if (tmp->Charmed())
-		action = 0;
+        QueuePacket(outapp);
+        safe_delete(outapp);
+        return;
+    }
+    if (tmp->IsEngaged()) {
+        MessageString(Chat::White, MERCHANT_BUSY);
+        action = MerchantActions::Close;
+    }
+    if (GetFeigned() || IsInvisible()) {
+        Message(Chat::White, "You cannot use a merchant right now.");
+        action = MerchantActions::Close;
+    }
+    int primaryfaction = tmp->CastToNPC()->GetPrimaryFaction();
+    int factionlvl = GetFactionLevel(CharacterID(), tmp->CastToNPC()->GetNPCTypeID(), GetRace(), GetClass(), GetDeity(),
+                                     primaryfaction, tmp);
+    if (factionlvl >= 7) {
+        MerchantRejectMessage(tmp, primaryfaction);
+        action = MerchantActions::Close;
+    }
 
-	if (!tmp->CastToNPC()->IsMerchantOpen()) {
-		tmp->SayString(zone->random.Int(MERCHANT_CLOSED_ONE, MERCHANT_CLOSED_THREE));
-		action = 0;
-	}
+    if (tmp->Charmed()) {
+        action = MerchantActions::Close;
+    }
 
-	auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
-	Merchant_Click_Struct* mco = (Merchant_Click_Struct*)outapp->pBuffer;
+    if (!tmp->CastToNPC()->IsMerchantOpen()) {
+        tmp->SayString(zone->random.Int(MERCHANT_CLOSED_ONE, MERCHANT_CLOSED_THREE));
+        action = MerchantActions::Close;
+    }
 
-	mco->npcid = mc->npcid;
-	mco->playerid = 0;
-	mco->command = action; // Merchant command 0x01 = open
-	if (RuleB(Merchant, UsePriceMod)) {
-		mco->rate = 1 / ((RuleR(Merchant, BuyCostMod))*Client::CalcPriceMod(tmp, true)); // works
-	}
-	else
-		mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
+    auto outapp = new EQApplicationPacket(OP_ShopRequest, sizeof(Merchant_Click_Struct));
+    auto mco    = (Merchant_Click_Struct *)outapp->pBuffer;
 
-	outapp->priority = 6;
-	QueuePacket(outapp);
-	safe_delete(outapp);
+    mco->npcid    = mc->npcid;
+    mco->playerid = 0;
+    mco->command  = action; // Merchant command 0x01 = open
+    if (RuleB(Merchant, UsePriceMod)) {
+        mco->rate = 1 / ((RuleR(Merchant, BuyCostMod)) * Client::CalcPriceMod(tmp, true)); // works
+    }
+    else {
+        mco->rate = 1 / (RuleR(Merchant, BuyCostMod));
+    }
 
-	if (action == 1)
-		BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
+    mco->tab_display = tabs_to_display;
 
-	return;
+    outapp->priority = 6;
+    QueuePacket(outapp);
+    safe_delete(outapp);
+
+    if (action == MerchantActions::Open) {
+        BulkSendMerchantInventory(merchantid, tmp->GetNPCTypeID());
+		if(tmp->CastToNPC()->GetParcelMerchant()) {
+			SendBulkParcels();
+		}
+    }
+
+    return;
 }
 
 void Client::Handle_OP_Sneak(const EQApplicationPacket *app)
@@ -15367,9 +15412,9 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	//Show Items
 	if (app->size == sizeof(Trader_ShowItems_Struct))
 	{
-		Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)app->pBuffer;
+		auto sis = (Trader_ShowItems_Struct*)app->pBuffer;
 
-		switch (sis->Code)
+		switch (sis->action)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
@@ -15378,7 +15423,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		}
 		case BazaarTrader_EndTransaction: {
 
-			Client* c = entity_list.GetClientByID(sis->TraderID);
+			Client* c = entity_list.GetClientByID(sis->trader_id);
 			if (c)
 			{
 				c->WithCustomer(0);
@@ -15402,17 +15447,17 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	}
 	else if (app->size == sizeof(ClickTrader_Struct))
 	{
-		if (Buyer) {
+		if (IsBuyer()) {
 			Trader_EndTrader();
 			Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			return;
 		}
 
-		ClickTrader_Struct* ints = (ClickTrader_Struct*)app->pBuffer;
+		auto ints = (ClickTrader_Struct*)app->pBuffer;
 
 		if (ints->Code == BazaarTrader_StartTraderMode)
 		{
-			GetItems_Struct* gis = GetTraderItems();
+			auto gis = GetTraderItems();
 
 			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
@@ -15451,7 +15496,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			for (uint32 i = 0; i < max_items; i++) {
 				if (database.GetItem(gis->Items[i])) {
 					database.SaveTraderItem(CharacterID(), gis->Items[i], gis->SerialNumber[i],
-						gis->Charges[i], ints->ItemCost[i], i);
+						gis->Charges[i], ints->ItemCost[i], i, GetID());
 
 					auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
 					if (inst)
@@ -15657,7 +15702,7 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			if (outtcs->Approval) {
 				BulkSendTraderInventory(Trader->CharacterID());
 				Trader->Trader_CustomerBrowsing(this);
-				TraderID = tcs->TraderID;
+				SetTraderID(tcs->TraderID);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Inventory Sent");
 			}
 			else
@@ -15685,15 +15730,46 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 
 		TraderBuy_Struct* tbs = (TraderBuy_Struct*)app->pBuffer;
 
-		if (Client* Trader = entity_list.GetClientByID(tbs->TraderID))
+		auto Trader = entity_list.GetClientByID(tbs->TraderID);
+
+		switch(tbs->Method)
 		{
-			BuyTraderItem(tbs, Trader, app);
-			LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+		case ByVendor:
+		{
+			if(Trader)
+			{
+				BuyTraderItem(tbs, Trader, app);
+				LogTrading("Handle_OP_TraderShop: Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
+					tbs->Action, tbs->Price, tbs->TraderID, tbs->ItemID, tbs->Quantity, tbs->ItemName);
+			}
+			break;
 		}
-		else
+		case ByParcel:
 		{
-			LogTrading("OP_TraderShop: Null Client Pointer");
+			if(!RuleB(Parcel, EnableParcelMerchants))
+			{
+				LogTrading("Bazaar purchase attempt by parcel delivery though 'World:EnableParcelMerchants' not enabled.");
+				Message(Chat::Yellow, "The parcel delivey system is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByParcel(tbs, app);
+			break;
+		}
+		case ByDirectToInventory:
+		{
+			if(!RuleB(Parcel, EnableDirectToInventoryDelivery))
+			{
+				LogTrading("Bazaar purchase attempt by direct inventory delivery though 'World:EnableDirectToInventoryDelivery' not enabled.");
+				Message(Chat::Yellow, "Direct inventory delivey is not enabled on this server.  Please visit the vendor directly.");
+				return;
+			}
+			BuyTraderItemByDirectToInventory(tbs);
+			break;
+		}
+		default:
+		{
+			LogTrading("OP_TraderShop: Unknown Buy Method [{}]\.", tbs->Method);
+		}
 		}
 	}
 	else if (app->size == 4)
@@ -15704,8 +15780,8 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 
 		if (Command == 4)
 		{
-			Client* c = entity_list.GetClientByID(TraderID);
-			TraderID = 0;
+			Client* c = entity_list.GetClientByID(GetTraderID());
+			SetTraderID(0);
 			if (c)
 			{
 				c->WithCustomer(0);
@@ -17129,4 +17205,28 @@ void Client::Handle_OP_GuildTributeDonatePlat(const EQApplicationPacket *app)
 
 		RequestGuildFavorAndTimer(GuildID());
 	}
+}
+
+void Client::Handle_OP_ShopSendParcel(const EQApplicationPacket *app)
+{
+    if (app->size != sizeof(Parcel_Struct)) {
+        LogError("Received Handle_OP_ShopSendParcel packet. Expected size {}, received size {}.", sizeof(Parcel_Struct),
+                 app->size);
+        return;
+    }
+
+    auto parcel_in = (Parcel_Struct *)app->pBuffer;
+    DoParcelSend(parcel_in);
+}
+
+void Client::Handle_OP_ShopRetrieveParcel(const EQApplicationPacket *app)
+{
+    if (app->size != sizeof(ParcelRetrieve_Struct)) {
+        LogError("Received Handle_OP_ShopRetrieveParcel packet. Expected size {}, received size {}.",
+                 sizeof(ParcelRetrieve_Struct), app->size);
+        return;
+    }
+
+    auto parcel_in = (ParcelRetrieve_Struct *)app->pBuffer;
+    DoParcelRetrieve(*parcel_in);
 }

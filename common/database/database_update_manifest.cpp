@@ -5346,6 +5346,39 @@ CREATE TABLE guild_tributes (
 ) ENGINE=InnoDB;
 )"
 	},
+		ManifestEntry {
+			.version = 9261,
+			.description = "2023_12_03_parcel_implementation.sql",
+			.check = "SHOW TABLES LIKE 'parcels'",
+			.condition = "empty",
+			.match = "",
+			.sql = R"(CREATE TABLE `parcels` (
+				`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+				`item_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+				`slot_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+				`quantity` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+				`to_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+				`from_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+				`note` VARCHAR(1024) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+				`sent_date` DATETIME NULL DEFAULT NULL,
+				PRIMARY KEY (`id`) USING BTREE,
+				UNIQUE INDEX `data_constraint` (`slot_id`, `to_name`) USING BTREE,
+				FULLTEXT INDEX `to_name_search` (`to_name`)
+				)
+				COLLATE='latin1_swedish_ci'
+				ENGINE=InnoDB
+				AUTO_INCREMENT=1;
+				CREATE TABLE `parcel_merchants` (
+					`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+					`merchant_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
+					`last_name` VARCHAR(50) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+					PRIMARY KEY (`id`) USING BTREE
+				)
+				COLLATE='latin1_swedish_ci'
+				ENGINE=InnoDB
+				AUTO_INCREMENT=1;
+		)"
+		}
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,

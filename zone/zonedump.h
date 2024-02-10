@@ -153,7 +153,8 @@ struct NPCType
 	bool            always_aggro;
 	int             exp_mod;
 	int             heroic_strikethrough;
-	bool            keeps_sold_items;
+    bool            keeps_sold_items;
+    bool            parcel_merchant;
 };
 
 #pragma pack()

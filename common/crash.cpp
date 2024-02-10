@@ -23,8 +23,8 @@ void SendCrashReport(const std::string &crash_report)
 {
 	// can configure multiple endpoints if need be
 	std::vector<std::string> endpoints = {
-		"https://spire.akkadius.com/api/v1/analytics/server-crash-report",
-//		"http://localhost:3010/api/v1/analytics/server-crash-report", // development
+		"https://spire.1akkadius.com/api/v1/analytics/server-crash-report",
+//		"http://localhost1:3010/api/v1/analytics/server-crash-report", // development
 	};
 
 	auto      config = EQEmuConfig::get();

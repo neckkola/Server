@@ -27,6 +27,8 @@
 #include "../common/version.h"
 #include "emu_constants.h"
 #include "textures.h"
+#include "../cereal/include/cereal/archives/binary.hpp"
+#include "../cereal/include/cereal/types/string.hpp"
 
 
 static const uint32 BUFF_COUNT = 42;
@@ -315,6 +317,9 @@ union
 	bool targetable_with_hotkey;
 	bool show_name;
 	bool guild_show;
+	bool trader;
+	bool buyer;
+	bool offline;
 };
 
 struct PlayerState_Struct {
@@ -1528,33 +1533,37 @@ struct ExpUpdate_Struct
 ** Packet Types: See ItemPacketType enum
 **
 */
-enum ItemPacketType
-{
-	ItemPacketViewLink			= 0x00,
-	ItemPacketMerchant			= 0x64,
-	ItemPacketTradeView			= 0x65,
-	ItemPacketLoot				= 0x66,
-	ItemPacketTrade				= 0x67,
-	ItemPacketCharInventory		= 0x69,
-	ItemPacketLimbo				= 0x6A,
-	ItemPacketWorldContainer	= 0x6B,
-	ItemPacketTributeItem		= 0x6C,
-	ItemPacketGuildTribute		= 0x6D,
-	ItemPacketCharmUpdate		= 0x6E, // noted as incorrect
-	ItemPacketRecovery			= 0x71,
-	ItemPacketParcel			= 0x73,
-	ItemPacketInvalid			= 0xFF
+enum ItemPacketType {
+    ItemPacketViewLink       = 0x00,
+    ItemPacketMerchant       = 0x64,
+    ItemPacketTradeView      = 0x65,
+    ItemPacketLoot           = 0x66,
+    ItemPacketTrade          = 0x67,
+    ItemPacketCharInventory  = 0x69,
+    ItemPacketLimbo          = 0x6A,
+    ItemPacketWorldContainer = 0x6B,
+    ItemPacketTributeItem    = 0x6C,
+    ItemPacketGuildTribute   = 0x6D,
+    ItemPacketCharmUpdate    = 0x6E, // noted as incorrect
+    ItemPacketRecovery       = 0x71,
+    ItemPacketParcel         = 0x73,
+    ItemPacketInvalid        = 0xFF
 };
 
 enum MerchantWindowTabDisplay {
-	None						= 0x00,
-	SellBuy						= 0x01,
-	Recover						= 0x02,
-	SellBuyRecover				= 0x03,
-	Parcel						= 0x04,
-	SellBuyParcel				= 0x05,
-	RecoverParcel				= 0x06,
-	SellBuyRecoverParcel		= 0x07
+    None                 = 0x00,
+    SellBuy              = 0x01,
+    Recover              = 0x02,
+    SellBuyRecover       = 0x03,
+    Parcel               = 0x04,
+    SellBuyParcel        = 0x05,
+    RecoverParcel        = 0x06,
+    SellBuyRecoverParcel = 0x07
+};
+
+enum MerchantActions {
+    Close = 0,
+    Open  = 1
 };
 
 //enum ItemPacketType
@@ -2066,14 +2075,35 @@ struct TimeOfDay_Struct {
 
 // Darvik: shopkeeper structs
 struct Merchant_Click_Struct {
-/*000*/ uint32	npcid;			// Merchant NPC's entity id
-/*004*/ uint32	playerid;
-/*008*/ uint32	command;		//1=open, 0=cancel/close
-/*012*/ float	rate;			//cost multiplier, dosent work anymore
-/*016*/ int32	tab_display;	// bitmask b000 none, b001 Purchase/Sell, b010 Recover, b100 Parcels
-/*020*/ int32	unknown02;		// Seen 2592000 from Server or -1 from Client
-/*024*/
+    /*000*/ uint32 npcid;       // Merchant NPC's entity id
+    /*004*/ uint32 playerid;
+    /*008*/ uint32 command;     // 1=open, 0=cancel/close
+    /*012*/ float  rate;        // cost multiplier, dosent work anymore
+    /*016*/ int32  tab_display; // bitmask b000 none, b001 Purchase/Sell, b010 Recover, b100 Parcels
+    /*020*/ int32  unknown02;   // Seen 2592000 from Server or -1 from Client
+    /*024*/
 };
+
+struct Parcel_Struct {
+    /*000*/ uint32 npc_id;
+    /*004*/ uint32 item_slot;
+	/*008*/ uint32 quantity;
+    /*012*/ uint32 money_flag;
+    /*016*/ char   send_to[64];
+    /*080*/ char   note[128];
+    /*208*/ uint32 unknown_208;
+    /*212*/ uint32 unknown_212;
+    /*216*/ uint32 unknown_216;
+};
+
+struct ParcelRetrieve_Struct
+{
+	uint32 merchant_entity_id;
+	uint32 player_entity_id;
+	uint32 parcel_slot_id;
+	uint32 parcel_item_id;
+};
+
 /*
 Unknowns:
 0 is e7 from 01 to // MAYBE SLOT IN PURCHASE
@@ -2903,272 +2933,272 @@ struct EnvDamage2_Struct {
 //
 
 enum BazaarTraderType {
-	BazaarTrader_Off = 0,
-	BazaarTrader_StartTraderMode = 1,
-	BazaarTrader_EndTraderMode = 2,
-	BazaarTrader_UpdatePrice = 3,
-	BazaarTrader_EndTransaction = 4,
-	BazaarSearchResults = 7,
-	BazaarWelcome = 9,
-	BazaarBuyItem = 10,
-	BazaarTrader_ShowItems = 11,
-	BazaarSearchDone = 12,
-	BazaarTrader_CustomerBrowsing = 13,
-	BazaarInspectItem = 18,
-	BazaarSearchDone2 = 19,
-	BazaarTrader_StartTraderMode2 = 22,
-	BazaarTrader_AddTraderToBazaarWindow = 24,
-	BazaarTrader_RemoveTraderFromBazaarWindow = 25
+    BazaarTrader_Off                      = 0,
+    BazaarTrader_StartTraderMode          = 1,
+    BazaarTrader_EndTraderMode            = 2,
+    BazaarTrader_UpdatePrice              = 3,
+    BazaarTrader_EndTransaction           = 4,
+    BazaarSearchResults                   = 7,
+    BazaarWelcome                         = 9,
+    BazaarBuyItem                         = 10,
+    BazaarTrader_ShowItems                = 11,
+    BazaarSearchDone                      = 12,
+    BazaarTrader_CustomerBrowsing         = 13,
+    BazaarInspectItem                     = 18,
+    BazaarSearchDone2                     = 19,
+    BazaarTrader_StartTraderMode2         = 22,
+    BazaarTrader_BazaarWindowAddTrader    = 24,
+    BazaarTrader_BazaarWindowRemoveTrader = 25
 };
 
 enum {
-	BazaarPriceChange_Fail = 0,
-	BazaarPriceChange_UpdatePrice = 1,
-	BazaarPriceChange_RemoveItem = 2,
-	BazaarPriceChange_AddItem = 3
+    BazaarPriceChange_Fail        = 0,
+    BazaarPriceChange_UpdatePrice = 1,
+    BazaarPriceChange_RemoveItem  = 2,
+    BazaarPriceChange_AddItem     = 3
 };
 
 struct BazaarWindowStart_Struct {
-	uint8	Action;
-	uint8	Unknown001;
-	uint16	Unknown002;
+    uint8  Action;
+    uint8  Unknown001;
+    uint16 Unknown002;
 };
 
-
 struct BazaarWelcome_Struct {
-	BazaarWindowStart_Struct Beginning;
-	uint32	Traders;
-	uint32	Items;
-	uint32	Unknown012;
-	uint32	Unknown016;
+    BazaarWindowStart_Struct Beginning;
+    uint32                   Traders;
+    uint32                   Items;
+    uint32                   Unknown012;
+    uint32                   Unknown016;
 };
 
 struct BazaarSearch_Struct {
-	/*000*/	uint32	action;
-	/*004*/	uint32	search_scope{ true }; //1 all traders 0 local traders
-	/*008*/	uint32	unknown008;
-	/*012*/	uint32	unknown012;
-	/*016*/	uint32	trader_id;
-	/*020*/	uint32	_class;
-	/*024*/	uint32	race;
-	/*028*/	uint32	item_stat;
-	/*032*/	uint32	slot;
-	/*036*/	uint32	type;
-	/*040*/	char	name[64];
-	/*104*/	uint32	min_cost;
-	/*108*/	uint32	max_cost;
-	/*112*/	uint32	min_level{ 1 };
-	/*116*/	uint32	max_level{ 0 };
-	/*120*/	uint32	max_results{ 0 };
-	/*124*/	uint32	prestige{ 0 };
-	/*128*/	uint32	augment{ 0 };
-}; 
+    /*000*/ uint32 action {0};
+    /*004*/ bool   search_scope {true}; // 1 all traders 0 local traders
+    /*008*/ uint32 unknown008 {0};
+    /*012*/ uint32 unknown012 {0};
+    /*016*/ uint32 trader_id {0};
+    /*020*/ uint32 _class {0};
+    /*024*/ uint32 race {0};
+    /*028*/ uint32 item_stat {0};
+    /*032*/ uint32 slot {0};
+    /*036*/ uint32 type {0};
+    /*040*/ char   name[64] {""};
+    /*104*/ uint32 min_cost {0};
+    /*108*/ uint32 max_cost {0};
+    /*112*/ uint32 min_level {1};
+    /*116*/ uint32 max_level {0};
+    /*120*/ uint32 max_results {0};
+    /*124*/ uint32 prestige {0};
+    /*128*/ uint32 augment {0};
+    /*132*/ uint32 trader_entity_id {0};
+};
 
-struct BazaarInspect_Struct{
-	uint32 ItemID;
-	uint32 Unknown004;
-	char Name[64];
+struct BazaarInspect_Struct {
+    uint32 ItemID;
+    uint32 Unknown004;
+    char   Name[64];
 };
 
 struct NewBazaarInspect_Struct {
-/*000*/	BazaarWindowStart_Struct Beginning;
-/*004*/	char Name[64];
-/*068*/	uint32 Unknown068;
-/*072*/	uint32 Unknown072;
-/*076*/	uint32 Unknown076;
-/*080*/	int32 SerialNumber;
-/*084*/	uint32 Unknown084;
+    /*000*/ BazaarWindowStart_Struct Beginning;
+    /*004*/ char                     Name[64];
+    /*068*/ uint32                   Unknown068;
+    /*072*/ uint32                   Unknown072;
+    /*076*/ uint32                   Unknown076;
+    /*080*/ int32                    SerialNumber;
+    /*084*/ uint32                   Unknown084;
 };
 
-struct BazaarReturnDone_Struct{
-	uint32 Type;
-	uint32 TraderID;
-	uint32 Unknown008;
-	uint32 Unknown012;
-	uint32 Unknown016;
+struct BazaarReturnDone_Struct {
+    uint32 Type;
+    uint32 TraderID;
+    uint32 Unknown008;
+    uint32 Unknown012;
+    uint32 Unknown016;
 };
+
 struct BazaarSearchResults_Struct {
-/*000*/	BazaarWindowStart_Struct Beginning;
-/*004*/	uint32	NumItems;
-/*008*/	uint32	SerialNumber;
-/*012*/	uint32	SellerID;
-/*016*/	uint32	Cost;
-/*020*/	uint32	ItemStat;
-/*024*/	char	ItemName[64];
-/*088*/
-	// New fields for SoD+, stripped off when encoding for older clients.
-	char	SellerName[64];
-	uint32	ItemID;
+    /*000*/ BazaarWindowStart_Struct Beginning;
+    /*004*/ uint32                   NumItems;
+    /*008*/ uint32                   SerialNumber;
+    /*012*/ uint32                   SellerID;
+    /*016*/ uint32                   Cost;
+    /*020*/ uint32                   ItemStat;
+    /*024*/ char                     ItemName[64];
+    /*088*/
+    // New fields for SoD+, stripped off when encoding for older clients.
+    char   SellerName[64];
+    uint32 ItemID;
 };
 
 // Barter/Buyer
 //
 //
 enum {
-	Barter_BuyerSearch = 0,
-	Barter_SellerSearch = 1,
-	Barter_BuyerModeOn = 2,
-	Barter_BuyerModeOff = 3,
-	Barter_BuyerItemUpdate = 5,
-	Barter_BuyerItemRemove = 6,
-	Barter_SellItem = 7,
-	Barter_SellerTransactionComplete = 8,
-	Barter_BuyerTransactionComplete = 9,
-	Barter_BuyerInspectBegin = 10,
-	Barter_BuyerInspectEnd = 11,
-	Barter_BuyerAppearance = 12,
-	Barter_BuyerInspectWindow = 13,
-	Barter_BarterItemInspect = 14,
-	Barter_SellerBrowsing = 15,
-	Barter_BuyerSearchResults = 16,
-	Barter_Welcome = 17,
-	Barter_WelcomeMessageUpdate = 19,
-	Barter_BuyerItemInspect = 21,
-	Barter_Unknown23 = 23
+    Barter_BuyerSearch               = 0,
+    Barter_SellerSearch              = 1,
+    Barter_BuyerModeOn               = 2,
+    Barter_BuyerModeOff              = 3,
+    Barter_BuyerItemUpdate           = 5,
+    Barter_BuyerItemRemove           = 6,
+    Barter_SellItem                  = 7,
+    Barter_SellerTransactionComplete = 8,
+    Barter_BuyerTransactionComplete  = 9,
+    Barter_BuyerInspectBegin         = 10,
+    Barter_BuyerInspectEnd           = 11,
+    Barter_BuyerAppearance           = 12,
+    Barter_BuyerInspectWindow        = 13,
+    Barter_BarterItemInspect         = 14,
+    Barter_SellerBrowsing            = 15,
+    Barter_BuyerSearchResults        = 16,
+    Barter_Welcome                   = 17,
+    Barter_WelcomeMessageUpdate      = 19,
+    Barter_BuyerItemInspect          = 21,
+    Barter_Unknown23                 = 23
 };
 
 struct BuyerLineTradeItems_Struct {
-	uint32	item_id;
-	uint32	item_quantity;
-	uint32	item_icon;
-	char	item_name[64];
+    uint32 item_id;
+    uint32 item_quantity;
+    uint32 item_icon;
+    char   item_name[64];
 };
 
 struct BuyerLineItems_Struct {
-	uint32	slot;
-	uint8	enabled;
-	uint32	item_id;
-	char	item_name[64];
-	uint32	item_icon;
-	uint32	item_quantity;
-	uint8	item_toggle;
-	uint32	item_cost;
-	BuyerLineTradeItems_Struct trade_items[10];
+    uint32                     slot;
+    uint8                      enabled;
+    uint32                     item_id;
+    char                       item_name[64];
+    uint32                     item_icon;
+    uint32                     item_quantity;
+    uint8                      item_toggle;
+    uint32                     item_cost;
+    BuyerLineTradeItems_Struct trade_items[10];
 };
 
 struct BuyerLine_Struct {
-	uint32	action;
-	uint32	no_items;
-	std::vector<BuyerLineItems_Struct> buy_line;
+    uint32                             action;
+    uint32                             no_items;
+    std::vector<BuyerLineItems_Struct> buy_line;
 };
 
 struct BuyerLineItemsSearch_Struct {
-	uint32	slot;
-	uint8	enabled;
-	uint32	item_id;
-	char	item_name[64];
-	uint32	item_icon;
-	uint32	item_quantity;
-	uint8	item_toggle;
-	uint32	item_cost;
-	uint32	buyer_id;
-	BuyerLineTradeItems_Struct trade_items[10];
+    uint32                     slot;
+    uint8                      enabled;
+    uint32                     item_id;
+    char                       item_name[64];
+    uint32                     item_icon;
+    uint32                     item_quantity;
+    uint8                      item_toggle;
+    uint32                     item_cost;
+    uint32                     buyer_id;
+    BuyerLineTradeItems_Struct trade_items[10];
 };
 
 struct BuyerLineSearch_Struct {
-	uint32	action;
-	uint32	no_items;
-	std::vector<BuyerLineItemsSearch_Struct> buy_line;
+    uint32                                   action;
+    uint32                                   no_items;
+    std::vector<BuyerLineItemsSearch_Struct> buy_line;
 };
 
 struct BuyerLineSellItem_Struct {
-	uint32	action;
-	uint32	purchase_method;	// 0 direct merchant, 1 via /barter window
-	uint32	unknown008;
-	uint32	buyer_entity_id;
-	uint32  seller_entity_id;
-	char	unknown[15];
-	uint32	slot;
-	uint8	enabled;
-	uint32	item_id;
-	char	item_name[64];
-	uint32	item_icon;
-	uint32	item_quantity;
-	uint8	item_toggle;
-	uint32	item_cost;
-	uint32	no_trade_items;
-	BuyerLineTradeItems_Struct trade_items[10];
-	char	unknown2[13];
-	uint32	seller_quantity;
+    uint32                     action;
+    uint32                     purchase_method; // 0 direct merchant, 1 via /barter window
+    uint32                     unknown008;
+    uint32                     buyer_entity_id;
+    uint32                     seller_entity_id;
+    char                       unknown[15];
+    uint32                     slot;
+    uint8                      enabled;
+    uint32                     item_id;
+    char                       item_name[64];
+    uint32                     item_icon;
+    uint32                     item_quantity;
+    uint8                      item_toggle;
+    uint32                     item_cost;
+    uint32                     no_trade_items;
+    BuyerLineTradeItems_Struct trade_items[10];
+    char                       unknown2[13];
+    uint32                     seller_quantity;
 };
 
 struct BuyerLineUpdateBuyLine_Struct {
-	uint32	action;
-	uint32	unknown004;
-	uint32	slot;
-	uint8	enabled;
-	uint32	item_id;
-	char	item_name[64];
-	uint32	item_icon;
-	uint32	item_quantity;
-	uint8	item_toggle;
-	uint32	item_cost;
-	uint32	no_trade_items;
-	BuyerLineTradeItems_Struct trade_items[10];
-
+    uint32                     action;
+    uint32                     unknown004;
+    uint32                     slot;
+    uint8                      enabled;
+    uint32                     item_id;
+    char                       item_name[64];
+    uint32                     item_icon;
+    uint32                     item_quantity;
+    uint8                      item_toggle;
+    uint32                     item_cost;
+    uint32                     no_trade_items;
+    BuyerLineTradeItems_Struct trade_items[10];
 };
 
 struct BuyerWelcomeMessageUpdate_Struct {
-/*000*/	uint32	Action;
-/*004*/	char	WelcomeMessage[256];
+    /*000*/ uint32 Action;
+    /*004*/ char   WelcomeMessage[256];
 };
 
 struct BuyerItemSearch_Struct {
-/*000*/	uint32	Unknown000;
-/*004*/	char	SearchString[64];
+    /*000*/ uint32 Unknown000;
+    /*004*/ char   SearchString[64];
 };
 
-struct	BuyerItemSearchResultEntry_Struct {
-/*000*/	char	ItemName[64];
-/*064*/	uint32	ItemID;
-/*068*/	uint32	Unknown068;
-/*072*/	uint32	Unknown072;
+struct BuyerItemSearchResultEntry_Struct {
+    /*000*/ char   ItemName[64];
+    /*064*/ uint32 ItemID;
+    /*068*/ uint32 Unknown068;
+    /*072*/ uint32 Unknown072;
 };
 
 #define MAX_BUYER_ITEMSEARCH_RESULTS 200
 
-struct	BuyerItemSearchResults_Struct {
-	uint32	Action;
-	uint32	ResultCount;
-	BuyerItemSearchResultEntry_Struct	Results[MAX_BUYER_ITEMSEARCH_RESULTS];
+struct BuyerItemSearchResults_Struct {
+    uint32                            Action;
+    uint32                            ResultCount;
+    BuyerItemSearchResultEntry_Struct Results[MAX_BUYER_ITEMSEARCH_RESULTS];
 };
 
 struct BarterSearchRequest_Struct {
-	uint32	Action;
-	char	SearchString[64];
-	uint32	SearchID;
+    uint32 Action;
+    char   SearchString[64];
+    uint32 SearchID;
 };
 
 struct BuyerItemSearchLinkRequest_Struct {
-/*000*/	uint32	Action;	// 0x00000015
-/*004*/	uint32	ItemID;
-/*008*/	uint32	Unknown008;
-/*012*/	uint32	Unknown012;
+    /*000*/ uint32 Action; // 0x00000015
+    /*004*/ uint32 ItemID;
+    /*008*/ uint32 Unknown008;
+    /*012*/ uint32 Unknown012;
 };
 
 struct BarterItemSearchLinkRequest_Struct {
-/*000*/	uint32	Action;	// 0x0000000E
-/*004*/	uint32	SearcherID;
-/*008*/	uint32	Unknown008;
-/*012*/	uint32	Unknown012;
-/*016*/	uint32	ItemID;
-/*020*/	uint32	Unknown020;
+    /*000*/ uint32 Action; // 0x0000000E
+    /*004*/ uint32 SearcherID;
+    /*008*/ uint32 Unknown008;
+    /*012*/ uint32 Unknown012;
+    /*016*/ uint32 ItemID;
+    /*020*/ uint32 Unknown020;
 };
 
 struct BuyerInspectRequest_Struct {
-	uint32	Action;
-	uint32	BuyerID;
-	uint32	Approval;
+    uint32 Action;
+    uint32 BuyerID;
+    uint32 Approval;
 };
 
 struct BuyerBrowsing_Struct {
-	uint32	Action;
-	char	PlayerName[64];
+    uint32 Action;
+    char   PlayerName[64];
 };
 
 struct BuyerRemoveItem_Struct {
-	uint32	Action;
-	uint32	BuySlot;
+    uint32 Action;
+    uint32 BuySlot;
 };
 
 struct ServerSideFilters_Struct {
@@ -3435,8 +3465,8 @@ struct Trader_TraderBulkSend_Struct { //size=4+(x*count)
 };
 
 struct Trader_ShowItems_Struct{
-/*000*/	uint32 Code;
-/*004*/	uint32 TraderID;
+/*000*/	uint32 action;
+/*004*/	uint32 trader_id;
 /*008*/	uint32 Unknown08[3];
 /*020*/
 };
@@ -6016,6 +6046,29 @@ struct UnderWorld {
 	/* 08 */	float x;
 	/* 12 */	float z;
 	/* 16 */
+};
+
+struct ParcelMessaging_Struct
+{
+    ItemPacketType packet_type;
+    std::string    serialized_item;
+    uint32         sent_time;
+    std::string    player_name;
+    std::string    note;
+    uint32         slot_id;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(CEREAL_NVP(packet_type),
+				CEREAL_NVP(serialized_item),
+				CEREAL_NVP(sent_time),
+				CEREAL_NVP(player_name),
+				CEREAL_NVP(note),
+				CEREAL_NVP(slot_id)
+		);
+	}
+
 };
 
 // Restore structure packing to default

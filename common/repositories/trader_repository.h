@@ -12,29 +12,37 @@
 
 class TraderRepository: public BaseTraderRepository {
 public:
-	struct BazaarDBSearchResults_Struct {
-		uint32	count;
-		uint32	trader_id;
-		uint32	item_id;
-		uint32	serial_number;
-		uint32	charges;
-		uint32	cost;
-		uint32	slot_id;
-		uint32	icon_id;
-		uint32	sum_charges;
-		uint32	trader_zone_id;
-		uint32	trader_entity_id;
-		uint32	item_stat;
-		bool	stackable;
-		std::string	item_name;
-		std::string serial_number_RoF;
-	};
-	struct DistinctTraders_Struct {
-		uint32	trader_char_id;
-		uint32	trader_zone_id;
-		uint32	trader_entity_id;
-		std::string	trader_name;
-	};
+    struct BazaarDBSearchResults_Struct {
+        uint32      count;
+        uint32      trader_id;
+        uint32      item_id;
+        uint32      serial_number;
+        uint32      charges;
+        uint32      cost;
+        uint32      slot_id;
+        uint32      icon_id;
+        uint32      sum_charges;
+        uint32      trader_zone_id;
+        uint32      trader_entity_id;
+        uint32      item_stat;
+        bool        stackable;
+        std::string item_name;
+        std::string serial_number_RoF;
+    };
+
+    struct DistinctTraders_Struct {
+        uint32      trader_id;
+        uint32      zone_id;
+        uint32      entity_id;
+        std::string trader_name;
+    };
+
+	struct BulkTraders_Struct {
+        uint32                              count {0};
+        uint32                              name_length {0};
+        std::vector<DistinctTraders_Struct> traders {};
+    };
+
     /**
      * This file was auto generated and can be modified and extended upon
      *
@@ -81,7 +89,7 @@ public:
 			search_criteria.append(fmt::format(" AND character_data.zone_id = {}", char_zone_id));
 		}
 		else if (search.trader_id > 0) {
-			search_criteria.append(fmt::format(" AND trader.entity_id = {}", search.trader_id));
+			search_criteria.append(fmt::format(" AND trader.char_id = {}", search.trader_id));
 		}
 
 		if (search.min_level != 1) {
@@ -306,29 +314,32 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<DistinctTraders_Struct> GetDistinctTraders(Database& db)
-	{
-		std::vector<DistinctTraders_Struct> all_entries;
+	static BulkTraders_Struct GetDistinctTraders(Database &db)
+    {
+        BulkTraders_Struct                  all_entries {};
+        std::vector<DistinctTraders_Struct> distinct_traders;
 
-		auto results = db.QueryDatabase(
-			"SELECT DISTINCT(t.char_id), c.zone_id, c.name, t.entity_id FROM trader AS t, character_data AS c WHERE t.char_id = c.id;"
-		);
+        auto results = db.QueryDatabase("SELECT DISTINCT(t.char_id), c.zone_id, c.name, t.entity_id FROM trader AS t, "
+                                        "character_data AS c WHERE t.char_id = c.id;");
 
-		all_entries.reserve(results.RowCount());
+        distinct_traders.reserve(results.RowCount());
 
-		for (auto row : results) {
-			DistinctTraders_Struct e{};
+        for (auto row : results)
+        {
+            DistinctTraders_Struct e {};
 
-			e.trader_char_id	= Strings::ToInt(row[0]);
-			e.trader_zone_id	= Strings::ToInt(row[1]);
-			e.trader_entity_id	= Strings::ToInt(row[3]);
-			e.trader_name		= row[2] ? row[2] : "";
-	
-			all_entries.push_back(e);
-		}
+            e.trader_id   = Strings::ToInt(row[0]);
+            e.zone_id     = Strings::ToInt(row[1]);
+            e.entity_id   = Strings::ToInt(row[3]);
+            e.trader_name = row[2] ? row[2] : "";
+            all_entries.name_length += e.trader_name.length() + 1;
 
-		return all_entries;
-	}
+            all_entries.traders.push_back(e);
+        }
+        all_entries.count = results.RowCount();
+        return all_entries;
+    }
+
 	static Trader GetTraderItem(Database& db, uint32 trader_id, uint32 item_id, uint32 item_cost)
 	{
 		Trader item{};

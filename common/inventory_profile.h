@@ -36,12 +36,13 @@
 //FatherNitwit: location bits for searching specific
 //places with HasItem() and HasItemByUse()
 enum {
-	invWhereWorn		= 0x01,
-	invWherePersonal	= 0x02,	//in the character's inventory
-	invWhereBank		= 0x04,
-	invWhereSharedBank	= 0x08,
-	invWhereTrading		= 0x10,
-	invWhereCursor		= 0x20
+    invWhereWorn       = 0x01,
+    invWherePersonal   = 0x02, // in the character's inventory
+    invWhereBank       = 0x04,
+    invWhereSharedBank = 0x08,
+    invWhereTrading    = 0x10,
+    invWhereCursor     = 0x20,
+    invWhereAll        = 0x3f
 };
 
 // ########################################

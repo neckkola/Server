@@ -9,9 +9,10 @@ namespace ServerEvents {
 	static const std::string EVENT_TYPE_HOT_ZONE_ACTIVE     = "hot_zone_activate";
 	static const std::string EVENT_TYPE_BROADCAST           = "broadcast";
 	static const std::string EVENT_TYPE_RELOAD_WORLD        = "reload_world";
-	static const std::string EVENT_TYPE_RULE_CHANGE         = "rule_change";
-	static const std::string EVENT_TYPE_CONTENT_FLAG_CHANGE = "content_flag_change";
-}
+    static const std::string EVENT_TYPE_RULE_CHANGE         = "rule_change";
+    static const std::string EVENT_TYPE_CONTENT_FLAG_CHANGE = "content_flag_change";
+    static const std::string EVENT_TYPE_PARCEL_PRUNE        = "parcel_prune";
+    }
 
 class ServerEventScheduler {
 public:

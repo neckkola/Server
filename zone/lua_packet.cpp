@@ -88,11 +88,6 @@ int Lua_Packet::GetRawOpcode() {
 	return static_cast<int>(self->GetOpcodeBypass());
 }
 
-int Lua_Packet::GetProtocolOpcode() {
-	Lua_Safe_Call_Int();
-	return static_cast<int>(self->GetProtocolOpcode());
-}
-
 void Lua_Packet::SetRawOpcode(int op) {
 	Lua_Safe_Call_Void();
 	self->SetOpcode(static_cast<EmuOpcode>(op));

@@ -354,6 +354,7 @@ struct Spawn_Struct_Bitfields
 /*29*/	unsigned   showname:1;
 /*30*/	unsigned   idleanimationsoff:1; // what we called statue?
 /*31*/	unsigned   untargetable:1;	// bClickThrough
+    // byte 5
 /* do these later
 32	unsigned   buyer:1;
 33	unsigned   offline:1;
@@ -3466,10 +3467,11 @@ struct GetItems_Struct {
 
 struct BecomeTrader_Struct {
 	uint32 id;
-	uint32 code;
+	uint32 action;
 };
 
-struct BazaarTrader_Struct {
+struct BazaarWindowAddTrader_Struct
+{
 	/*000*/	uint32	action;
 	/*004*/	uint32	zone_id;
 	/*008*/	uint32	trader_id;
@@ -3477,7 +3479,16 @@ struct BazaarTrader_Struct {
 	/*016*/	char	trader_name[64];
 };
 
-struct BazaarRemoveTrader_Struct {
+struct BazaarTrader_Struct
+{
+	/*000*/	uint32	action;
+	/*004*/	uint32	zone_id;
+	/*008*/	uint32	trader_id;
+	/*012*/	uint32	entity_id;
+	/*016*/	char	trader_name[64];
+};
+
+struct BazaarWindowRemoveTrader_Struct {
 	/*000*/	uint32	action;
 	/*004*/	uint32	trader_id;
 };
@@ -4642,7 +4653,7 @@ struct ItemSerializationHeader
 /*036*/	uint32 merchant_slot; //1 if not a merchant item
 /*040*/	uint32 scaled_value; //0
 /*044*/	uint32 instance_id; //unique instance id if not merchant item, else is merchant slot
-/*048*/	uint32 unknown028; //0
+/*048*/	uint32 parcel_item_id; //0
 /*052*/	uint32 last_cast_time;	// Unix Time from PP of last cast for this recast type if recast delay > 0
 /*056*/	uint32 charges; //Total Charges an item has (-1 for unlimited)
 /*060*/	uint32 inst_nodrop;	// 1 if the item is no drop (attuned items)
@@ -5358,6 +5369,18 @@ struct BuyerRemoveItem_Struct {
 	uint32	unknown004;
 	uint32	slot_id;
 	uint32	toggle;
+};
+
+struct Parcel_Struct {
+    /*000*/ uint32                       npc_id;
+    /*004*/ TypelessInventorySlot_Struct inventory_slot;
+	/*012*/ uint32                       quantity;
+	/*016*/ uint32                       money_flag;
+	/*020*/ char                         send_to[64];
+    /*084*/ char                         note[128];
+    /*212*/ uint32                       unknown_212;
+    /*216*/ uint32                       unknown_216;
+    /*220*/ uint32                       unknown_220;
 };
 
 	}; /*structs*/

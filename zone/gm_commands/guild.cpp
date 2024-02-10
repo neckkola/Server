@@ -19,19 +19,19 @@ void command_guild(Client* c, const Seperator* sep)
 		t = c->GetTarget()->CastToClient();
 	}
 
-	bool is_create = !strcasecmp(sep->arg[1], "create");
-	bool is_delete = !strcasecmp(sep->arg[1], "delete");
-	bool is_help = !strcasecmp(sep->arg[1], "help");
-	bool is_info = !strcasecmp(sep->arg[1], "info");
-	bool is_list = !strcasecmp(sep->arg[1], "list");
-	bool is_rename = !strcasecmp(sep->arg[1], "rename");
-	bool is_search = !strcasecmp(sep->arg[1], "search");
-	bool is_set = !strcasecmp(sep->arg[1], "set");
-	bool is_set_leader = !strcasecmp(sep->arg[1], "setleader");
-	bool is_set_rank = !strcasecmp(sep->arg[1], "setrank");
-	bool is_status = !strcasecmp(sep->arg[1], "status");
-	bool is_details = !strcasecmp(sep->arg[1], "details");
-	bool is_test = !strcasecmp(sep->arg[1], "test");
+	bool is_create     = !strcasecmp(sep->arg[1], "create");
+    bool is_delete     = !strcasecmp(sep->arg[1], "delete");
+    bool is_help       = !strcasecmp(sep->arg[1], "help");
+    bool is_info       = !strcasecmp(sep->arg[1], "info");
+    bool is_list       = !strcasecmp(sep->arg[1], "list");
+    bool is_rename     = !strcasecmp(sep->arg[1], "rename");
+    bool is_search     = !strcasecmp(sep->arg[1], "search");
+    bool is_set        = !strcasecmp(sep->arg[1], "set");
+    bool is_set_leader = !strcasecmp(sep->arg[1], "setleader");
+    bool is_set_rank   = !strcasecmp(sep->arg[1], "setrank");
+    bool is_status     = !strcasecmp(sep->arg[1], "status");
+    bool is_details    = !strcasecmp(sep->arg[1], "details");
+    bool is_test       = !strcasecmp(sep->arg[1], "test");
 	if (
 		!is_create &&
 		!is_delete &&
@@ -595,12 +595,9 @@ void command_guild(Client* c, const Seperator* sep)
 	}
 	else if (is_test) {
 		if (!sep->IsNumber(2)) {
-			c->Message(Chat::White, "Usage: #guild test [Guild ID]");
+			c->Message(Chat::White, "Usage: #guild test [Guild ID]. NOT YET IMPLEMENTED");
 		}
 		else {
-			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
-			c->SendGuildMembersList();
 		}
 	}
 }

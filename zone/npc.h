@@ -263,11 +263,12 @@ public:
 	void SetSecSkill(uint8 skill_type)	{ sec_melee_type = skill_type; }
 	void SetRangedSkill(uint8 skill_type)	{ ranged_type = skill_type; }
 
-	uint32	MerchantType;
-	bool	merchant_open;
+	uint32 MerchantType;
+    bool   merchant_open;
 	inline void	MerchantOpenShop() { merchant_open = true; }
 	inline void	MerchantCloseShop() { merchant_open = false; }
 	inline bool	IsMerchantOpen() { return merchant_open; }
+	inline bool GetParcelMerchant() { return NPCTypedata->parcel_merchant; }
 	void	Depop(bool start_spawn_timer = false);
 	void	Stun(int duration);
 	void	UnStun();

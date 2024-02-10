@@ -300,6 +300,7 @@ namespace EQ
 		int GetItemHeroicCorrup(bool augments = false) const;
 		int GetItemHaste(bool augments = false) const;
 		uint32 GetItemGuildFavor() const;
+		std::string DetermineMoneyStringForParcels(uint32 cp) const;
 
 	protected:
 		//////////////////////////
