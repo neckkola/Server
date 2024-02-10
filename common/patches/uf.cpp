@@ -3060,23 +3060,21 @@ namespace UF
 
 			structs::Spawn_Struct_Bitfields *Bitfields = (structs::Spawn_Struct_Bitfields*)Buffer;
 
-			Bitfields->afk = 0;
-			Bitfields->linkdead = 0;
-			Bitfields->gender = emu->gender;
-
-			Bitfields->invis = emu->invis;
-			Bitfields->sneak = 0;
-			Bitfields->lfg = emu->lfg;
-			Bitfields->gm = emu->gm;
-			Bitfields->anon = emu->anon;
-			Bitfields->showhelm = emu->showhelm;
-			Bitfields->targetable = 1;
-			Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
-			Bitfields->statue = 0;
-			Bitfields->trader = 0;
-			Bitfields->buyer = 0;
-
-			Bitfields->showname = ShowName;
+			Bitfields->afk                    = 0;
+            Bitfields->linkdead               = 0;
+            Bitfields->gender                 = emu->gender;
+            Bitfields->invis                  = emu->invis;
+            Bitfields->sneak                  = 0;
+            Bitfields->lfg                    = emu->lfg;
+            Bitfields->gm                     = emu->gm;
+            Bitfields->anon                   = emu->anon;
+            Bitfields->showhelm               = emu->showhelm;
+            Bitfields->targetable             = 1;
+            Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
+            Bitfields->statue                 = 0;
+            Bitfields->trader                 = emu->trader;
+            Bitfields->buyer                  = 0;
+            Bitfields->showname               = ShowName;
 
 			if (emu->DestructibleObject)
 			{

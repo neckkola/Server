@@ -3843,6 +3843,45 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		}
 		break;
 	}
+    case ServerOP_RoF2Trader:
+    {
+        auto data = (ServerRoF2Trader_Struct *)pack->pBuffer;
+
+        for (auto const &c : entity_list.GetClientList())
+        {
+            if (c.second->ClientVersion() >= EQ::versions::ClientVersion::RoF2)
+            {
+                auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(RoF2_BecomeTrader_Struct));
+                auto out    = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
+                if (data->action == BazaarTrader_StartTraderMode)
+                {
+                    out->action = BazaarTrader_AddTraderToBazaarWindow;
+                } else
+                {
+                    out->action = BazaarTrader_RemoveTraderFromBazaarWindow;
+                }
+                
+				out->trader_id = data->trader_id;
+                out->entity_id = data->entity_id;
+                out->zone_id   = data->zone_id;
+                strn0cpy(out->trader_name, data->trader_name, sizeof(out->trader_name));
+
+				c.second->QueuePacket(outapp);
+                safe_delete(outapp);
+            }
+            if (strcmp(zone->GetShortName(), "bazaar") == 0)
+            {
+                if (data->action == BazaarTrader_StartTraderMode)
+                {
+                    c.second->SendBecomeTraderPacket(BazaarTrader_StartTraderMode, data->entity_id, data->trader_name);
+                } else
+                {
+                    c.second->SendBecomeTraderPacket(BazaarTrader_Off, data->entity_id, data->trader_name);
+                }
+            }
+        }
+        break;
+    }
 	default: {
 		LogInfo("Unknown ZS Opcode [{}] size [{}]", (int)pack->opcode, pack->size);
 		break;

@@ -3515,11 +3515,11 @@ namespace RoF
 			ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
 			SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			eq->Code = emu->Code;
-			strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
-			eq->TraderID = emu->TraderID;
-			eq->Stacksize = 0;
-			eq->Price = 0;
+			eq->Code      = emu->action;
+            eq->TraderID  = emu->trader_id;
+            eq->Stacksize = 0;
+            eq->Price     = 0;
+            strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
 
 			FINISH_ENCODE();
 		}
@@ -5057,8 +5057,8 @@ namespace RoF
 			SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 			MEMSET_IN(Trader_ShowItems_Struct);
 
-			emu->Code = eq->Code;
-			emu->TraderID = eq->TraderID;
+			emu->action    = eq->Code;
+            emu->trader_id = eq->TraderID;
 
 			FINISH_DIRECT_DECODE();
 		}

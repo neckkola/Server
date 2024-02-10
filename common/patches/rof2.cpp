@@ -520,65 +520,63 @@ namespace RoF2
 
 	ENCODE(OP_BecomeTrader)
 	{
-		EQApplicationPacket* inapp = *p;
-		*p = nullptr;
-		unsigned char* __emu_buffer = inapp->pBuffer;
-		BecomeTrader_Struct* in = (BecomeTrader_Struct*)__emu_buffer;
+        EQApplicationPacket *inapp  = *p;
+        *p                          = nullptr;
+        unsigned char *__emu_buffer = inapp->pBuffer;
+        auto           in           = (RoF2_BecomeTrader_Struct *)__emu_buffer;
 
-		switch (in->Code) 
+		switch (in->action) 
 		{
 		case 0x0:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+			auto emu = (RoF2_BecomeTrader_Struct*)__emu_buffer;
 
-			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+			auto outapp   = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+            auto eq       = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-			eq->code = 0;
-			eq->id = emu->ID;
+			eq->action    = 0;
+            eq->id        = emu->entity_id;
 
 			dest->FastQueuePacket(&outapp);
 			break;
 		}
 		case 0x1:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+            auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
 
-			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+            auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+            auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-			eq->code = 1;
-			eq->id = emu->ID;
+            eq->action = 1;
+            eq->id     = emu->entity_id;
 
-			dest->FastQueuePacket(&outapp);
-			break;
+            dest->FastQueuePacket(&outapp);
+            break;
 		}
 		case 0x18:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+            auto emu      = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            auto outapp   = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
+            auto eq       = (structs::BazaarTrader_Struct *)outapp->pBuffer;
 
-			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
-			structs::BazaarTrader_Struct* eq = (structs::BazaarTrader_Struct*)outapp->pBuffer;
-
-			eq->action		= structs::BazaarSendAddTrader;
-			eq->entity_id	= emu->ID;
-			eq->trader_id	= emu->ID;
-			eq->zone_id		= emu->Unknown072;
-			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
-
+			eq->action    = emu->action;
+            eq->entity_id = emu->entity_id;
+            eq->trader_id = emu->trader_id;
+            eq->zone_id   = emu->zone_id;
+            strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+            
 			dest->FastQueuePacket(&outapp);
-			break;
+            break;
 		}
 		case 0x19:
 		{
-			BecomeTrader_Struct* emu = (BecomeTrader_Struct*)__emu_buffer;
+			auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
+			auto eq = (structs::BazaarRemoveTrader_Struct *)outapp->pBuffer;
 
-			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BecomeTrader_Struct));
-			structs::BecomeTrader_Struct* eq = (structs::BecomeTrader_Struct*)outapp->pBuffer;
+			eq->action    = emu->action;
+            eq->trader_id = emu->trader_id;
 
-			eq->id = structs::BazaarSendRemoveTrader;
-			eq->code = emu->ID;
-			
 			dest->FastQueuePacket(&outapp);
 			break;
 		}
@@ -3879,10 +3877,10 @@ namespace RoF2
 			ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
 			SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			eq->Code = emu->Code;
+			eq->Code     = emu->action;
+            eq->TraderID = emu->trader_id;
 			//strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
 			//snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", 0);
-			eq->TraderID = emu->TraderID;
 			//eq->Stacksize = 0;
 			//eq->Price = 0;
 
@@ -4388,22 +4386,21 @@ namespace RoF2
 			}
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, emu->NPC); // 0 PC, 1 NPC etc
 
-			structs::Spawn_Struct_Bitfields *Bitfields = (structs::Spawn_Struct_Bitfields*)Buffer;
-
-			Bitfields->gender = emu->gender;
-			Bitfields->ispet = emu->is_pet;
-			Bitfields->afk = emu->afk;
-			Bitfields->anon = emu->anon;
-			Bitfields->gm = emu->gm;
-			Bitfields->sneak = 0;
-			Bitfields->lfg = emu->lfg;
-			Bitfields->invis = emu->invis;
-			Bitfields->linkdead = 0;
-			Bitfields->showhelm = emu->showhelm;
-			Bitfields->trader = 0;
-			Bitfields->targetable = 1;
-			Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
-			Bitfields->showname = ShowName;
+			structs::Spawn_Struct_Bitfields *Bitfields = (structs::Spawn_Struct_Bitfields *)Buffer;
+            Bitfields->gender                          = emu->gender;
+            Bitfields->ispet                           = emu->is_pet;
+            Bitfields->afk                             = emu->afk;
+            Bitfields->anon                            = emu->anon;
+            Bitfields->gm                              = emu->gm;
+            Bitfields->sneak                           = 0;
+            Bitfields->lfg                             = emu->lfg;
+            Bitfields->invis                           = emu->invis;
+            Bitfields->linkdead                        = 0;
+            Bitfields->showhelm                        = emu->showhelm;
+            Bitfields->trader                          = emu->trader ? 1 : 0;
+            Bitfields->targetable                      = 1;
+            Bitfields->targetable_with_hotkey          = emu->targetable_with_hotkey ? 1 : 0;
+            Bitfields->showname                        = ShowName;
 
 			if (emu->DestructibleObject)
 			{
@@ -5835,8 +5832,8 @@ namespace RoF2
 			DECODE_LENGTH_EXACT(structs::Trader_ShowItems_Struct);
 			SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			emu->Code = eq->Code;
-			emu->TraderID = eq->TraderID;
+			emu->action    = eq->Code;
+            emu->trader_id = eq->TraderID;
 
 			FINISH_DIRECT_DECODE();
 		}

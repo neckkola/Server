@@ -988,47 +988,45 @@ void Client::Trader_ShowItems(){
 
 void Client::SendTraderPacket(Client* Trader, uint32 Unknown72)
 {
-	if(!Trader)
-		return;
-
-	auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(BecomeTrader_Struct));
-
-	BecomeTrader_Struct* bts = (BecomeTrader_Struct*)outapp->pBuffer;
-
-	bts->Code = BazaarTrader_StartTraderMode;
-	bts->ID = Trader->GetID();
-	strn0cpy(bts->Name, Trader->GetName(), sizeof(bts->Name));
+    if (!Trader)
+    {
+        return;
+    }
+    
+	auto outapp    = new EQApplicationPacket(OP_BecomeTrader, sizeof(RoF2_BecomeTrader_Struct));
+    auto bts       = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
+    bts->action    = BazaarTrader_StartTraderMode;
+    bts->entity_id = Trader->GetID();
+    bts->trader_id = Trader->CharacterID();
+    bts->zone_id   = Trader->GetZoneID();
+    strn0cpy(bts->trader_name, Trader->GetName(), sizeof(bts->trader_name));
 
 	QueuePacket(outapp);
-
-
-	safe_delete(outapp);
+    safe_delete(outapp);
 }
 
 void Client::Trader_CustomerBrowsing(Client *Customer) {
 
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
+    auto sis    = (Trader_ShowItems_Struct *)outapp->pBuffer;
 
-	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
+    sis->action    = BazaarTrader_CustomerBrowsing;
+    sis->trader_id = Customer->GetID();
 
-	sis->Code = BazaarTrader_CustomerBrowsing;
-
-	sis->TraderID = Customer->GetID();
-
-	QueuePacket(outapp);
-	safe_delete(outapp);
+    QueuePacket(outapp);
+    safe_delete(outapp);
 }
 
 
 void Client::Trader_StartTrader() {
 
-	Trader=true;
+	SetTrader(true);
 
 	auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
-	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
+    auto sis    = (Trader_ShowItems_Struct *)outapp->pBuffer;
 
-	sis->Code = BazaarTrader_StartTraderMode;
-	sis->TraderID = GetID();
+    sis->action    = BazaarTrader_StartTraderMode;
+    sis->trader_id = CharacterID();
 
 	QueuePacket(outapp);
 	safe_delete(outapp);
@@ -1041,60 +1039,58 @@ void Client::Trader_EndTrader() {
 
 	// If someone is looking at our wares, remove all the items from the window.
 	//
-	if(CustomerID) {
-		Client* Customer = entity_list.GetClientByID(CustomerID);
-		GetItems_Struct* gis=GetTraderItems();
+    if (IsThereACustomer())
+    {
+        auto customer = entity_list.GetClientByID(GetCustomerID());
+        auto gis      = GetTraderItems();
 
-		if(Customer && gis) {
-			auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
-			TraderDelItem_Struct* tdis = (TraderDelItem_Struct*)outapp->pBuffer;
+        if (customer && gis)
+        {
+            auto outapp = new EQApplicationPacket(OP_TraderDelItem, sizeof(TraderDelItem_Struct));
+            auto tdis   = (TraderDelItem_Struct *)outapp->pBuffer;
 
-			tdis->Unknown000 = 0;
-			tdis->TraderID = Customer->GetID();
-			tdis->Unknown012 = 0;
-			Customer->Message(Chat::Red, "The Trader is no longer open for business");
+            tdis->Unknown000 = 0;
+            tdis->TraderID   = customer->GetID();
+            tdis->Unknown012 = 0;
+            customer->Message(Chat::Red, "The Trader is no longer open for business");
 
-			for(int i = 0; i < 80; i++) {
-				if(gis->Items[i] != 0) {
+            for (int i = 0; i < 80; i++)
+            {
+                if (gis->Items[i] != 0)
+                {
+                    if (customer->ClientVersion() >= EQ::versions::ClientVersion::RoF)
+                    {
+                        // RoF+ use Item IDs for now
+                        tdis->ItemID = gis->Items[i];
+                    } else
+                    {
+                        tdis->ItemID = gis->SerialNumber[i];
+                    }
 
-					if (Customer->ClientVersion() >= EQ::versions::ClientVersion::RoF)
-					{
-						// RoF+ use Item IDs for now
-						tdis->ItemID = gis->Items[i];
-					}
-					else
-					{
-						tdis->ItemID = gis->SerialNumber[i];
-					}
+                    customer->QueuePacket(outapp);
+                }
+            }
 
-					Customer->QueuePacket(outapp);
-				}
-			}
-
-			safe_delete(outapp);
-		}
-		safe_delete(gis);
-	}
+            safe_delete(outapp);
+        }
+        safe_delete(gis);
+    }
 
 	database.DeleteTraderItem(CharacterID());
 
-	SendBecomeTrader(this, BazaarTrader_EndTraderMode);
+    SendBecomeTrader(this, BazaarTrader_EndTraderMode);
 
-	auto outapp= new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
+    auto outapp = new EQApplicationPacket(OP_Trader, sizeof(Trader_ShowItems_Struct));
+    auto sis    = (Trader_ShowItems_Struct *)outapp->pBuffer;
 
-	Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)outapp->pBuffer;
+    sis->action    = BazaarTrader_EndTraderMode;
+	sis->trader_id = CharacterID();
 
-	sis->Code = BazaarTrader_EndTraderMode;
+    QueuePacket(outapp);
+    safe_delete(outapp);
 
-	sis->TraderID = BazaarTrader_EndTraderMode;
-
-	QueuePacket(outapp);
-
-	safe_delete(outapp);
-
-	WithCustomer(0);
-
-	Trader = false;
+    WithCustomer(0);
+    SetTrader(false);
 }
 
 void Client::SendTraderItem(uint32 ItemID, uint16 Quantity) {
@@ -1795,12 +1791,14 @@ void Client::SendBazaarResults(
 
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 0);
 		VARSTRUCT_ENCODE_TYPE(uint16, bufptr, results[0].trader_zone_id);
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results[0].trader_entity_id);
+		//VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results[0].trader_entity_id);
+		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results[0].trader_id);
 		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results.size());
 
 		for (auto i : results)
 		{
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.trader_entity_id);					//trader ID
+			//VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.trader_entity_id);					//trader ID
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.trader_id);					//trader ID
 			VARSTRUCT_ENCODE_STRING(bufptr, i.serial_number_RoF.c_str());				//serial
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.cost);	 							//cost
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.stackable ? i.charges : i.count);	//quanity
@@ -2189,13 +2187,13 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 
 		// If we have a customer currently browsing, update them with the new items.
 		//
-		if (CustomerID) {
+		if (IsThereACustomer()) {
 			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 				tpus->SerialNumber = RoF_Item_ID;
-				UpdateTraderCustomerItemsAdded(CustomerID, gis, RoF_Item_ID);
+				UpdateTraderCustomerItemsAdded(GetCustomerID(), gis, RoF_Item_ID);
 			}
 			else {
-				UpdateTraderCustomerItemsAdded(CustomerID, gis, IDOfItemToAdd);
+				UpdateTraderCustomerItemsAdded(GetCustomerID(), gis, IDOfItemToAdd);
 			}
 		}
 
@@ -2215,7 +2213,7 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	// This is a safeguard against a Trader increasing the price of an item while a customer is browsing and
 	// unwittingly buying it at a higher price than they were expecting to.
 	//
-	if((OldPrice != 0) && (tpus->NewPrice > OldPrice) && CustomerID) {
+	if((OldPrice != 0) && (tpus->NewPrice > OldPrice) && GetCustomerID()) {
 
 		tpus->SubAction = BazaarPriceChange_Fail;
 		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
@@ -2253,13 +2251,13 @@ void Client::HandleTraderPriceUpdate(const EQApplicationPacket *app) {
 	database.UpdateTraderItemPrice(CharacterID(), IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
 
 	// If a customer is browsing our goods, send them the updated prices / remove the items from the Merchant window
-	if (CustomerID) {
+	if (IsThereACustomer()) {
 		if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 			tpus->SerialNumber = RoF_Item_ID;
-			UpdateTraderCustomerPriceChanged(CustomerID, gis, RoF_Item_ID, ChargesOnItemToUpdate, tpus->NewPrice);
+			UpdateTraderCustomerPriceChanged(GetCustomerID(), gis, RoF_Item_ID, ChargesOnItemToUpdate, tpus->NewPrice);
 		}
 		else {
-			UpdateTraderCustomerPriceChanged(CustomerID, gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
+			UpdateTraderCustomerPriceChanged(GetCustomerID(), gis, IDOfItemToUpdate, ChargesOnItemToUpdate, tpus->NewPrice);
 		}
 	}
 	safe_delete(gis);
@@ -3070,7 +3068,7 @@ void Client::ToggleBuyerMode(bool TurnOn) {
 	else {
 		VARSTRUCT_ENCODE_TYPE(uint32, Buf, 0x00);
 		BuyerRepository::DeleteBuyLine(database, CharacterID());
-		CustomerID = 0;
+		SetCustomerID(0);
 	}
 
 	VARSTRUCT_ENCODE_STRING(Buf, GetName());
@@ -3079,7 +3077,7 @@ void Client::ToggleBuyerMode(bool TurnOn) {
 
 	safe_delete(outapp);
 
-	Buyer = TurnOn;
+	SetBuyer(TurnOn);
 }
 
 void Client::UpdateBuyLine(const EQApplicationPacket* app) {
@@ -3090,34 +3088,19 @@ void Client::UpdateBuyLine(const EQApplicationPacket* app) {
 	// A BuyLine is toggled on or off in the/buyer window.
 	//
 
-	char* Buf = (char*)app->pBuffer;
-
-	char ItemName[64];
-
-	/*uint32 Action		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
-	uint32 BuySlot = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-	uint8 Unknown009 = VARSTRUCT_DECODE_TYPE(uint8, Buf);
-	uint32 ItemID = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-	/* ItemName */		VARSTRUCT_DECODE_STRING(ItemName, Buf);
-	uint32 Icon = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-	uint32 Quantity = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-	uint8 ToggleOnOff = VARSTRUCT_DECODE_TYPE(uint8, Buf);
-	uint32 Price = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-	/*uint32 UnknownZ		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
-	uint32 ItemCount = VARSTRUCT_DECODE_TYPE(uint32, Buf);
-
-
-
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF)
 	{
-		char* buffer = (char*)app->pBuffer;
+        char *buffer = (char *)app->pBuffer;
 
-		BuyerLine_Struct bl{};
-		bl.action = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-		bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
-
-		bl.buy_line.resize(bl.no_items);
-		memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
+        BuyerLine_Struct bl {};
+        bl.action   = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+        bl.no_items = VARSTRUCT_DECODE_TYPE(uint32, buffer);
+        if (!bl.no_items)
+        {
+			return;
+        }
+        bl.buy_line.resize(bl.no_items);
+        memcpy(&bl.buy_line[0], buffer, bl.no_items * sizeof(BuyerLineItems_Struct));
 
 		for (auto const& b : bl.buy_line) 
 		{
@@ -3166,10 +3149,10 @@ void Client::UpdateBuyLine(const EQApplicationPacket* app) {
 
 			FastQueuePacket(&outapp);
 
-			if (CustomerID) {
+			if (IsThereACustomer()) {
 				//Update the Seller's Merchant Window if there is one.
 				Message(Chat::Yellow, "There is a player browsing.  Should resend the window data.");
-				auto customer = entity_list.GetClientByID(CustomerID);
+				auto customer = entity_list.GetClientByID(GetCustomerID());
 				if (!customer) {
 					return;
 				}
@@ -3204,6 +3187,22 @@ void Client::UpdateBuyLine(const EQApplicationPacket* app) {
 		}
 		return;
 	}
+
+	char *Buf = (char *)app->pBuffer;
+
+	char ItemName[64];
+
+	/*uint32 Action		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
+	uint32 BuySlot = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	uint8 Unknown009 = VARSTRUCT_DECODE_TYPE(uint8, Buf);
+	uint32 ItemID = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	/* ItemName */		VARSTRUCT_DECODE_STRING(ItemName, Buf);
+	uint32 Icon = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	uint32 Quantity = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	uint8 ToggleOnOff = VARSTRUCT_DECODE_TYPE(uint8, Buf);
+	uint32 Price = VARSTRUCT_DECODE_TYPE(uint32, Buf);
+	/*uint32 UnknownZ		=*/ VARSTRUCT_SKIP_TYPE(uint32, Buf);	//unused
+	uint32 ItemCount = VARSTRUCT_DECODE_TYPE(uint32, Buf);
 
 	const EQ::ItemData *item = database.GetItem(ItemID);
 
@@ -3325,30 +3324,30 @@ const std::string &Client::GetMailKey() const
 
 void Client::SendBecomeTrader(Client* trader, BazaarTraderType action) 
 {
-	auto outapp = new ServerPacket(ServerOP_RoF2Trader, sizeof(ServerRoF2Trader_Struct));
-	ServerRoF2Trader_Struct* data = (ServerRoF2Trader_Struct*)outapp->pBuffer;
+    auto outapp = new ServerPacket(ServerOP_RoF2Trader, sizeof(ServerRoF2Trader_Struct));
+    auto data   = (ServerRoF2Trader_Struct *)outapp->pBuffer;
 
-	data->action = action;
-	data->entity_id = trader->GetID();
-	data->trader_id = trader->CharacterID();
-	data->zone_id	= trader->GetZoneID();
-	strn0cpy(data->trader_name, trader->GetName(), sizeof(data->trader_name));
+    data->action    = action;
+    data->entity_id = trader->GetID();
+    data->trader_id = trader->CharacterID();
+    data->zone_id   = trader->GetZoneID();
+    strn0cpy(data->trader_name, trader->GetName(), sizeof(data->trader_name));
 
-	worldserver.SendPacket(outapp);
-	safe_delete(outapp);
+    worldserver.SendPacket(outapp);
+    safe_delete(outapp);
 }
 
-void Client::SendBecomeTraderPacket(BazaarTraderType action, uint32 trader_id, const char* trader_name)
+void Client::SendBecomeTraderPacket(BazaarTraderType action, uint32 entity_id, const char* trader_name)
 {
-	auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(BecomeTrader_Struct));
-	BecomeTrader_Struct* bts = (BecomeTrader_Struct*)outapp->pBuffer;
+    auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(RoF2_BecomeTrader_Struct));
+    auto bts    = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
 
-	bts->Code = action;
-	bts->ID = trader_id;
-	strn0cpy(bts->Name, trader_name, sizeof(bts->Name));
+    bts->action    = action;
+    bts->entity_id = entity_id;
+    strn0cpy(bts->trader_name, trader_name, sizeof(bts->trader_name));
 
-	QueuePacket(outapp);
-	safe_delete(outapp);
+    QueuePacket(outapp);
+    safe_delete(outapp);
 }
 
 void Client::SendBulkBazaarTraders()
@@ -3366,35 +3365,36 @@ void Client::SendBulkBazaarTraders()
 		std::vector<trader> traders;
 	};
 	
-	auto GetTraders = [&]() -> bulk_traders 
-		{
-			bulk_traders results{};
-			trader Trader{};
-			auto result = TraderRepository::GetDistinctTraders(database);
-
-			if (result.size() > 0) {
-				for (auto i : result) {
-					auto trader = entity_list.GetClientByCharID(i.trader_char_id);
-					if (trader) {
-						Trader.entity_id	= trader->GetID();
-						Trader.trader_id	= trader->GetID();
-						Trader.zone_id		= trader->GetZoneID();
-						Trader.trader_name  = std::string(trader->GetName());
-						results.name_length += Trader.trader_name.length() + 1;
-					}
-					else {
-						Trader.entity_id	= i.trader_entity_id;
-						Trader.trader_id	= i.trader_entity_id;
-						Trader.zone_id		= i.trader_zone_id;
-						Trader.trader_name  = i.trader_name;
-						results.name_length += Trader.trader_name.length() + 1;
-					}
-					results.traders.push_back(Trader);
-				}
-			}
-			results.count = results.traders.size();
-			return results;
-		};
+	auto GetTraders = [&]() -> bulk_traders {
+        bulk_traders results {};
+        trader       Trader {};
+        auto         result = TraderRepository::GetDistinctTraders(database);
+        if (result.size() > 0)
+        {
+            for (auto &i : result)
+            {
+                auto trader = entity_list.GetClientByCharID(i.trader_char_id);
+                if (trader)
+                {
+                    Trader.entity_id   = trader->GetID();
+                    Trader.trader_id   = trader->CharacterID();
+                    Trader.zone_id     = trader->GetZoneID();
+                    Trader.trader_name = std::string(trader->GetName());
+                    results.name_length += Trader.trader_name.length() + 1;
+                } else
+                {
+                    Trader.entity_id   = i.trader_entity_id;
+                    Trader.trader_id   = i.trader_char_id;
+                    Trader.zone_id     = i.trader_zone_id;
+                    Trader.trader_name = i.trader_name;
+                    results.name_length += Trader.trader_name.length() + 1;
+                }
+                results.traders.push_back(Trader);
+            }
+        }
+        results.count = results.traders.size();
+        return results;
+    };
 
 	auto results = GetTraders();
 	auto p_size = 4 + 12 * results.count + results.name_length;

@@ -1044,8 +1044,18 @@ public:
 	bool IsValidSlot(uint32 slot);
 	bool IsBankSlot(uint32 slot);
 
-	inline bool IsTrader() const { return(Trader); }
-	inline bool IsBuyer() const { return(Buyer); }
+	bool         IsTrader() const { return trader; }
+    void         SetTrader(bool status) { trader = status; }
+    uint16       GetTraderID() { return trader_id; }
+    void         SetTraderID(uint16 id) { trader_id = id; }
+    bool         IsBuyer() const { return buyer; }
+    void         SetBuyer(bool status) { buyer = status; }
+    void         SetBuyerID(uint16 id) { buyer_id = id; }
+    uint16       GetBuyerID() { return buyer_id; }
+    bool         IsThereACustomer() const { return customer_id ? true : false; }
+    void         SetCustomerID(uint16 id) { customer_id = id; }
+    uint16       GetCustomerID() { return customer_id; }
+
 	eqFilterMode GetFilter(eqFilterType filter_id) const { return ClientFilters[filter_id]; }
 	void SetFilter(eqFilterType filter_id, eqFilterMode filter_mode) { ClientFilters[filter_id] = filter_mode; }
 
@@ -1851,14 +1861,15 @@ private:
 	uint16 controlling_boat_id;
 	uint16 controlled_mob_id;
 	uint16 TrackingID;
-	uint16 CustomerID;
-	uint16 TraderID;
 	uint32 account_creation;
 	uint8 firstlogon;
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
-	bool Trader;
-	bool Buyer;
+    bool               trader;
+    bool               buyer;
+    uint16             trader_id;
+    uint16             buyer_id;
+    uint16             customer_id;
 	std::string BuyerWelcomeMessage;
 	int Haste; //precalced value
 	uint32 tmSitting; // time stamp started sitting, used for HP regen bonus added on MAY 5, 2004

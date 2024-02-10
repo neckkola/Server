@@ -81,7 +81,7 @@ public:
 			search_criteria.append(fmt::format(" AND character_data.zone_id = {}", char_zone_id));
 		}
 		else if (search.trader_id > 0) {
-			search_criteria.append(fmt::format(" AND trader.entity_id = {}", search.trader_id));
+			search_criteria.append(fmt::format(" AND trader.char_id = {}", search.trader_id));
 		}
 
 		if (search.min_level != 1) {

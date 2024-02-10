@@ -755,7 +755,15 @@ void Client::CompleteConnect()
 
 	entity_list.SendIllusionWearChange(this);
 
-	entity_list.SendTraders(this);
+	if (ClientVersion() == EQ::versions::ClientVersion::RoF2) 
+	{
+		//SendBulkBazaarTraders();
+		//SendBulkTraderStatus();
+		//entity_list.SendTraders(this);
+	}
+	else {
+		//entity_list.SendTraders(this);
+	}
 
 	Mob *pet = GetPet();
 	if (pet) {
@@ -3751,7 +3759,7 @@ void Client::Handle_OP_Barter(const EQApplicationPacket *app)
 
 	case Barter_BuyerModeOn:
 	{
-		if (!Trader) {
+		if (!IsTrader()) {
 			ToggleBuyerMode(true);
 		}
 		else {
@@ -4924,7 +4932,7 @@ void Client::Handle_OP_ClientUpdate(const EQApplicationPacket *app) {
 
 	if (cy != m_Position.y || cx != m_Position.x) {
 		// End trader mode if we move
-		if (Trader) {
+		if (IsTrader()) {
 			Trader_EndTrader();
 		}
 
@@ -15367,9 +15375,9 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	//Show Items
 	if (app->size == sizeof(Trader_ShowItems_Struct))
 	{
-		Trader_ShowItems_Struct* sis = (Trader_ShowItems_Struct*)app->pBuffer;
+		auto sis = (Trader_ShowItems_Struct*)app->pBuffer;
 
-		switch (sis->Code)
+		switch (sis->action)
 		{
 		case BazaarTrader_EndTraderMode: {
 			Trader_EndTrader();
@@ -15378,7 +15386,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 		}
 		case BazaarTrader_EndTransaction: {
 
-			Client* c = entity_list.GetClientByID(sis->TraderID);
+			Client* c = entity_list.GetClientByID(sis->trader_id);
 			if (c)
 			{
 				c->WithCustomer(0);
@@ -15402,17 +15410,17 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 	}
 	else if (app->size == sizeof(ClickTrader_Struct))
 	{
-		if (Buyer) {
+		if (IsBuyer()) {
 			Trader_EndTrader();
 			Message(Chat::Red, "You cannot be a Trader and Buyer at the same time.");
 			return;
 		}
 
-		ClickTrader_Struct* ints = (ClickTrader_Struct*)app->pBuffer;
+		auto ints = (ClickTrader_Struct*)app->pBuffer;
 
 		if (ints->Code == BazaarTrader_StartTraderMode)
 		{
-			GetItems_Struct* gis = GetTraderItems();
+			auto gis = GetTraderItems();
 
 			LogTrading("Start Trader Mode");
 			// Verify there are no NODROP or items with a zero price
@@ -15657,7 +15665,7 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			if (outtcs->Approval) {
 				BulkSendTraderInventory(Trader->CharacterID());
 				Trader->Trader_CustomerBrowsing(this);
-				TraderID = tcs->TraderID;
+				SetTraderID(tcs->TraderID);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Inventory Sent");
 			}
 			else
@@ -15704,8 +15712,8 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 
 		if (Command == 4)
 		{
-			Client* c = entity_list.GetClientByID(TraderID);
-			TraderID = 0;
+			Client* c = entity_list.GetClientByID(GetTraderID());
+			SetTraderID(0);
 			if (c)
 			{
 				c->WithCustomer(0);

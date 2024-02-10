@@ -197,11 +197,11 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	ip = eqs->GetRemoteIP();
 	port = ntohs(eqs->GetRemotePort());
 	client_state = CLIENT_CONNECTING;
-	Trader=false;
-	Buyer = false;
 	Haste = 0;
-	CustomerID = 0;
-	TraderID = 0;
+    trader               = false;
+    buyer                = false;
+    customer_id          = 0;
+    trader_id            = 0;
 	TrackingID = 0;
 	WID = 0;
 	account_id = 0;
@@ -406,12 +406,12 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if (Trader) {
+	if (IsTrader()) {
 		database.DeleteTraderItem(CharacterID());
 		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_RemoveTraderFromBazaarWindow);
 	}
 
-	if(Buyer)
+	if(IsBuyer())
 		ToggleBuyerMode(false);
 
 	if(conn_state != ClientConnectFinished) {
@@ -2145,14 +2145,17 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	Mob::FillSpawnStruct(ns, ForWho);
 
 	// Populate client-specific spawn information
-	ns->spawn.afk		= AFK;
-	ns->spawn.lfg		= LFG; // afk and lfg are cleared on zoning on live
-	ns->spawn.anon		= m_pp.anon;
-	ns->spawn.gm		= GetGM() ? 1 : 0;
-	ns->spawn.guildID	= GuildID();
-//	ns->spawn.linkdead	= IsLD() ? 1 : 0;
-//	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
-	ns->spawn.show_name = true;
+    ns->spawn.afk     = AFK;
+    ns->spawn.lfg     = LFG; // afk and lfg are cleared on zoning on live
+    ns->spawn.anon    = m_pp.anon;
+    ns->spawn.gm      = GetGM() ? 1 : 0;
+    ns->spawn.guildID = GuildID();
+    //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
+    //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
+    ns->spawn.show_name = true;
+    ns->spawn.trader    = IsTrader();
+    ns->spawn.buyer     = IsBuyer();
+    ns->spawn.offline   = false;
 
 	strcpy(ns->spawn.title, m_pp.title);
 	strcpy(ns->spawn.suffix, m_pp.suffix);
@@ -11650,8 +11653,8 @@ void Client::SendPath(Mob* target)
 		RuleB(Bazaar, EnableWarpToTrader) &&
 		target->IsClient() &&
 		(
-			target->CastToClient()->Trader ||
-			target->CastToClient()->Buyer
+			target->CastToClient()->IsTrader() ||
+			target->CastToClient()->IsBuyer()
 		)
 		) {
 		Message(

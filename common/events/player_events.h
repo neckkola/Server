@@ -780,15 +780,15 @@ namespace PlayerEvent {
 	};
 
 	struct TraderPurchaseEvent {
-		uint32      item_id;
-		std::string item_name;
-		uint32      trader_id;
-		std::string trader_name;
-		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
-		uint64      player_money_balance;
-		uint32		method{ 0 };
+        uint32      item_id;
+        std::string item_name;
+        uint32      trader_id;
+        std::string trader_name;
+        uint32      price;
+        uint32      charges;
+        uint32      total_cost;
+        uint64      player_money_balance;
+        uint32      method {0};
 
 
 		// cereal
@@ -809,15 +809,15 @@ namespace PlayerEvent {
 	};
 
 	struct TraderSellEvent {
-		uint32      item_id;
-		std::string item_name;
-		uint32      buyer_id;
-		std::string buyer_name;
-		uint32      price;
-		uint32      charges;
-		uint32      total_cost;
-		uint64      player_money_balance;
-		uint32		method;
+        uint32      item_id;
+        std::string item_name;
+        uint32      buyer_id;
+        std::string buyer_name;
+        uint32      price;
+        uint32      charges;
+        uint32      total_cost;
+        uint64      player_money_balance;
+        uint32      method;
 
 
 		// cereal

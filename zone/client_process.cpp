@@ -1002,22 +1002,22 @@ void Client::BulkSendMerchantInventory(int merchant_id, int npcid) {
 uint8 Client::WithCustomer(uint16 NewCustomer){
 
 	if(NewCustomer == 0) {
-		CustomerID = 0;
+		customer_id = 0;
 		return 0;
 	}
 
-	if(CustomerID == 0) {
-		CustomerID = NewCustomer;
+	if(customer_id == 0) {
+		customer_id = NewCustomer;
 		return 1;
 	}
 
 	// Check that the player browsing our wares hasn't gone away.
 
-	Client* c = entity_list.GetClientByID(CustomerID);
+	Client* c = entity_list.GetClientByID(GetCustomerID());
 
 	if(!c) {
 		LogTrading("Previous customer has gone away");
-		CustomerID = NewCustomer;
+		SetCustomerID(NewCustomer);
 		return 1;
 	}
 

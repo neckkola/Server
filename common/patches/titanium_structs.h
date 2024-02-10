@@ -310,7 +310,7 @@ struct Spawn_Struct {
 /*0288*/ uint32 unknown0288;
 /*0292*/ char     lastName[32];   // Player's Lastname
 /*0324*/ float    walkspeed;      // Speed when walking
-/*0328*/ uint8 unknown0328;
+/*0328*/ uint8 unknown0328; //name turns red mf
 /*0329*/ uint8  is_pet;         // 0=no, 1=yes
 /*0330*/ uint8  light;          // Spawn's lightsource %%% wrong
 /*0331*/ uint8  class_;         // Player's class

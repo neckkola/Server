@@ -354,6 +354,7 @@ struct Spawn_Struct_Bitfields
 /*29*/	unsigned   showname:1;
 /*30*/	unsigned   idleanimationsoff:1; // what we called statue?
 /*31*/	unsigned   untargetable:1;	// bClickThrough
+    // byte 5
 /* do these later
 32	unsigned   buyer:1;
 33	unsigned   offline:1;
@@ -3466,7 +3467,7 @@ struct GetItems_Struct {
 
 struct BecomeTrader_Struct {
 	uint32 id;
-	uint32 code;
+	uint32 action;
 };
 
 struct BazaarTrader_Struct {
