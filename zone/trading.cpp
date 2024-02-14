@@ -1850,7 +1850,7 @@ void Client::SendBazaarResults(
 			//		Cost = Strings::ToInt(row[5]);
 			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.cost);
 			//		StatValue = Strings::ToInt(row[8]);
-			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, StatValue);
+			VARSTRUCT_ENCODE_TYPE(uint32, bufptr, i.item_stat);
 			bool Stackable = i.stackable;
 			if (Stackable) {
 				//			int Charges = Strings::ToInt(row[9]);
@@ -3344,7 +3344,7 @@ void Client::SendBecomeTraderPacket(BazaarTraderType action, uint32 entity_id, c
 
     bts->action    = action;
     bts->entity_id = entity_id;
-    strn0cpy(bts->trader_name, trader_name, sizeof(bts->trader_name));
+	strn0cpy(bts->trader_name, trader_name, sizeof(bts->trader_name));
 
     QueuePacket(outapp);
     safe_delete(outapp);
@@ -3352,20 +3352,20 @@ void Client::SendBecomeTraderPacket(BazaarTraderType action, uint32 entity_id, c
 
 void Client::SendBulkBazaarTraders()
 {
-	struct trader {
-		uint32	zone_id;
-		uint32	trader_id;
-		uint32	entity_id;
-		std::string trader_name;
-	};
+    struct trader {
+        uint32      zone_id;
+        uint32      trader_id;
+        uint32      entity_id;
+        std::string trader_name;
+    };
 
-	struct bulk_traders {
-		uint32	count;
-		uint32	name_length;
-		std::vector<trader> traders;
-	};
-	
-	auto GetTraders = [&]() -> bulk_traders {
+    struct bulk_traders {
+        uint32              count;
+        uint32              name_length;
+        std::vector<trader> traders;
+    };
+
+    auto GetTraders = [&]() -> bulk_traders {
         bulk_traders results {};
         trader       Trader {};
         auto         result = TraderRepository::GetDistinctTraders(database);
@@ -3396,29 +3396,29 @@ void Client::SendBulkBazaarTraders()
         return results;
     };
 
-	auto results = GetTraders();
-	auto p_size = 4 + 12 * results.count + results.name_length;
-	auto buffer = new char[p_size];
-	char* bufptr = buffer;
-	memset(buffer, 0, p_size);
+    auto  results = GetTraders();
+    auto  p_size  = 4 + 12 * results.count + results.name_length;
+    auto  buffer  = new char[p_size];
+    char *bufptr  = buffer;
+    memset(buffer, 0, p_size);
 
-	VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results.count);
+    VARSTRUCT_ENCODE_TYPE(uint32, bufptr, results.count);
 
-	for (auto t : results.traders)
-	{
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.zone_id);			//zone ID
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.trader_id);			//trader ID
-		VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.entity_id);			//entity ID
-		VARSTRUCT_ENCODE_STRING(bufptr, t.trader_name.c_str());		//name
-	}
+    for (auto t : results.traders)
+    {
+        VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.zone_id);       // zone ID
+        VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.trader_id);     // trader ID
+        VARSTRUCT_ENCODE_TYPE(uint32, bufptr, t.entity_id);     // entity ID
+        VARSTRUCT_ENCODE_STRING(bufptr, t.trader_name.c_str()); // name
+    }
 
-	auto outapp = new EQApplicationPacket(OP_TraderBulkSend, p_size);
-	memcpy(outapp->pBuffer, buffer, p_size);
+    auto outapp = new EQApplicationPacket(OP_TraderBulkSend, p_size);
+    memcpy(outapp->pBuffer, buffer, p_size);
 
-	QueuePacket(outapp);
+    QueuePacket(outapp);
 
-	safe_delete(outapp);
-	safe_delete_array(buffer);
+    safe_delete(outapp);
+    safe_delete_array(buffer);
 }
 
 void Client::SendBulkTraderStatus() {
@@ -3526,4 +3526,48 @@ void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct blsi)
 		//Update buyer database entries
 		BuyerRepository::UpdateBuyLine(database, bli, buyer->GetID());
 	}
+}
+
+void Client::SendActiveTraders()
+{
+    auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(RoF2_BecomeTrader_Struct));
+    auto eq     = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
+
+    for (auto const &c : entity_list.GetClientList())
+    {
+        if (c.second->IsTrader())
+        {
+            if (ClientVersion() <= EQ::versions::ClientVersion::UF)
+            {
+                eq->action = BazaarTrader_StartTraderMode;
+            } else
+            {
+                eq->action = BazaarTrader_BazaarWindowAddTrader;
+            }
+
+            eq->entity_id = c.second->GetID();
+            eq->trader_id = c.second->CharacterID();
+            eq->zone_id   = c.second->GetZoneID();
+            strn0cpy(eq->trader_name, c.second->GetName(), sizeof(eq->trader_name));
+
+            QueuePacket(outapp);
+        }
+    }
+
+    safe_delete(outapp);
+}
+uint32 Client::DetermineTraderID(BazaarSearch_Struct *bss)
+{
+	if(bss->trader_id)
+	{
+		return bss->trader_id;
+	} else
+	{
+		auto trader = entity_list.GetClientByID(bss->trader_entity_id);
+		if(trader)
+		{
+			return trader->GetTraderID();
+		}
+	}
+	return 0;
 }

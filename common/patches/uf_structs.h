@@ -2945,9 +2945,23 @@ struct GetItems_Struct{
 	uint32	items[80];
 };
 
-struct BecomeTrader_Struct{
-	uint32 id;
-	uint32 code;
+struct BecomeTrader_Struct {
+	/*000*/	uint32	entity_id;
+	/*004*/	uint32	action;
+	/*008*/	char	trader_name[64];
+};
+
+struct BazaarWindowAddTrader_Struct
+{
+	/*000*/	uint32	entity_id;
+	/*004*/	uint32	action;
+	/*008*/	char	trader_name[64];
+};
+
+struct BazaarWindowRemoveTrader_Struct
+{
+	/*000*/	uint32	action;
+	/*004*/	uint32	trader_id;
 };
 
 struct Trader_ShowItems_Struct{

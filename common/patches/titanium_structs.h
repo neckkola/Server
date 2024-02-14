@@ -2273,19 +2273,20 @@ struct BazaarWelcome_Struct {
 };
 
 struct BazaarSearch_Struct {
-	BazaarWindowStart_Struct beginning;
-	uint32	traderid;
-	uint32  class_;
-	uint32  race;
-	uint32  stat;
-	uint32  slot;
-	uint32  type;
-	char   name[64];
-	uint32	minprice;
-	uint32	maxprice;
-	uint32	minlevel;
-	uint32	maxlevel;
+    BazaarWindowStart_Struct beginning;
+    uint32                   trader_id;
+    uint32                   class_;
+    uint32                   race;
+    uint32                   stat;
+    uint32                   slot;
+    uint32                   type;
+    char                     name[64];
+    uint32                   min_price;
+    uint32                   max_price;
+    uint32                   min_level;
+    uint32                   max_level;
 };
+
 struct BazaarInspect_Struct{
 	uint32 item_id;
 	uint32 unknown;
@@ -2472,8 +2473,22 @@ struct GetItems_Struct{
 };
 
 struct BecomeTrader_Struct{
-	uint32 ID;
-	uint32 Code;
+	/*000*/	uint32	entity_id;
+	/*004*/	uint32	action;
+	/*008*/	char	trader_name[64];
+};
+
+struct BazaarWindowAddTrader_Struct
+{
+	/*000*/	uint32	entity_id;
+	/*004*/	uint32	action;
+	/*008*/	char	trader_name[64];
+};
+
+struct BazaarWindowRemoveTrader_Struct
+{
+	/*000*/	uint32	action;
+	/*004*/	uint32	trader_id;
 };
 
 struct Trader_ShowItems_Struct{

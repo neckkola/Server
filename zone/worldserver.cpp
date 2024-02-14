@@ -3855,10 +3855,10 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
                 auto out    = (RoF2_BecomeTrader_Struct *)outapp->pBuffer;
                 if (data->action == BazaarTrader_StartTraderMode)
                 {
-                    out->action = BazaarTrader_AddTraderToBazaarWindow;
+                    out->action = BazaarTrader_BazaarWindowAddTrader;
                 } else
                 {
-                    out->action = BazaarTrader_RemoveTraderFromBazaarWindow;
+                    out->action = BazaarTrader_BazaarWindowRemoveTrader;
                 }
                 
 				out->trader_id = data->trader_id;
@@ -3869,7 +3869,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				c.second->QueuePacket(outapp);
                 safe_delete(outapp);
             }
-            if (strcmp(zone->GetShortName(), "bazaar") == 0)
+            if (zone && zone->GetZoneID() == Zones::BAZAAR)
             {
                 if (data->action == BazaarTrader_StartTraderMode)
                 {

@@ -408,7 +408,7 @@ Client::~Client() {
 
 	if (IsTrader()) {
 		database.DeleteTraderItem(CharacterID());
-		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_RemoveTraderFromBazaarWindow);
+		SendBecomeTrader(this, BazaarTraderType::BazaarTrader_BazaarWindowRemoveTrader);
 	}
 
 	if(IsBuyer())

@@ -527,37 +527,37 @@ namespace RoF2
 
 		switch (in->action) 
 		{
-		case 0x0:
+		case BazaarTrader_Off:
 		{
 			auto emu = (RoF2_BecomeTrader_Struct*)__emu_buffer;
 
-			auto outapp   = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
-            auto eq       = (structs::BecomeTrader_Struct *)outapp->pBuffer;
+			auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+            auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-			eq->action    = 0;
-            eq->id        = emu->entity_id;
+            eq->action = BazaarTrader_Off;
+			eq->id = emu->entity_id;
 
 			dest->FastQueuePacket(&outapp);
 			break;
 		}
-		case 0x1:
+		case BazaarTrader_StartTraderMode:
 		{
             auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
 
             auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
             auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
 
-            eq->action = 1;
+            eq->action = BazaarTrader_StartTraderMode;
             eq->id     = emu->entity_id;
 
             dest->FastQueuePacket(&outapp);
             break;
 		}
-		case 0x18:
+		case BazaarTrader_BazaarWindowAddTrader:
 		{
             auto emu      = (RoF2_BecomeTrader_Struct *)__emu_buffer;
-            auto outapp   = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
-            auto eq       = (structs::BazaarTrader_Struct *)outapp->pBuffer;
+            auto outapp   = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowAddTrader_Struct));
+            auto eq       = (structs::BazaarWindowAddTrader_Struct *)outapp->pBuffer;
 
 			eq->action    = emu->action;
             eq->entity_id = emu->entity_id;
@@ -568,18 +568,18 @@ namespace RoF2
 			dest->FastQueuePacket(&outapp);
             break;
 		}
-		case 0x19:
-		{
-			auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
-			auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarTrader_Struct));
-			auto eq = (structs::BazaarRemoveTrader_Struct *)outapp->pBuffer;
+        case BazaarTrader_BazaarWindowRemoveTrader:
+        {
+            auto emu    = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowRemoveTrader_Struct));
+            auto eq     = (structs::BazaarWindowRemoveTrader_Struct *)outapp->pBuffer;
 
-			eq->action    = emu->action;
+            eq->action    = emu->action;
             eq->trader_id = emu->trader_id;
 
-			dest->FastQueuePacket(&outapp);
-			break;
-		}
+            dest->FastQueuePacket(&outapp);
+            break;
+        }
 		}
 		safe_delete(inapp);
 	}
@@ -4027,16 +4027,16 @@ namespace RoF2
 
 			FINISH_ENCODE();
 		}
-		else if (psize == sizeof(BecomeTrader_Struct))
+		else if (psize == sizeof(RoF2_BecomeTrader_Struct))
 		{
-			ENCODE_LENGTH_EXACT(BecomeTrader_Struct);
-			SETUP_DIRECT_ENCODE(BecomeTrader_Struct, structs::BazaarTrader_Struct);
+			ENCODE_LENGTH_EXACT(RoF2_BecomeTrader_Struct);
+			SETUP_DIRECT_ENCODE(RoF2_BecomeTrader_Struct, structs::BazaarTrader_Struct);
 
 			eq->action = structs::BazaarSendAddTrader;
-			eq->entity_id = emu->ID;
-			eq->trader_id = emu->ID;
-			eq->zone_id = emu->Unknown072;
-			strn0cpy(eq->trader_name, emu->Name, sizeof(eq->trader_name));
+			eq->entity_id = emu->entity_id;
+			eq->trader_id = emu->trader_id;
+			eq->zone_id = emu->zone_id;
+			strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
 
 			FINISH_ENCODE();
 		}
@@ -4783,18 +4783,19 @@ namespace RoF2
 
 	DECODE(OP_BazaarSearch)
 	{
-		char *Buffer = (char *)__packet->pBuffer;
+        char *Buffer = (char *)__packet->pBuffer;
+        uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+        if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::BazaarClickInspect_Struct)))
+        {
+            return;
+        }
 
-		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::BazaarClickInspect_Struct)))
-			return;
+        SETUP_DIRECT_DECODE(BazaarInspect_Struct, structs::BazaarClickInspect_Struct);
 
-		SETUP_DIRECT_DECODE(BazaarInspect_Struct, structs::BazaarClickInspect_Struct);
+        emu->ItemID = Strings::ToUnsignedBigInt(eq->serial_number);
 
-		emu->ItemID = Strings::ToUnsignedBigInt(eq->serial_number);
-
-		FINISH_DIRECT_DECODE();
+        FINISH_DIRECT_DECODE();
 	}
 
 	DECODE(OP_BlockedBuffs)

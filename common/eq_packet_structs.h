@@ -2906,22 +2906,22 @@ struct EnvDamage2_Struct {
 //
 
 enum BazaarTraderType {
-    BazaarTrader_Off                          = 0,
-    BazaarTrader_StartTraderMode              = 1,
-    BazaarTrader_EndTraderMode                = 2,
-    BazaarTrader_UpdatePrice                  = 3,
-    BazaarTrader_EndTransaction               = 4,
-    BazaarSearchResults                       = 7,
-    BazaarWelcome                             = 9,
-    BazaarBuyItem                             = 10,
-    BazaarTrader_ShowItems                    = 11,
-    BazaarSearchDone                          = 12,
-    BazaarTrader_CustomerBrowsing             = 13,
-    BazaarInspectItem                         = 18,
-    BazaarSearchDone2                         = 19,
-    BazaarTrader_StartTraderMode2             = 22,
-    BazaarTrader_AddTraderToBazaarWindow      = 24,
-    BazaarTrader_RemoveTraderFromBazaarWindow = 25
+    BazaarTrader_Off                      = 0,
+    BazaarTrader_StartTraderMode          = 1,
+    BazaarTrader_EndTraderMode            = 2,
+    BazaarTrader_UpdatePrice              = 3,
+    BazaarTrader_EndTransaction           = 4,
+    BazaarSearchResults                   = 7,
+    BazaarWelcome                         = 9,
+    BazaarBuyItem                         = 10,
+    BazaarTrader_ShowItems                = 11,
+    BazaarSearchDone                      = 12,
+    BazaarTrader_CustomerBrowsing         = 13,
+    BazaarInspectItem                     = 18,
+    BazaarSearchDone2                     = 19,
+    BazaarTrader_StartTraderMode2         = 22,
+    BazaarTrader_BazaarWindowAddTrader    = 24,
+    BazaarTrader_BazaarWindowRemoveTrader = 25
 };
 
 enum {
@@ -2946,24 +2946,25 @@ struct BazaarWelcome_Struct {
 };
 
 struct BazaarSearch_Struct {
-    /*000*/ uint32 action;
-    /*004*/ uint32 search_scope {true}; // 1 all traders 0 local traders
-    /*008*/ uint32 unknown008;
-    /*012*/ uint32 unknown012;
-    /*016*/ uint32 trader_id;
-    /*020*/ uint32 _class;
-    /*024*/ uint32 race;
-    /*028*/ uint32 item_stat;
-    /*032*/ uint32 slot;
-    /*036*/ uint32 type;
-    /*040*/ char   name[64];
-    /*104*/ uint32 min_cost;
-    /*108*/ uint32 max_cost;
+    /*000*/ uint32 action {0};
+    /*004*/ bool   search_scope {true}; // 1 all traders 0 local traders
+    /*008*/ uint32 unknown008 {0};
+    /*012*/ uint32 unknown012 {0};
+    /*016*/ uint32 trader_id {0};
+    /*020*/ uint32 _class {0};
+    /*024*/ uint32 race {0};
+    /*028*/ uint32 item_stat {0};
+    /*032*/ uint32 slot {0};
+    /*036*/ uint32 type {0};
+    /*040*/ char   name[64] {""};
+    /*104*/ uint32 min_cost {0};
+    /*108*/ uint32 max_cost {0};
     /*112*/ uint32 min_level {1};
     /*116*/ uint32 max_level {0};
     /*120*/ uint32 max_results {0};
     /*124*/ uint32 prestige {0};
     /*128*/ uint32 augment {0};
+    /*132*/ uint32 trader_entity_id {0};
 };
 
 struct BazaarInspect_Struct {

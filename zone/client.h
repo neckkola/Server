@@ -323,7 +323,7 @@ public:
 	void TradeRequestFailed(const EQApplicationPacket* app);
 	void BuyTraderItem(TraderBuy_Struct* tbs,Client* trader,const EQApplicationPacket* app);
 	void FinishTrade(Mob* with, bool finalizer = false, void* event_entry = nullptr, std::list<void*>* event_details = nullptr);
-	void SendBecomeTraderPacket(BazaarTraderType action, uint32 trader_id, const char* trader_name);
+	void SendBecomeTraderPacket(BazaarTraderType action, uint32 entity_id, const char* trader_name);
 	void SendBecomeTrader(Client* trader, BazaarTraderType action);
 	void SendBulkTraderStatus();
 	void SendBulkBazaarTraders();
@@ -332,6 +332,9 @@ public:
 	void BuyTraderItemByParcel(TraderBuy_Struct* tbs, const EQApplicationPacket* app);
 	void BuyTraderItemByDirectToInventory(TraderBuy_Struct* tbs);
 	void SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct blsi);
+	void SendActiveTraders();
+	void GetActiveTraders();
+	uint32 DetermineTraderID(BazaarSearch_Struct *bss);
 
 	void SendZonePoints();
 

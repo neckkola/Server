@@ -353,6 +353,75 @@ namespace UF
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	ENCODE(OP_BecomeTrader)
+    {
+        EQApplicationPacket *inapp  = *p;
+        *p                          = nullptr;
+        unsigned char *__emu_buffer = inapp->pBuffer;
+        auto           in           = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+
+        switch (in->action)
+        {
+            case BazaarTrader_Off:
+            {
+                auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+
+                auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+                auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
+
+                eq->action    = BazaarTrader_Off;
+                eq->entity_id = emu->entity_id;
+
+                dest->FastQueuePacket(&outapp);
+                break;
+            }
+            case BazaarTrader_StartTraderMode:
+            {
+                auto emu = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+
+                auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+                auto eq     = (structs::BecomeTrader_Struct *)outapp->pBuffer;
+
+                eq->action    = BazaarTrader_StartTraderMode;
+                eq->entity_id = emu->entity_id;
+				strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+
+                dest->FastQueuePacket(&outapp);
+                break;
+            }
+			default:
+			{
+				dest->QueuePacket(inapp);
+			}
+			//case BazaarTrader_BazaarWindowAddTrader:
+            //{
+            //    auto emu    = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            //    auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowAddTrader_Struct));
+            //    auto eq     = (structs::BazaarWindowAddTrader_Struct *)outapp->pBuffer;
+
+            //    eq->action    = emu->action;
+            //    eq->entity_id = emu->entity_id;
+            //    strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+
+            //    dest->FastQueuePacket(&outapp);
+            //    break;
+            //}
+            //case BazaarTrader_BazaarWindowRemoveTrader:
+            //{
+            //    auto emu    = (RoF2_BecomeTrader_Struct *)__emu_buffer;
+            //    auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowRemoveTrader_Struct));
+            //    auto eq     = (structs::BazaarWindowRemoveTrader_Struct *)outapp->pBuffer;
+
+            //    eq->action    = emu->action;
+            //    eq->trader_id = emu->trader_id;
+
+            //    dest->FastQueuePacket(&outapp);
+            //    break;
+            //}
+        }
+        safe_delete(inapp);
+    }
+
 	//ENCODE(OP_BecomeTrader)
 	//{
 	//	SETUP_DIRECT_ENCODE(New_BecomeTrader_Struct, struct::BecomeTrader_Struct);
@@ -3072,7 +3141,7 @@ namespace UF
             Bitfields->targetable             = 1;
             Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
             Bitfields->statue                 = 0;
-            Bitfields->trader                 = emu->trader;
+            Bitfields->trader                 = emu->trader ? 1 : 0;
             Bitfields->buyer                  = 0;
             Bitfields->showname               = ShowName;
 
@@ -3400,24 +3469,27 @@ namespace UF
 		if (SubAction == 7) {
 			SETUP_DIRECT_DECODE(BazaarSearch_Struct, structs::BazaarSearch_Struct);
 
-			emu->action		= eq->Beginning.Action;
-			emu->item_stat	= eq->ItemStat;
-			emu->max_cost	= eq->MaxPrice;
-			emu->min_cost	= eq->MinPrice;
-			emu->max_level	= eq->MaxLlevel;
-			emu->min_level	= eq->Minlevel;
-			emu->race		= eq->Race;
-			emu->slot		= eq->Slot;
-			emu->type		= eq->Type;
-			emu->trader_id	= eq->TraderID;
-			emu->_class		= eq->Class_;
-			strn0cpy(emu->name, eq->Name, sizeof(emu->name));
+			emu->action           = eq->Beginning.Action;
+            emu->item_stat        = eq->ItemStat;
+            emu->max_cost         = eq->MaxPrice;
+            emu->min_cost         = eq->MinPrice;
+            emu->max_level        = eq->MaxLlevel;
+            emu->min_level        = eq->Minlevel;
+            emu->race             = eq->Race;
+            emu->slot             = eq->Slot;
+            emu->type             = eq->Type;
+            emu->trader_entity_id = eq->TraderID;
+            emu->_class           = eq->Class_;
+            strn0cpy(emu->name, eq->Name, sizeof(emu->name));
 
-			//set defaults to fields that don't exist in UF
-			emu->augment = 0;
-			emu->prestige = 0;
-			emu->search_scope = 1;
-			emu->max_results = RuleI(Bazaar, MaxSearchResults);
+			// set defaults to fields that aren't used in UF
+            emu->augment      = 0;
+            emu->trader_id    = 0;
+            emu->unknown008   = 0;
+            emu->unknown012   = 0;
+            emu->prestige     = 0;
+            emu->search_scope = true;
+            emu->max_results  = RuleI(Bazaar, MaxSearchResults);
 
 			FINISH_DIRECT_DECODE();
 			return;

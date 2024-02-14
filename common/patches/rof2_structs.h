@@ -3470,7 +3470,8 @@ struct BecomeTrader_Struct {
 	uint32 action;
 };
 
-struct BazaarTrader_Struct {
+struct BazaarWindowAddTrader_Struct
+{
 	/*000*/	uint32	action;
 	/*004*/	uint32	zone_id;
 	/*008*/	uint32	trader_id;
@@ -3478,7 +3479,16 @@ struct BazaarTrader_Struct {
 	/*016*/	char	trader_name[64];
 };
 
-struct BazaarRemoveTrader_Struct {
+struct BazaarTrader_Struct
+{
+	/*000*/	uint32	action;
+	/*004*/	uint32	zone_id;
+	/*008*/	uint32	trader_id;
+	/*012*/	uint32	entity_id;
+	/*016*/	char	trader_name[64];
+};
+
+struct BazaarWindowRemoveTrader_Struct {
 	/*000*/	uint32	action;
 	/*004*/	uint32	trader_id;
 };

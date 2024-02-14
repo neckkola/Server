@@ -12,29 +12,30 @@
 
 class TraderRepository: public BaseTraderRepository {
 public:
-	struct BazaarDBSearchResults_Struct {
-		uint32	count;
-		uint32	trader_id;
-		uint32	item_id;
-		uint32	serial_number;
-		uint32	charges;
-		uint32	cost;
-		uint32	slot_id;
-		uint32	icon_id;
-		uint32	sum_charges;
-		uint32	trader_zone_id;
-		uint32	trader_entity_id;
-		uint32	item_stat;
-		bool	stackable;
-		std::string	item_name;
-		std::string serial_number_RoF;
-	};
-	struct DistinctTraders_Struct {
-		uint32	trader_char_id;
-		uint32	trader_zone_id;
-		uint32	trader_entity_id;
-		std::string	trader_name;
-	};
+    struct BazaarDBSearchResults_Struct {
+        uint32      count;
+        uint32      trader_id;
+        uint32      item_id;
+        uint32      serial_number;
+        uint32      charges;
+        uint32      cost;
+        uint32      slot_id;
+        uint32      icon_id;
+        uint32      sum_charges;
+        uint32      trader_zone_id;
+        uint32      trader_entity_id;
+        uint32      item_stat;
+        bool        stackable;
+        std::string item_name;
+        std::string serial_number_RoF;
+    };
+
+    struct DistinctTraders_Struct {
+        uint32      trader_char_id;
+        uint32      trader_zone_id;
+        uint32      trader_entity_id;
+        std::string trader_name;
+    };
     /**
      * This file was auto generated and can be modified and extended upon
      *
@@ -306,29 +307,30 @@ public:
 		return all_entries;
 	}
 
-	static std::vector<DistinctTraders_Struct> GetDistinctTraders(Database& db)
-	{
-		std::vector<DistinctTraders_Struct> all_entries;
+	static std::vector<DistinctTraders_Struct> GetDistinctTraders(Database &db)
+    {
+        std::vector<DistinctTraders_Struct> all_entries;
 
-		auto results = db.QueryDatabase(
-			"SELECT DISTINCT(t.char_id), c.zone_id, c.name, t.entity_id FROM trader AS t, character_data AS c WHERE t.char_id = c.id;"
-		);
+        auto results = db.QueryDatabase("SELECT DISTINCT(t.char_id), c.zone_id, c.name, t.entity_id FROM trader AS t, "
+                                        "character_data AS c WHERE t.char_id = c.id;");
 
-		all_entries.reserve(results.RowCount());
+        all_entries.reserve(results.RowCount());
 
-		for (auto row : results) {
-			DistinctTraders_Struct e{};
+        for (auto row : results)
+        {
+            DistinctTraders_Struct e {};
 
-			e.trader_char_id	= Strings::ToInt(row[0]);
-			e.trader_zone_id	= Strings::ToInt(row[1]);
-			e.trader_entity_id	= Strings::ToInt(row[3]);
-			e.trader_name		= row[2] ? row[2] : "";
-	
-			all_entries.push_back(e);
-		}
+            e.trader_char_id   = Strings::ToInt(row[0]);
+            e.trader_zone_id   = Strings::ToInt(row[1]);
+            e.trader_entity_id = Strings::ToInt(row[3]);
+            e.trader_name      = row[2] ? row[2] : "";
 
-		return all_entries;
-	}
+            all_entries.push_back(e);
+        }
+
+        return all_entries;
+    }
+
 	static Trader GetTraderItem(Database& db, uint32 trader_id, uint32 item_id, uint32 item_cost)
 	{
 		Trader item{};
