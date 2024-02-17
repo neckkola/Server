@@ -285,100 +285,123 @@ void EQEmuLogSys::ProcessConsoleMessage(
 					  rang::style::reset;
 		}
 	}
-	else if (Strings::Contains(message, "[")) {
-		for (auto &e: Strings::Split(message, " ")) {
-			if (Strings::Contains(e, "[") && Strings::Contains(e, "]")) {
-				e = Strings::Replace(e, "[", "");
-				e = Strings::Replace(e, "]", "");
+    else if (Strings::Contains(message, "[")) {
+        for (auto &e : Strings::Split(message, " ")) {
+            std::string e_prefix;
+            std::string e_suffix;
+            if (Strings::Contains(e, "[") && Strings::Contains(e, "]")) {
+                uint32 start_size     = e.length();
+                uint32 length_between = Strings::GetBetween(e, "[", "]").length();
+                if (start_size - length_between == 2) {
+                    e = Strings::Replace(e, "[", "");
+                    e = Strings::Replace(e, "]", "");
+                }
+                else {
+                    e_prefix = Strings::Split(e, "[")[0];
+                    e_suffix = Strings::Split(e, "]")[1];
+                    e        = Strings::GetBetween(e, "[", "]");
+                }
 
-				bool is_upper = false;
+                bool is_upper = false;
 
-				for (int i = 0; i < strlen(e.c_str()); i++) {
-					if (isupper(e[i])) {
-						is_upper = true;
-					}
-				}
+                for (int i = 0; i < strlen(e.c_str()); i++) {
+                    if (isupper(e[i])) {
+                        is_upper = true;
+                    }
+                }
 
-				// color matching in []
-				// ex: [<red>variable] would produce [variable] with red inside brackets
-				std::map<std::string, rang::fgB> colors = {
-					{"<black>",   rang::fgB::black},
-					{"<green>",   rang::fgB::green},
-					{"<yellow>",  rang::fgB::yellow},
-					{"<blue>",    rang::fgB::blue},
-					{"<magenta>", rang::fgB::magenta},
-					{"<cyan>",    rang::fgB::cyan},
-					{"<gray>",    rang::fgB::gray},
-					{"<red>",     rang::fgB::red},
-				};
+                // color matching in []
+                // ex: [<red>variable] would produce [variable] with red inside brackets
+                std::map<std::string, rang::fgB> colors = {
+                    {"<black>",   rang::fgB::black  },
+                    {"<green>",   rang::fgB::green  },
+                    {"<yellow>",  rang::fgB::yellow },
+                    {"<blue>",    rang::fgB::blue   },
+                    {"<magenta>", rang::fgB::magenta},
+                    {"<cyan>",    rang::fgB::cyan   },
+                    {"<gray>",    rang::fgB::gray   },
+                    {"<red>",     rang::fgB::red    },
+                };
 
-				bool      match_color = false;
-				for (auto &c: colors) {
-					if (Strings::Contains(e, c.first)) {
-						e = Strings::Replace(e, c.first, "");
-						(!is_error ? std::cout : std::cerr)
-							<< rang::fgB::gray
-							<< "["
-							<< rang::style::bold
-							<< c.second
-							<< e
-							<< rang::style::reset
-							<< rang::fgB::gray
-							<< "] ";
-						match_color = true;
-					}
-				}
+                bool match_color = false;
+                for (auto &c : colors) {
+                    if (Strings::Contains(e, c.first)) {
+                        e = Strings::Replace(e, c.first, "");
+                        (!is_error ? std::cout : std::cerr) << rang::fgB::gray    //
+                                                            << e_prefix           //
+                                                            << "["                //
+                                                            << rang::style::bold  //
+                                                            << c.second           //
+                                                            << e                  //
+                                                            << rang::style::reset //
+                                                            << rang::fgB::gray    //
+                                                            << "]"                //
+                                                            << e_suffix           //
+                                                            << " ";
+                        match_color = true;
+                    }
+                }
 
-				// string match to colors
-				std::map<std::string, rang::fgB> matches = {
-					{"missing", rang::fgB::red},
-					{"error",   rang::fgB::red},
-					{"ok",      rang::fgB::green},
-				};
+                // string match to colors
+                std::map<std::string, rang::fgB> matches = {
+                    {"missing", rang::fgB::red  },
+                    {"error",   rang::fgB::red  },
+                    {"ok",      rang::fgB::green},
+                };
 
-				for (auto &c: matches) {
-					if (Strings::Contains(e, c.first)) {
-						(!is_error ? std::cout : std::cerr)
-							<< rang::fgB::gray
-							<< "["
-							<< rang::style::bold
-							<< c.second
-							<< e
-							<< rang::style::reset
-							<< rang::fgB::gray
-							<< "] ";
-						match_color = true;
-					}
-				}
+                for (auto &c : matches) {
+                    if (Strings::Contains(e, c.first)) {
+                        (!is_error ? std::cout : std::cerr) << rang::fgB::gray    //
+                                                            << e_prefix           //
+                                                            << "["                //
+                                                            << rang::style::bold  //
+                                                            << c.second           //
+                                                            << e                  //
+                                                            << rang::style::reset //
+                                                            << rang::fgB::gray    //
+                                                            << "]"                //
+                                                            << e_suffix           //
+                                                            << " ";               //
+                        match_color = true;
+                    }
+                }
 
-				// if we don't match a color in either the string matching or
-				// the color tag matching, we default to yellow inside brackets
-				// if uppercase, does not get colored
-				if (!match_color) {
-					if (!is_upper) {
-						(!is_error ? std::cout : std::cerr)
-							<< rang::fgB::gray
-							<< "["
-							<< rang::style::bold
-							<< rang::fgB::yellow
-							<< e
-							<< rang::style::reset
-							<< rang::fgB::gray
-							<< "] ";
-					}
-					else {
-						(!is_error ? std::cout : std::cerr) << rang::fgB::gray << "[" << e << "] ";
-					}
-				}
-			}
-			else {
-				(!is_error ? std::cout : std::cerr)
-					<< (is_error ? rang::fgB::red : rang::fgB::gray)
-					<< e
-					<< " ";
-			}
-		}
-	}
+                // if we don't match a color in either the string matching or
+                // the color tag matching, we default to yellow inside brackets
+                // if uppercase, does not get colored
+                if (!match_color) {
+                    if (!is_upper) {
+                        (!is_error ? std::cout : std::cerr) << rang::fgB::gray                                   //
+                                                            << e_prefix                                          //
+                                                            << "["                                               //
+                                                            << rang::style::bold                                 //
+                                                            << rang::fgB::yellow                                 //
+                                                            << e                                                 //
+                                                            << rang::style::reset                                //
+                                                            << rang::fgB::gray                                   //
+                                                            << "]"                                               //
+                                                            << e_suffix                                          //
+                                                            << " ";                                              //
+                    }
+                    else {
+                        (!is_error ? std::cout : std::cerr) << rang::fgB::gray                                   //
+                                                            << e_prefix                                          //
+                                                            << "["                                               //
+                                                            << e                                                 //
+                                                            << "]"                                               //
+                                                            << e_prefix                                          //
+                                                            << " ";                                              //
+                    }
+                }
+            }
+            else {
+                (!is_error ? std::cout : std::cerr) << (is_error ? rang::fgB::red : rang::fgB::gray) << e_prefix //
+                                                    << e                                                         //
+                                                    << e_suffix                                                  //
+                                                    << " ";                                                      //
+            }
+        }
+    }
 	else {
 		(!is_error ? std::cout : std::cerr)
 			<< (is_error ? rang::fgB::red : rang::fgB::gray)
