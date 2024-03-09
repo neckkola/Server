@@ -2497,18 +2497,17 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		safe_delete(outapp);
 	}
 
-	auto app = new EQApplicationPacket(OP_Death, sizeof(Death_Struct));
+	auto app      = new EQApplicationPacket(OP_Death, sizeof(Death_Struct));
+    auto d        = (Death_Struct *)app->pBuffer;
+	app->priority = 1;
 
-	auto d = (Death_Struct*) app->pBuffer;
-
-	d->spawn_id     = GetID();
-	d->killer_id    = killer_mob ? killer_mob->GetID() : 0;
-	d->bindzoneid   = 0;
-	d->spell_id     = UINT32_MAX;
-	d->attack_skill = SkillDamageTypes[attack_skill];
-	d->damage       = damage;
-
-	app->priority = 6;
+    d->spawn_id     = GetID();
+    d->killer_id    = killer_mob ? killer_mob->GetID() : 0;
+    d->bindzoneid   = 0;
+    d->spell_id     = UINT32_MAX;
+    d->attack_skill = SkillDamageTypes[attack_skill];
+    d->damage       = damage;
+    d->corpseid     = GetID();
 
 	entity_list.QueueClients(killer_mob, app, false);
 
@@ -2860,7 +2859,26 @@ bool NPC::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::SkillTy
 		}
 
 		entity_list.LimitRemoveNPC(this);
+
+		std::string temp_name {};
+		temp_name = fmt::format("{}'s_corpse{}",
+								EntityList::RemoveNumbers((char *)corpse->GetName()),
+								GetID());
+
 		entity_list.AddCorpse(corpse, GetID());
+
+		auto out2      = new EQApplicationPacket(OP_MobRename, sizeof(MobRename_Struct));
+        auto data      = (MobRename_Struct *)out2->pBuffer;
+        out2->priority = 6;
+
+        strn0cpy(data->old_name, temp_name.c_str(), sizeof(data->old_name));
+        strn0cpy(data->old_name_again, data->old_name, sizeof(data->old_name_again));
+        strn0cpy(data->new_name, corpse->GetCleanName(), sizeof(data->new_name));
+        data->unknown192 = 0;
+        data->unknown196 = 1;
+
+        entity_list.QueueClients(killer_mob, out2, false);
+        safe_delete(out2);
 
 		entity_list.UnMarkNPC(GetID());
 		entity_list.RemoveNPC(GetID());
