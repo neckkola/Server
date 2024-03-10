@@ -446,6 +446,67 @@ namespace RoF2
 		dest->FastQueuePacket(&in, ack_req);
 	}
 
+	ENCODE(OP_BecomeTrader)
+	{
+		EQApplicationPacket *inapp = *p;
+		*p = nullptr;
+		unsigned char *__emu_buffer = inapp->pBuffer;
+		auto          in            = (BecomeTrader_Struct *) __emu_buffer;
+
+		switch (in->action) {
+			case TraderOff: {
+				auto emu = (BecomeTrader_Struct *) __emu_buffer;
+
+				auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+				auto eq     = (structs::BecomeTrader_Struct *) outapp->pBuffer;
+
+				eq->action    = TraderOff;
+				eq->entity_id = emu->entity_id;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			case TraderOn: {
+				auto emu = (BecomeTrader_Struct *) __emu_buffer;
+
+				auto outapp = new EQApplicationPacket(OP_BecomeTrader, sizeof(structs::BecomeTrader_Struct));
+				auto eq     = (structs::BecomeTrader_Struct *) outapp->pBuffer;
+
+				eq->action    = TraderOn;
+				eq->entity_id = emu->entity_id;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			case AddTraderToBazaarWindow: {
+				auto emu    = (BecomeTrader_Struct *) __emu_buffer;
+				auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(BecomeTrader_Struct));
+				auto eq     = (BecomeTrader_Struct *) outapp->pBuffer;
+
+				eq->action    = emu->action;
+				eq->entity_id = emu->entity_id;
+				eq->trader_id = emu->trader_id;
+				eq->zone_id   = emu->zone_id;
+				strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+			case RemoveTraderFromBazaarWindow: {
+				auto emu    = (BecomeTrader_Struct *) __emu_buffer;
+				auto outapp = new EQApplicationPacket(OP_TraderShop, sizeof(structs::BazaarWindowRemoveTrader_Struct));
+				auto eq     = (structs::BazaarWindowRemoveTrader_Struct *) outapp->pBuffer;
+
+				eq->action    = emu->action;
+				eq->trader_id = emu->trader_id;
+
+				dest->FastQueuePacket(&outapp);
+				break;
+			}
+		}
+		safe_delete(inapp);
+	}
+
 	ENCODE(OP_BeginCast)
 	{
 		SETUP_DIRECT_ENCODE(BeginCast_Struct, structs::BeginCast_Struct);
@@ -3651,10 +3712,10 @@ namespace RoF2
 			ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
 			SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			eq->Code = emu->Code;
+			eq->Code = emu->action;
 			//strncpy(eq->SerialNumber, "0000000000000000", sizeof(eq->SerialNumber));
 			//snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", 0);
-			eq->TraderID = emu->TraderID;
+			eq->TraderID = emu->entity_id;
 			//eq->Stacksize = 0;
 			//eq->Price = 0;
 
@@ -3680,13 +3741,13 @@ namespace RoF2
 		ENCODE_LENGTH_EXACT(TraderBuy_Struct);
 		SETUP_DIRECT_ENCODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
-		OUT(Action);
-		OUT(Price);
-		OUT(TraderID);
-		memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-		OUT(ItemID);
-		OUT(Quantity);
-		OUT(AlreadySold);
+		OUT(action);
+		OUT(price);
+		OUT(trader_id);
+		memcpy(eq->item_name, emu->item_name, sizeof(eq->item_name));
+		OUT(item_id);
+		OUT(quantity);
+		OUT(already_sold);
 
 		FINISH_ENCODE();
 	}
@@ -3696,9 +3757,10 @@ namespace RoF2
 		ENCODE_LENGTH_EXACT(TraderDelItem_Struct);
 		SETUP_DIRECT_ENCODE(TraderDelItem_Struct, structs::TraderDelItem_Struct);
 
-		OUT(TraderID);
-		snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", emu->ItemID);
-		LogTrading("ENCODE(OP_TraderDelItem): TraderID [{}], SerialNumber: [{}]", emu->TraderID, emu->ItemID);
+		eq->TraderID = emu->trader_id;
+		auto serial = fmt::format("{:016}\n", emu->item_id);
+		strn0cpy(eq->SerialNumber, serial.c_str(), sizeof(eq->SerialNumber));
+		LogTrading("ENCODE(OP_TraderDelItem): TraderID [{}], SerialNumber: [{}]", emu->trader_id, emu->item_id);
 
 		FINISH_ENCODE();
 	}
@@ -3739,21 +3801,21 @@ namespace RoF2
 			ENCODE_LENGTH_EXACT(TraderBuy_Struct);
 			SETUP_DIRECT_ENCODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
-			OUT(Action);
-			OUT(TraderID);
+			OUT(action);
+			OUT(trader_id);
 
 			//memcpy(eq->BuyerName, emu->BuyerName, sizeof(eq->BuyerName));
 			//memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
 
-			memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-			OUT(ItemID);
-			OUT(AlreadySold);
-			OUT(Price);
-			OUT(Quantity);
-			snprintf(eq->SerialNumber, sizeof(eq->SerialNumber), "%016d", emu->ItemID);
+			memcpy(eq->item_name, emu->item_name, sizeof(eq->item_name));
+			OUT(item_id);
+			OUT(already_sold);
+			OUT(price);
+			OUT(quantity);
+			snprintf(eq->serial_number, sizeof(eq->serial_number), "%016d", emu->item_id);
 
 			LogTrading("ENCODE(OP_TraderShop): Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, emu->ItemName);
+				eq->action, eq->price, eq->trader_id, eq->item_id, eq->quantity, emu->item_name);
 
 			FINISH_ENCODE();
 		}
@@ -4115,7 +4177,7 @@ namespace RoF2
 			Bitfields->invis = emu->invis;
 			Bitfields->linkdead = 0;
 			Bitfields->showhelm = emu->showhelm;
-			Bitfields->trader = 0;
+			Bitfields->trader = emu->trader ? 1 : 0;
 			Bitfields->targetable = 1;
 			Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
 			Bitfields->showname = ShowName;
@@ -5390,8 +5452,8 @@ namespace RoF2
 			DECODE_LENGTH_EXACT(structs::Trader_ShowItems_Struct);
 			SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
 
-			emu->Code = eq->Code;
-			emu->TraderID = eq->TraderID;
+			emu->action = eq->Code;
+			emu->entity_id = eq->TraderID;
 
 			FINISH_DIRECT_DECODE();
 		}
@@ -5411,12 +5473,12 @@ namespace RoF2
 		DECODE_LENGTH_EXACT(structs::TraderBuy_Struct);
 		SETUP_DIRECT_DECODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
-		IN(Action);
-		IN(Price);
-		IN(TraderID);
-		memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));
-		IN(ItemID);
-		IN(Quantity);
+		IN(action);
+		IN(price);
+		IN(trader_id);
+		memcpy(emu->item_name, eq->item_name, sizeof(emu->item_name));
+		IN(item_id);
+		IN(quantity);
 
 		FINISH_DIRECT_DECODE();
 	}
@@ -5457,16 +5519,22 @@ namespace RoF2
 			DECODE_LENGTH_EXACT(structs::TraderBuy_Struct);
 			SETUP_DIRECT_DECODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
-			IN(Action);
-			IN(Price);
-			IN(TraderID);
-			memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));
-			IN(ItemID);
-			IN(Quantity);
+			IN(action);
+			IN(method);
+			IN(price);
+			IN(trader_id);
+			IN(item_id);
+			IN(quantity);
+			IN(already_sold);
+			IN_str(seller_name);
+
+			memcpy(emu->serial_number, eq->serial_number, sizeof(emu->serial_number));
+			memcpy(emu->item_name, eq->item_name, sizeof(emu->item_name));
+
 			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct (Unknowns) Unknown004 [{}], Unknown008 [{}], Unknown012 [{}], Unknown076 [{}], Unknown276 [{}]",
-				eq->Unknown004, eq->Unknown008, eq->Unknown012, eq->Unknown076, eq->Unknown276);
+				eq->method, eq->unknown_008, eq->unknown_012, eq->unknown_076, eq->unknown_276);
 			LogTrading("DECODE(OP_TraderShop): TraderBuy_Struct Buy Action [{}], Price [{}], Trader [{}], ItemID [{}], Quantity [{}], ItemName, [{}]",
-				eq->Action, eq->Price, eq->TraderID, eq->ItemID, eq->Quantity, eq->ItemName);
+				eq->action, eq->price, eq->trader_id, eq->item_id, eq->quantity, eq->item_name);
 
 			FINISH_DIRECT_DECODE();
 		}
@@ -5580,10 +5648,9 @@ namespace RoF2
 
 		//sprintf(hdr.unknown000, "06e0002Y1W00");
 
-		if (packet_type == ItemPacketParcel) {
-			strn0cpy(
-				hdr.unknown000, fmt::format("{:03}PAR{:010}\0", inst->GetMerchantSlot(), item->ID).c_str(),
-				sizeof(hdr.unknown000));
+		if (packet_type == ItemPacketParcel || packet_type == ItemPacketMerchant) {
+			//strn0cpy(hdr.unknown000, fmt::format("{:03}PAR{:010}\0", inst->GetMerchantSlot(), item->ID).c_str(),sizeof(hdr.unknown000));
+			strn0cpy(hdr.unknown000, fmt::format("{:016}\0", inst->GetSerialNumber()).c_str(),sizeof(hdr.unknown000));
 		}
 		else {
 			snprintf(hdr.unknown000, sizeof(hdr.unknown000), "%016d", item->ID);

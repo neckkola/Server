@@ -1422,6 +1422,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 		case ServerOP_ReloadLoot:
 		case ServerOP_RezzPlayerAccept:
 		case ServerOP_SpawnStatusChange:
+		case ServerOP_TraderMessaging:
 		case ServerOP_UpdateSpawn:
 		case ServerOP_WWDialogueWindow:
 		case ServerOP_WWLDoNUpdate:

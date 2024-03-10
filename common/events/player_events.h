@@ -983,12 +983,11 @@ namespace PlayerEvent {
 		}
 	};
 
-	struct ParcelRetrieve
-	{
-        uint32      item_id;
-        uint32      quantity;
-        std::string from_player_name;
-        uint32      sent_date;
+	struct ParcelRetrieve {
+		uint32      item_id;
+		uint32      quantity;
+		std::string from_player_name;
+		uint32      sent_date;
 
 		// cereal
 		template<class Archive>

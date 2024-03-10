@@ -37,6 +37,8 @@
 #include "../races.h"
 #include "../raid.h"
 #include "../guilds.h"
+//#include "../repositories/trader_repository.h"
+#include "../cereal/include/cereal/types/vector.hpp"
 
 #include <iostream>
 #include <sstream>
@@ -307,50 +309,100 @@ namespace UF
 		EQApplicationPacket *in = *p;
 		*p = nullptr;
 
-		char *Buffer = (char *)in->pBuffer;
+		uint32 action = *(uint32 *)in->pBuffer;
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+		switch (action) {
+			case BazaarSearch: {
+				std::vector<BazaarSearchResultsFromDB_Struct> results {};
+				auto bsms = (BazaarSearchMessaging_Struct *)in->pBuffer;
+				EQ::Util::MemoryStreamReader ss(
+					reinterpret_cast<char *>(bsms->payload),
+					in->size - sizeof(BazaarSearchMessaging_Struct)
+				);
+				cereal::BinaryInputArchive ar(ss);
+				ar(results);
 
-		if (SubAction != BazaarSearchResults)
-		{
-			dest->FastQueuePacket(&in, ack_req);
-			return;
+				auto  size    = results.size() * sizeof(BazaarSearchResults_Struct);
+				auto  buffer  = new uchar[size];
+				uchar *bufptr = buffer;
+				memset(buffer, 0, size);
+
+				for (auto row = results.begin(); row != results.end(); ++row) {
+					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, structs::UFBazaarTraderBuyerActions::BazaarSearch);
+					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row->trader_entity_id);
+					strn0cpy(reinterpret_cast<char *>(bufptr), row->trader_name.c_str(), 64);
+					bufptr += 64;
+					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, 1);
+					VARSTRUCT_ENCODE_TYPE(int32, bufptr, row->item_id);
+					VARSTRUCT_ENCODE_TYPE(int32, bufptr, row->serial_number);
+					bufptr += 4;
+					if (row->stackable) {
+						strn0cpy(
+							reinterpret_cast<char *>(bufptr),
+							fmt::format("{}({})", row->item_name.c_str(), row->charges).c_str(),
+							64
+						);
+					}
+					else {
+						strn0cpy(
+							reinterpret_cast<char *>(bufptr),
+							fmt::format("{}({})", row->item_name.c_str(), row->count).c_str(),
+							64
+						);
+					}
+					bufptr += 64;
+					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row->cost);
+					VARSTRUCT_ENCODE_TYPE(uint32, bufptr, row->item_stat);
+				}
+
+				auto outapp = new EQApplicationPacket(OP_BazaarSearch, size);
+				memcpy(outapp->pBuffer, buffer, size);
+				dest->FastQueuePacket(&outapp);
+
+				safe_delete(outapp);
+				safe_delete_array(buffer);
+				safe_delete(in);
+				break;
+			}
+			case BazaarInspect:
+			case WelcomeMessage: {
+				dest->FastQueuePacket(&in, ack_req);
+				break;
+			}
+			default: {
+				dest->FastQueuePacket(&in, ack_req);
+			}
 		}
+	}
 
-		unsigned char *__emu_buffer = in->pBuffer;
+	ENCODE(OP_BecomeTrader)
+	{
+		ENCODE_LENGTH_EXACT(BecomeTrader_Struct);
+		SETUP_DIRECT_ENCODE(BecomeTrader_Struct, structs::BecomeTrader_Struct);
 
-		BazaarSearchResults_Struct *emu = (BazaarSearchResults_Struct *)__emu_buffer;
-
-		int EntryCount = in->size / sizeof(BazaarSearchResults_Struct);
-
-		if (EntryCount == 0 || (in->size % sizeof(BazaarSearchResults_Struct)) != 0)
+		switch (emu->action)
 		{
-			LogNetcode("[STRUCTS] Wrong size on outbound [{}]: Got [{}], expected multiple of [{}]", opcodes->EmuToName(in->GetOpcode()), in->size, sizeof(BazaarSearchResults_Struct));
-			delete in;
-			return;
+			case TraderOff:
+			{
+				eq->action    = structs::UFBazaarTraderBuyerActions::Zero;
+				eq->entity_id = emu->entity_id;
+				break;
+			}
+			case TraderOn:
+			{
+				eq->action    = structs::UFBazaarTraderBuyerActions::BeginTraderMode;
+				eq->entity_id = emu->entity_id;
+				strn0cpy(eq->trader_name, emu->trader_name, sizeof(eq->trader_name));
+				break;
+			}
+			default:
+			{
+				EQApplicationPacket *in = *p;
+				*p = nullptr;
+				dest->FastQueuePacket(&in, ack_req);
+			}
 		}
-
-		in->size = EntryCount * sizeof(structs::BazaarSearchResults_Struct);
-		in->pBuffer = new unsigned char[in->size];
-		memset(in->pBuffer, 0, in->size);
-
-		structs::BazaarSearchResults_Struct *eq = (structs::BazaarSearchResults_Struct *)in->pBuffer;
-
-		for (int i = 0; i < EntryCount; ++i, ++emu, ++eq)
-		{
-			OUT(Beginning.Action);
-			OUT(SellerID);
-			memcpy(eq->SellerName, emu->SellerName, sizeof(eq->SellerName));
-			OUT(NumItems);
-			OUT(ItemID);
-			OUT(SerialNumber);
-			memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-			OUT(Cost);
-			OUT(ItemStat);
-		}
-
-		delete[] __emu_buffer;
-		dest->FastQueuePacket(&in, ack_req);
+		FINISH_ENCODE();
 	}
 
 	ENCODE(OP_Buff)
@@ -2759,14 +2811,68 @@ namespace UF
 
 	ENCODE(OP_Trader)
 	{
-		if ((*p)->size != sizeof(TraderBuy_Struct)) {
-			EQApplicationPacket *in = *p;
-			*p = nullptr;
-			dest->FastQueuePacket(&in, ack_req);
-			return;
-		}
+		auto action = *(uint32 *) (*p)->pBuffer;
 
-		ENCODE_FORWARD(OP_TraderBuy);
+		switch (action) {
+			case TraderOn: {
+				ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
+				SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
+
+				eq->action = structs::UFBazaarTraderBuyerActions::BeginTraderMode;
+				OUT(entity_id);
+
+				FINISH_ENCODE();
+				break;
+			}
+			case TraderOff: {
+				ENCODE_LENGTH_EXACT(Trader_ShowItems_Struct);
+				SETUP_DIRECT_ENCODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
+
+				eq->action = structs::UFBazaarTraderBuyerActions::EndTraderMode;
+				OUT(entity_id);
+
+				FINISH_ENCODE();
+				break;
+			}
+			case ListTraderItems: {
+				ENCODE_LENGTH_EXACT(Trader_Struct);
+				SETUP_DIRECT_ENCODE(Trader_Struct, structs::Trader_Struct);
+
+				eq->action = structs::UFBazaarTraderBuyerActions::ListTraderItems;
+				std::copy_n(emu->items, UF::invtype::BAZAAR_SIZE, eq->item_id);
+				std::copy_n(emu->item_cost, UF::invtype::BAZAAR_SIZE, eq->item_cost);
+
+				FINISH_ENCODE();
+				break;
+			}
+			case BuyTraderItem: {
+				ENCODE_LENGTH_EXACT(TraderBuy_Struct);
+				SETUP_DIRECT_ENCODE(TraderBuy_Struct, structs::TraderBuy_Struct);
+
+				eq->action = structs::UFBazaarTraderBuyerActions::BuyTraderItem;
+				OUT(price);
+				OUT(trader_id);
+				OUT(item_id);
+				OUT(already_sold);
+				OUT(quantity);
+				strn0cpy(eq->item_name, emu->item_name, sizeof(eq->item_name));
+
+				FINISH_ENCODE();
+				break;
+			}
+			case ItemMove: {
+				EQApplicationPacket *in = *p;
+				*p = nullptr;
+				dest->FastQueuePacket(&in, ack_req);
+				break;
+			}
+			default: {
+				EQApplicationPacket *in = *p;
+				*p = nullptr;
+				dest->FastQueuePacket(&in, ack_req);
+				LogError("Unknown Encode OP_Trader action {} received.  Unhandled.", action);
+			}
+		}
 	}
 
 	ENCODE(OP_TraderBuy)
@@ -2774,15 +2880,44 @@ namespace UF
 		ENCODE_LENGTH_EXACT(TraderBuy_Struct);
 		SETUP_DIRECT_ENCODE(TraderBuy_Struct, structs::TraderBuy_Struct);
 
-		OUT(Action);
-		OUT(Price);
-		OUT(TraderID);
-		memcpy(eq->ItemName, emu->ItemName, sizeof(eq->ItemName));
-		OUT(ItemID);
-		OUT(Quantity);
-		OUT(AlreadySold);
+		OUT(action);
+		OUT(price);
+		OUT(trader_id);
+		OUT(item_id);
+		OUT(already_sold);
+		OUT(quantity);
+		strn0cpy(eq->item_name, emu->item_name, sizeof(eq->item_name));
 
 		FINISH_ENCODE();
+	}
+
+	ENCODE(OP_TraderShop)
+	{
+		auto action = *(uint32 *)(*p)->pBuffer;
+
+		switch (action) {
+			case BuyTraderItem: {
+				ENCODE_LENGTH_EXACT(TraderBuy_Struct);
+				SETUP_DIRECT_ENCODE(TraderBuy_Struct, structs::TraderBuy_Struct);
+
+				eq->action = structs::UFBazaarTraderBuyerActions::BuyTraderItem;
+				OUT(price);
+				OUT(trader_id);
+				OUT(item_id);
+				OUT(already_sold);
+				OUT(quantity);
+				strn0cpy(eq->item_name, emu->item_name, sizeof(eq->item_name));
+
+				FINISH_ENCODE();
+				break;
+			}
+			default: {
+				EQApplicationPacket *in = *p;
+				*p = nullptr;
+				dest->FastQueuePacket(&in, ack_req);
+				LogError("Unknown Encode OP_TraderShop action {} received.  Unhandled.", action);
+			}
+		}
 	}
 
 	ENCODE(OP_TributeItem)
@@ -3056,7 +3191,7 @@ namespace UF
 			Bitfields->targetable = 1;
 			Bitfields->targetable_with_hotkey = emu->targetable_with_hotkey ? 1 : 0;
 			Bitfields->statue = 0;
-			Bitfields->trader = 0;
+			Bitfields->trader = emu->trader ? 1 : 0;
 			Bitfields->buyer = 0;
 
 			Bitfields->showname = ShowName;
@@ -3379,20 +3514,49 @@ namespace UF
 
 	DECODE(OP_BazaarSearch)
 	{
-		char *Buffer = (char *)__packet->pBuffer;
+		uint32 action = *(uint32 *) __packet->pBuffer;
 
-		uint8 SubAction = VARSTRUCT_DECODE_TYPE(uint8, Buffer);
+		switch (action) {
+			case structs::UFBazaarTraderBuyerActions::BazaarSearch: {
+				DECODE_LENGTH_EXACT(structs::BazaarSearch_Struct);
+				SETUP_DIRECT_DECODE(BazaarSearchCriteria_Struct, structs::BazaarSearch_Struct);
 
-		if ((SubAction != BazaarInspectItem) || (__packet->size != sizeof(structs::NewBazaarInspect_Struct)))
-			return;
+				emu->action           = eq->Beginning.Action;
+				emu->item_stat        = eq->ItemStat;
+				emu->max_cost         = eq->MaxPrice;
+				emu->min_cost         = eq->MinPrice;
+				emu->max_level        = eq->MaxLlevel;
+				emu->min_level        = eq->Minlevel;
+				emu->race             = eq->Race;
+				emu->slot             = eq->Slot;
+				emu->type             = eq->Type == UINT32_MAX ? UINT8_MAX : eq->Type;
+				emu->trader_entity_id = eq->TraderID;
+				emu->_class           = eq->Class_;
+				strn0cpy(emu->name, eq->Name, sizeof(emu->name));
 
-		SETUP_DIRECT_DECODE(NewBazaarInspect_Struct, structs::NewBazaarInspect_Struct);
-		MEMSET_IN(structs::NewBazaarInspect_Struct);
-		IN(Beginning.Action);
-		memcpy(emu->Name, eq->Name, sizeof(emu->Name));
-		IN(SerialNumber);
+				// set defaults to fields that aren't used in UF
+				emu->search_scope = true;
+				emu->max_results  = RuleI(Bazaar, MaxSearchResults);
 
-		FINISH_DIRECT_DECODE();
+				FINISH_DIRECT_DECODE();
+				break;
+			}
+			case structs::UFBazaarTraderBuyerActions::BazaarInspect: {
+				SETUP_DIRECT_DECODE(NewBazaarInspect_Struct, structs::NewBazaarInspect_Struct);
+
+				IN(Beginning.Action);
+				memcpy(emu->Name, eq->Name, sizeof(emu->Name));
+				IN(SerialNumber);
+
+				FINISH_DIRECT_DECODE();
+				break;
+			}
+			case structs::UFBazaarTraderBuyerActions::WelcomeMessage: {
+				break;
+			}
+			default: {
+			}
+		}
 	}
 
 	DECODE(OP_BookButton)
@@ -4075,18 +4239,60 @@ namespace UF
 		FINISH_DIRECT_DECODE();
 	}
 
+	DECODE(OP_Trader)
+	{
+		auto action = (uint32) __packet->pBuffer[0];
+		switch (action) {
+			case structs::UFBazaarTraderBuyerActions::BeginTraderMode: {
+				DECODE_LENGTH_EXACT(structs::BeginTrader_Struct);
+				SETUP_DIRECT_DECODE(ClickTrader_Struct, structs::BeginTrader_Struct);
+
+				emu->Code       = TraderOn;
+				emu->Unknown004 = 0;
+				std::copy_n(eq->serial_number, UF::invtype::BAZAAR_SIZE, emu->SerialNumber);
+				std::copy_n(eq->cost, UF::invtype::BAZAAR_SIZE, emu->ItemCost);
+
+				FINISH_DIRECT_DECODE();
+				break;
+			}
+			case structs::UFBazaarTraderBuyerActions::EndTraderMode: {
+				DECODE_LENGTH_EXACT(structs::Trader_ShowItems_Struct);
+				SETUP_DIRECT_DECODE(Trader_ShowItems_Struct, structs::Trader_ShowItems_Struct);
+
+				emu->action    = TraderOff;
+				IN(entity_id);
+
+				FINISH_DIRECT_DECODE();
+				break;
+			}
+			case structs::UFBazaarTraderBuyerActions::PriceUpdate:
+			case structs::UFBazaarTraderBuyerActions::ItemMove:
+			case structs::UFBazaarTraderBuyerActions::EndTransaction:
+			case structs::UFBazaarTraderBuyerActions::ListTraderItems: {
+				break;
+			}
+			case structs::UFBazaarTraderBuyerActions::ReconcileItems: {
+				//eat packet as it is not used atm
+				break;
+			}
+			default: {
+				LogError("Unknown Decode OP_Trader action {} received.  Unhandled.", action);
+			}
+		}
+	}
+
 	DECODE(OP_TraderBuy)
 	{
 		DECODE_LENGTH_EXACT(structs::TraderBuy_Struct);
 		SETUP_DIRECT_DECODE(TraderBuy_Struct, structs::TraderBuy_Struct);
-		MEMSET_IN(TraderBuy_Struct);
 
-		IN(Action);
-		IN(Price);
-		IN(TraderID);
-		memcpy(emu->ItemName, eq->ItemName, sizeof(emu->ItemName));
-		IN(ItemID);
-		IN(Quantity);
+		IN(action);
+		IN(price);
+		IN(trader_id);
+		IN(item_id);
+		IN(quantity);
+		IN(already_sold);
+		strn0cpy(emu->item_name, eq->item_name, sizeof(eq->item_name));
 
 		FINISH_DIRECT_DECODE();
 	}

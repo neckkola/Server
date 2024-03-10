@@ -51,6 +51,8 @@
 #include "../common/repositories/character_corpse_items_repository.h"
 #include "../common/repositories/zone_repository.h"
 #include "../common/repositories/parcel_merchants_repository.h"
+#include "../common/repositories/trader_repository.h"
+
 
 #include <ctime>
 #include <iostream>
@@ -315,15 +317,15 @@ Trader_Struct* ZoneDatabase::LoadTraderItem(uint32 char_id)
 		return loadti;
 	}
 
-	loadti->Code = BazaarTrader_ShowItems;
+	loadti->action = BazaarTrader_ShowItems;
 	for (auto& row = results.begin(); row != results.end(); ++row) {
-		if (Strings::ToInt(row[5]) >= 80 || Strings::ToInt(row[4]) < 0) {
+		if (Strings::ToInt(row[5]) >= 200 || Strings::ToInt(row[4]) < 0) {
 			LogTrading("Bad Slot number when trying to load trader information!\n");
 			continue;
 		}
 
-		loadti->Items[Strings::ToInt(row[5])] = Strings::ToInt(row[1]);
-		loadti->ItemCost[Strings::ToInt(row[5])] = Strings::ToInt(row[4]);
+		loadti->items[Strings::ToInt(row[5])] = Strings::ToInt(row[1]);
+		loadti->item_cost[Strings::ToInt(row[5])] = Strings::ToInt(row[4]);
 	}
 	return loadti;
 }
@@ -333,7 +335,7 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	auto loadti = new TraderCharges_Struct;
 	memset(loadti,0,sizeof(TraderCharges_Struct));
 
-	std::string query = StringFormat("SELECT * FROM trader WHERE char_id=%i ORDER BY slot_id LIMIT 80", char_id);
+	std::string query = StringFormat("SELECT * FROM trader WHERE char_id=%i ORDER BY slot_id LIMIT 200", char_id);
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
 		LogTrading("Failed to load trader information!\n");
@@ -341,7 +343,7 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	}
 
 	for (auto& row = results.begin(); row != results.end(); ++row) {
-		if (Strings::ToInt(row[5]) >= 80 || Strings::ToInt(row[5]) < 0) {
+		if (Strings::ToInt(row[5]) >= 200 || Strings::ToInt(row[5]) < 0) {
 			LogTrading("Bad Slot number when trying to load trader information!\n");
 			continue;
 		}
@@ -354,49 +356,49 @@ TraderCharges_Struct* ZoneDatabase::LoadTraderItemWithCharges(uint32 char_id)
 	return loadti;
 }
 
-EQ::ItemInstance* ZoneDatabase::LoadSingleTraderItem(uint32 CharID, int SerialNumber) {
-	std::string query = StringFormat("SELECT * FROM trader WHERE char_id = %i AND serialnumber = %i "
-                                    "ORDER BY slot_id LIMIT 80", CharID, SerialNumber);
-    auto results = QueryDatabase(query);
-    if (!results.Success())
-        return nullptr;
+EQ::ItemInstance *ZoneDatabase::LoadSingleTraderItem(uint32 char_id, int serial_number)
+{
+	auto results = TraderRepository::GetWhere(
+		database,
+		fmt::format(
+			"`char_id` = '{}' AND `item_sn` = '{}' ORDER BY slot_id",
+			char_id,
+			serial_number
+		));
 
-	if (results.RowCount() == 0) {
-    LogTrading("Bad result from query\n"); fflush(stdout);
-        return nullptr;
-    }
+	if (results.empty()) {
+		LogTrading("Could not find item serial number {} for character id {}", serial_number, char_id);
+	}
 
-    auto& row = results.begin();
 
-    int ItemID = Strings::ToInt(row[1]);
-	int Charges = Strings::ToInt(row[3]);
-	int Cost = Strings::ToInt(row[4]);
+	int item_id = results.at(0).item_id;
+	int charges = results.at(0).item_charges;
+	int cost    = results.at(0).item_cost;
 
-	const EQ::ItemData *item = database.GetItem(ItemID);
-
-	if(!item) {
-		LogTrading("Unable to create item\n");
-		fflush(stdout);
+	const EQ::ItemData *item = database.GetItem(item_id);
+	if (!item) {
+		LogTrading("Unable to create item.");
 		return nullptr;
 	}
 
-    if (item->NoDrop == 0)
-        return nullptr;
-
-    EQ::ItemInstance* inst = database.CreateItem(item);
-	if(!inst) {
-		LogTrading("Unable to create item instance\n");
-		fflush(stdout);
+	if (item->NoDrop == 0) {
 		return nullptr;
 	}
 
-    inst->SetCharges(Charges);
-	inst->SetSerialNumber(SerialNumber);
-	inst->SetMerchantSlot(SerialNumber);
-	inst->SetPrice(Cost);
+	EQ::ItemInstance *inst = database.CreateItem(item);
+	if (!inst) {
+		LogTrading("Unable to create item instance.");
+		return nullptr;
+	}
 
-	if(inst->IsStackable())
-		inst->SetMerchantCount(Charges);
+	inst->SetCharges(charges);
+	inst->SetSerialNumber(serial_number);
+	inst->SetMerchantSlot(serial_number);
+	inst->SetPrice(cost);
+
+	if (inst->IsStackable()) {
+		inst->SetMerchantCount(charges);
+	}
 
 	return inst;
 }

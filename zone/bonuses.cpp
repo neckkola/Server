@@ -4116,7 +4116,7 @@ bool Client::CalcItemScale(uint32 slot_x, uint32 slot_y) {
 			continue;
 
 		// TEST CODE: test for bazaar trader crashing with charm items
-		if (Trader)
+		if (IsTrader())
 			if (i >= EQ::invbag::GENERAL_BAGS_BEGIN && i <= EQ::invbag::GENERAL_BAGS_END) {
 				EQ::ItemInstance* parent_item = m_inv.GetItem(EQ::InventoryProfile::CalcSlotId(i));
 				if (parent_item && parent_item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel)
@@ -4208,7 +4208,7 @@ bool Client::DoItemEnterZone(uint32 slot_x, uint32 slot_y) {
 			continue;
 
 		// TEST CODE: test for bazaar trader crashing with charm items
-		if (Trader)
+		if (IsTrader())
 			if (i >= EQ::invbag::GENERAL_BAGS_BEGIN && i <= EQ::invbag::GENERAL_BAGS_END) {
 				EQ::ItemInstance* parent_item = m_inv.GetItem(EQ::InventoryProfile::CalcSlotId(i));
 				if (parent_item && parent_item->GetItem()->BagType == EQ::item::BagTypeTradersSatchel)

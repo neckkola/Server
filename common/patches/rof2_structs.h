@@ -3421,8 +3421,21 @@ struct GetItems_Struct {
 };
 
 struct BecomeTrader_Struct {
-	uint32 id;
-	uint32 code;
+	uint32 entity_id;
+	uint32 action;
+};
+
+struct NEWBecomeTrader_Struct {
+	uint32 action;
+	uint32 zone_id;
+	uint32 trader_id;
+	uint32 entity_id;
+	char   trader_name[64];
+};
+
+struct BazaarWindowRemoveTrader_Struct {
+	uint32 action;
+	uint32 trader_id;
 };
 
 struct Trader_ShowItems_Struct {
@@ -3450,38 +3463,23 @@ struct TraderStatus_Struct {
 };
 
 struct TraderBuy_Struct {
-	/*000*/ uint32	Action;
-	/*004*/	uint32	Unknown004;
-	/*008*/ uint32	Unknown008;
-	/*012*/	uint32	Unknown012;
-	/*016*/ uint32	TraderID;
-	/*020*/ char	BuyerName[64];
-	/*084*/ char	SellerName[64];
-	/*148*/ char	Unknown148[32];
-	/*180*/ char	ItemName[64];
-	/*244*/ char	SerialNumber[16];
-	/*260*/ uint32	Unknown076;
-	/*264*/ uint32	ItemID;
-	/*268*/ uint32	Price;
-	/*272*/ uint32	AlreadySold;
-	/*276*/ uint32	Unknown276;
-	/*280*/ uint32	Quantity;
+	/*000*/ uint32	action;
+	/*004*/	uint32	method;
+	/*008*/ uint32	unknown_008;
+	/*012*/	uint32	unknown_012;
+	/*016*/ uint32	trader_id;
+	/*020*/ char	buyer_name[64];
+	/*084*/ char	seller_name[64];
+	/*148*/ char	unknown_148[32];
+	/*180*/ char	item_name[64];
+	/*244*/ char	serial_number[16];
+	/*260*/ uint32	unknown_076;
+	/*264*/ uint32	item_id;
+	/*268*/ uint32	price;
+	/*272*/ uint32	already_sold;
+	/*276*/ uint32	unknown_276;
+	/*280*/ uint32	quantity;
 	/*284*/
-};
-
-struct TraderBuy_Struct_OLD {
-/*000*/ uint32   Action;
-/*004*/	uint32	Unknown004;
-/*008*/ uint32   Price;
-/*012*/	uint32	Unknown008;	// Probably high order bits of a 64 bit price.
-/*016*/ uint32   TraderID;
-/*020*/ char    ItemName[64];
-/*084*/ uint32   Unknown076;
-/*088*/ uint32   ItemID;
-/*092*/ uint32   AlreadySold;
-/*096*/ uint32   Quantity;
-/*100*/ uint32   Unknown092;
-/*104*/
 };
 
 struct TraderItemUpdate_Struct{
@@ -3502,7 +3500,7 @@ struct MoneyUpdate_Struct{
 struct TraderDelItem_Struct{
 	/*000*/ uint32 Unknown000;
 	/*004*/ uint32 TraderID;
-	/*008*/ char   SerialNumber[16];
+	/*008*/ char   SerialNumber[17];
 	/*024*/ uint32 Unknown012;
 	/*028*/
 };
