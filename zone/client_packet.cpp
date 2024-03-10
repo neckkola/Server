@@ -4325,6 +4325,11 @@ void Client::Handle_OP_CancelTrade(const EQApplicationPacket *app)
 
 		with->CastToClient()->QueuePacket(app);
 
+		if (ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
+			DoParcelCancel();
+			SetEngagedWithParcelMerchant(false);
+		}
+
 		// Put trade items/cash back into inventory
 		FinishTrade(this);
 		trade->Reset();

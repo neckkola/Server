@@ -1755,6 +1755,10 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		parcel_merchants = BaseParcelMerchantsRepository::All(database);
 	}
 
+	if (RuleB(Parcel, EnableParcelMerchants)) {
+		parcel_merchants = BaseParcelMerchantsRepository::All(database);
+	}
+
 	for (NpcTypesRepository::NpcTypes &n : NpcTypesRepository::GetWhere((Database &) content_db, filter)) {
 		NPCType *t;
 		t = new NPCType;
@@ -1926,6 +1930,17 @@ const NPCType *ZoneDatabase::LoadNPCTypesData(uint32 npc_type_id, bool bulk_load
 		else if (!RuleB(NPC, DisableLastNames) && RuleB(Parcel, EnableParcelMerchants)) {
 			strn0cpy(t->lastname, n.lastname.c_str(), sizeof(t->lastname));
 			t->parcel_merchant = false;
+			for (auto const &p: parcel_merchants) {
+				if (n.id == p.merchant_id) {
+					t->parcel_merchant = true;
+					strn0cpy(t->lastname, p.last_name.c_str(), sizeof(t->lastname));
+				}
+			}
+		}
+		else if (RuleB(Parcel, EnableParcelMerchants)) {
+			t->parcel_merchant = true;
+		}
+		else if (!RuleB(NPC, DisableLastNames) && RuleB(Parcel, EnableParcelMerchants)) {
 			for (auto const &p: parcel_merchants) {
 				if (n.id == p.merchant_id) {
 					t->parcel_merchant = true;

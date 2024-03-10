@@ -17,11 +17,16 @@
 */
 
 #include "../common/global_define.h"
+#include "../common/eqemu_logsys.h"
+#include "../common/rulesys.h"
+#include "../common/strings.h"
+#include "../common/misc_functions.h"
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/trader_repository.h"
 #include "worldserver.h"
 #include "string_ids.h"
 #include "parcels.h"
+
 #include "client.h"
 #include "../common/ruletypes.h"
 
@@ -48,7 +53,7 @@ void Client::SendBulkParcels()
 			auto inst = database.CreateItem(item, p.second.quantity);
 			if (inst) {
 				if (inst->IsStackable()) {
-					inst->SetCharges(p.second.quantity);
+				inst->SetCharges(p.second.quantity);
 				}
 
 				if (item->ID == PARCEL_MONEY_ITEM_ID) {
@@ -126,7 +131,7 @@ void Client::SendParcel(Parcel_Struct parcel_in)
 		auto inst = database.CreateItem(item, parcel.quantity);
 		if (inst) {
 			if (inst->IsStackable()) {
-				inst->SetCharges(parcel.quantity);
+			inst->SetCharges(parcel.quantity);
 			}
 
 			if (item->ID == PARCEL_MONEY_ITEM_ID) {
@@ -343,11 +348,17 @@ void Client::DoParcelSend(Parcel_Struct *parcel_in)
 			RemoveItem(parcel_out.item_id, parcel_out.quantity);
 			//DeleteItemInInventory(parcel_in->item_slot, quantity, true, true);
 			auto outapp = new EQApplicationPacket(OP_ShopSendParcel);
-			FastQueuePacket(&outapp);
+				FastQueuePacket(&outapp);
 
 			if (inst->IsStackable() && (quantity - parcel_in->quantity > 0)) {
 				inst->SetCharges(quantity - parcel_in->quantity);
-				PutItemInInventory(parcel_in->item_slot, *inst, true);
+					PutItemInInventory(parcel_in->item_slot, *inst, true);
+				}
+			}
+			else {
+				DeleteItemInInventory(parcel_in->item_slot, parcel_in->quantity, true, true);
+				auto outapp = new EQApplicationPacket(OP_ShopSendParcel, 4);
+				FastQueuePacket(&outapp);
 			}
 
 			MessageString(
@@ -494,20 +505,20 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 
 	auto p = parcels.find(parcel_in.parcel_slot_id);
 	if (p != parcels.end()) {
-		uint32 item_id       = parcel_in.parcel_item_id;
+			uint32 item_id       = parcel_in.parcel_item_id;
 		uint32 item_quantity = p->second.quantity;
-		if (!item_id || !item_quantity) {
-			LogError("Attempt to retrieve parcel with erroneous item id or quantity for client character id {}.",
-					 CharacterID());
-			SendParcelRetrieveAck();
-			return;
-		}
+			if (!item_id || !item_quantity) {
+				LogError("Attempt to retrieve parcel with erroneous item id or quantity for client character id {}.",
+						 CharacterID());
+				SendParcelRetrieveAck();
+				return;
+			}
 
-		auto inst = database.CreateItem(item_id, item_quantity);
-		if (!inst) {
-			SendParcelRetrieveAck();
-			return;
-		}
+			auto inst = database.CreateItem(item_id, item_quantity);
+			if (!inst) {
+				SendParcelRetrieveAck();
+				return;
+			}
 
 		switch (parcel_in.parcel_item_id) {
 			case PARCEL_MONEY_ITEM_ID: {
@@ -525,11 +536,15 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 				auto free_id = GetInv().FindFreeSlot(false, false);
 				if (CheckLoreConflict(inst->GetItem())) {
 					if (RuleB(Parcel, DeleteOnDuplicate)) {
+						DeleteParcel(p.second.id);
+						SendParcelDelete(parcel_in);
 						MessageString(
 							Chat::Yellow,
 							PARCEL_DUPLICATE_DELETE,
 							inst->GetItem()->Name
 						);
+						SendParcelRetrieveAck();
+						return;
 					}
 					else {
 						MessageString(
@@ -551,10 +566,13 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							inst->GetItem()->Name,
 							p->second.from_name.c_str()
 						);
-					}
+				}
 					else if (free_id != INVALID_INDEX) {
 						inst->SetCharges(item_quantity);
-						if (PutItemInInventory(free_id, *inst, true)) {
+					if (PutItemInInventory(free_id, *inst, true)) {
+						DeleteParcel(p.second.id);
+						SendParcelDelete(parcel_in);
+						if (inst->IsStackable()) {
 							MessageString(
 								Chat::Yellow,
 								PARCEL_DELIVERED_2,
@@ -565,9 +583,9 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							);
 						}
 					}
-					else {
-						MessageString(
-							Chat::Yellow,
+						else {
+							MessageString(
+								Chat::Yellow,
 							PARCEL_INV_FULL,
 							merchant->GetCleanName()
 						);
@@ -580,9 +598,9 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 					if (PutItemInInventory(free_id, *inst, true)) {
 						MessageString(
 							Chat::Yellow,
-							PARCEL_DELIVERED,
-							merchant->GetCleanName(),
-							inst->GetItem()->Name,
+								PARCEL_DELIVERED,
+								merchant->GetCleanName(),
+								inst->GetItem()->Name,
 							p->second.from_name.c_str()
 						);
 					}
@@ -591,32 +609,32 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 							Chat::Yellow,
 							PARCEL_INV_FULL,
 							merchant->GetCleanName()
-						);
+							);
 						SendParcelRetrieveAck();
 						return;
+						}
 					}
-				}
-				else {
-					MessageString(
-						Chat::Yellow,
-						PARCEL_INV_FULL,
-						merchant->GetCleanName()
-					);
+					else {
+						MessageString(
+							Chat::Yellow,
+							PARCEL_INV_FULL,
+							merchant->GetCleanName()
+						);
 					SendParcelRetrieveAck();
 					return;
+					}
 				}
 			}
-		}
 
-		if (player_event_logs.IsEventEnabled(PlayerEvent::PARCEL_RETRIEVE)) {
-			PlayerEvent::ParcelRetrieve e{};
+			if (player_event_logs.IsEventEnabled(PlayerEvent::PARCEL_RETRIEVE)) {
+				PlayerEvent::ParcelRetrieve e{};
 			e.from_player_name = p->second.from_name;
 			e.item_id          = p->second.item_id;
 			e.quantity         = p->second.quantity;
 			e.sent_date        = p->second.sent_date;
 
-			RecordPlayerEventLog(PlayerEvent::PARCEL_RETRIEVE, e);
-		}
+				RecordPlayerEventLog(PlayerEvent::PARCEL_RETRIEVE, e);
+			}
 
 		DeleteParcel(p->second.id);
 		SendParcelDelete(parcel_in);
@@ -637,7 +655,10 @@ bool Client::DeleteParcel(uint32 parcel_id)
 	auto it = std::find_if(parcels.cbegin(), parcels.cend(), [&](const auto &x) { return x.second.id == parcel_id; });
 	SetParcelCount(GetParcelCount() - 1);
 
-	return true;
+		return true;
+	}
+
+	return false;
 }
 
 void Client::LoadParcels()
