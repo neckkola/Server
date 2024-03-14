@@ -17,16 +17,11 @@
 */
 
 #include "../common/global_define.h"
-#include "../common/eqemu_logsys.h"
-#include "../common/rulesys.h"
-#include "../common/strings.h"
-#include "../common/misc_functions.h"
 #include "../common/events/player_event_logs.h"
 #include "../common/repositories/trader_repository.h"
 #include "worldserver.h"
 #include "string_ids.h"
 #include "parcels.h"
-
 #include "client.h"
 #include "../common/ruletypes.h"
 
@@ -514,11 +509,11 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 				return;
 			}
 
-			auto inst = database.CreateItem(item_id, item_quantity);
-			if (!inst) {
-				SendParcelRetrieveAck();
-				return;
-			}
+		auto inst = database.CreateItem(item_id, item_quantity);
+		if (!inst) {
+			SendParcelRetrieveAck();
+			return;
+		}
 
 		switch (parcel_in.parcel_item_id) {
 			case PARCEL_MONEY_ITEM_ID: {
@@ -536,15 +531,13 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 				auto free_id = GetInv().FindFreeSlot(false, false);
 				if (CheckLoreConflict(inst->GetItem())) {
 					if (RuleB(Parcel, DeleteOnDuplicate)) {
-						DeleteParcel(p.second.id);
-						SendParcelDelete(parcel_in);
 						MessageString(
 							Chat::Yellow,
 							PARCEL_DUPLICATE_DELETE,
 							inst->GetItem()->Name
 						);
-						SendParcelRetrieveAck();
-						return;
+						DeleteParcel(p->second.id);
+						SendParcelDelete(parcel_in);
 					}
 					else {
 						MessageString(
@@ -633,8 +626,8 @@ void Client::DoParcelRetrieve(ParcelRetrieve_Struct parcel_in)
 			e.quantity         = p->second.quantity;
 			e.sent_date        = p->second.sent_date;
 
-				RecordPlayerEventLog(PlayerEvent::PARCEL_RETRIEVE, e);
-			}
+			RecordPlayerEventLog(PlayerEvent::PARCEL_RETRIEVE, e);
+		}
 
 		DeleteParcel(p->second.id);
 		SendParcelDelete(parcel_in);
@@ -657,9 +650,6 @@ bool Client::DeleteParcel(uint32 parcel_id)
 
 		return true;
 	}
-
-	return false;
-}
 
 void Client::LoadParcels()
 {
