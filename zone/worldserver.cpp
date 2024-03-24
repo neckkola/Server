@@ -1092,7 +1092,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					break;
 				}
 
-				database.SetGroupID(Inviter->GetName(), group->GetID(), Inviter->CastToClient()->CharacterID(), false);
+				group->AddToGroup(Inviter);
 				database.SetGroupLeaderName(group->GetID(), Inviter->GetName());
 				group->UpdateGroupAAs();
 
@@ -1192,9 +1192,11 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				group->UpdatePlayer(client);
 			else
 			{
-				if (client->GetMerc())
-					database.SetGroupID(client->GetMerc()->GetCleanName(), 0, client->CharacterID(), true);
-				database.SetGroupID(client->GetName(), 0, client->CharacterID(), false);	//cannot re-establish group, kill it
+				if (client->GetMerc()) {
+					Group::RemoveFromGroup(client->GetMerc());
+				}
+
+				Group::RemoveFromGroup(client);	//cannot re-establish group, kill it
 			}
 
 		}
@@ -2093,6 +2095,15 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 	{
 		zone->SendReloadMessage("Rules");
 		RuleManager::Instance()->LoadRules(&database, RuleManager::Instance()->GetActiveRuleset(), true);
+		break;
+	}
+	case ServerOP_ReloadSkillCaps:
+	{
+		if (zone && zone->IsLoaded()) {
+			zone->SendReloadMessage("Skill Caps");
+			zone->ReloadSkillCaps();
+		}
+
 		break;
 	}
 	case ServerOP_ReloadDataBucketsCache:
@@ -3559,11 +3570,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		LogInfo("Loading items");
 		if (!content_db.LoadItems(hotfix_name)) {
 			LogError("Loading items failed!");
-		}
-
-		LogInfo("Loading skill caps");
-		if (!content_db.LoadSkillCaps(std::string(hotfix_name))) {
-			LogError("Loading skill caps failed!");
 		}
 
 		LogInfo("Loading spells");
