@@ -1800,7 +1800,7 @@ bool Client::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::Skil
 	d->spell_id = IsValidSpell(spell) ? spell : 0xffffffff;
 	d->attack_skill = IsValidSpell(spell) ? 0xe7 : attack_skill;
 	d->damage = damage;
-	app.priority = 6;
+	app.priority = 1;
 	entity_list.QueueClients(this, &app);
 
 	// #2: figure out things that affect the player dying and mark them dead
@@ -2010,6 +2010,28 @@ bool Client::Death(Mob* killer_mob, int64 damage, uint16 spell, EQ::skills::Skil
 					}
 				}
 			}
+
+			std::string temp_name {};
+			std::string temp_name2 {};
+			temp_name = fmt::format("{}'s corpse{}",
+									EntityList::RemoveNumbers((char *)new_corpse->GetName()),
+									GetID());
+			temp_name2 = fmt::format("{}`s corpse",
+									 GetCleanName()
+									 );
+
+			auto out2      = new EQApplicationPacket(OP_MobRename, sizeof(MobRename_Struct));
+			auto data      = (MobRename_Struct *)out2->pBuffer;
+			out2->priority = 6;
+
+			strn0cpy(data->old_name, temp_name.c_str(), sizeof(data->old_name));
+			strn0cpy(data->old_name_again, data->old_name, sizeof(data->old_name_again));
+			strn0cpy(data->new_name, temp_name2.c_str(), sizeof(data->new_name));
+			data->unknown192 = 0;
+			data->unknown196 = 1;
+
+			entity_list.QueueClients(killer_mob, out2, false);
+			safe_delete(out2);
 
 			entity_list.AddCorpse(new_corpse, GetID());
 			SetID(0);
