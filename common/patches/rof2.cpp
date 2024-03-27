@@ -3988,7 +3988,17 @@ namespace RoF2
 
 			int PacketSize = 206;
 
-			PacketSize += strlen(emu->name);
+			std::string temp_name {};
+			if (Strings::Contains(emu->name, "'s corpse"))
+			{
+				temp_name = emu->name;
+				std::replace (temp_name.begin (), temp_name.end (), '\'', '`');
+				PacketSize += temp_name.length();
+			} else
+			{
+				PacketSize += strlen(emu->name);
+			}
+
 			PacketSize += strlen(emu->lastName);
 
 			emu->title[31] = 0;
@@ -4044,7 +4054,7 @@ namespace RoF2
 			auto outapp = new EQApplicationPacket(OP_ZoneEntry, PacketSize);
 			Buffer = (char *)outapp->pBuffer;
 			BufferStart = Buffer;
-			VARSTRUCT_ENCODE_STRING(Buffer, emu->name);
+			VARSTRUCT_ENCODE_STRING(Buffer, temp_name.empty() ? emu->name : temp_name.c_str());
 			VARSTRUCT_ENCODE_TYPE(uint32, Buffer, emu->spawnId);
 			VARSTRUCT_ENCODE_TYPE(uint8, Buffer, emu->level);
 			// actually melee range variable, this probably screws the shit out of melee ranges :D
