@@ -167,7 +167,6 @@ SET(zone_sources
     zone_event_scheduler.cpp
     zone_npc_factions.cpp
     zone_reload.cpp
-    zone_skill_caps.cpp
     zoning.cpp
 )
 
