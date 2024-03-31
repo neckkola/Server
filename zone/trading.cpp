@@ -1028,24 +1028,24 @@ void Client::Trader_CustomerBrowsing(Client *Customer)
 void Client::TraderStartTrader(const EQApplicationPacket *app)
 {
 	uint32                                max_items = GetInv().GetLookup()->InventoryTypeSize.Bazaar;
-	auto                                  ints      = (ClickTrader_Struct *) app->pBuffer;
-	auto                                  gis       = GetTraderItems();
+	auto                                  in        = (ClickTrader_Struct *) app->pBuffer;
+	auto                                  inv       = GetTraderItems();
 	TraderRepository::Trader              trader_item{};
 	std::vector<TraderRepository::Trader> trader_items{};
 
 	bool        trade_items_valid = true;
 
 	for (uint32 i = 0; i < max_items; i++) {
-		auto it   = std::find(std::begin(ints->SerialNumber), std::end(ints->SerialNumber), gis->SerialNumber[i]);
-		if (ints->SerialNumber[i] == 0) {
+		auto it   = std::find(std::begin(in->SerialNumber), std::end(in->SerialNumber), inv->SerialNumber[i]);
+		if (in->SerialNumber[i] == 0) {
 			break;
 		}
 
-		auto inst = FindTraderItemBySerialNumber(gis->SerialNumber[i]);
+		auto inst = FindTraderItemBySerialNumber(inv->SerialNumber[i]);
 		if (!inst) {
 			trade_items_valid = false;
 		}
-		else if (it == std::end(ints->SerialNumber)) {
+		else if (it == std::end(in->SerialNumber)) {
 			if (inst->GetItem() && inst->GetItem()->NoDrop == 0) {
 				Message(
 					Chat::Red,
@@ -1067,11 +1067,11 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 		if (!trade_items_valid) {
 			Message(Chat::Red, "You are not able to become a trader at this time.");
 			TraderEndTrader();
-			safe_delete(gis);
+			safe_delete(inv);
 			return;
 		}
 
-		inst->SetPrice(ints->ItemCost[i]);
+		inst->SetPrice(in->ItemCost[i]);
 
 		trader_item.id             = 0;
 		trader_item.char_entity_id = GetID();
@@ -1080,14 +1080,14 @@ void Client::TraderStartTrader(const EQApplicationPacket *app)
 		trader_item.item_charges   = inst->GetCharges();
 		trader_item.item_cost      = inst->GetPrice();
 		trader_item.item_id        = inst->GetID();
-		trader_item.item_sn        = ints->SerialNumber[i];
+		trader_item.item_sn        = in->SerialNumber[i];
 		trader_item.slot_id        = i;
 
 		trader_items.emplace_back(trader_item);
 	}
 
 	TraderRepository::ReplaceMany(database, trader_items);
-	safe_delete(gis);
+	safe_delete(inv);
 
 	// This refreshes the Trader window to display the End Trader button
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {

@@ -1871,12 +1871,12 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 		uint32 dstbagid = 0;
 
 		if (src_slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN && src_slot_id <= EQ::invbag::GENERAL_BAGS_END) {
-			srcbag = m_inv.GetItem(((int)(src_slot_id / 10)) - 3);
+			srcbag = m_inv.GetItem(EQ::InventoryProfile::CalcSlotId(src_slot_id));
 			if (srcbag)
 				srcbagid = srcbag->GetItem()->ID;
 		}
 		if (dst_slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN && dst_slot_id <= EQ::invbag::GENERAL_BAGS_END) {
-			dstbag = m_inv.GetItem(((int)(dst_slot_id / 10)) - 3);
+			dstbag = m_inv.GetItem(EQ::InventoryProfile::CalcSlotId(dst_slot_id));
 			if (dstbag)
 				dstbagid = dstbag->GetItem()->ID;
 		}
