@@ -2180,6 +2180,22 @@ bool Client::SwapItem(MoveItem_Struct* move_in) {
 		}
 
 		LogInventory("Moving entire item from slot [{}] to slot [{}]", src_slot_id, dst_slot_id);
+		if (src_inst->IsStackable() &&
+			dst_slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN &&
+			dst_slot_id <= EQ::invbag::GENERAL_BAGS_END
+			)	{
+			EQ::ItemInstance *bag = nullptr;
+			bag = m_inv.GetItem(EQ::InventoryProfile::CalcSlotId(dst_slot_id));
+			if (bag) {
+				if (bag->GetItem()->BagType == EQ::item::BagTypeTradersSatchel) {
+					PutItemInInventory(dst_slot_id, *src_inst, true);
+					auto outapp = new EQApplicationPacket(OP_Trader, sizeof(TraderBuy_Struct));
+					auto data   = (TraderBuy_Struct *) outapp->pBuffer;
+					data->action = 10;//BuyTraderItem;
+					FastQueuePacket(&outapp);
+				}
+			}
+		}
 
 		if (src_slot_id <= EQ::invslot::EQUIPMENT_END) {
 			if(src_inst) {
