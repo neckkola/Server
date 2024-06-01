@@ -157,6 +157,7 @@ SET(repositories
     repositories/base/base_bugs_repository.h
     repositories/base/base_bug_reports_repository.h
     repositories/base/base_buyer_repository.h
+    repositories/base/base_buyer_trade_items_repository.h
     repositories/base/base_character_activities_repository.h
     repositories/base/base_character_alternate_abilities_repository.h
     repositories/base/base_character_alt_currency_repository.h
@@ -339,6 +340,7 @@ SET(repositories
     repositories/bugs_repository.h
     repositories/bug_reports_repository.h
     repositories/buyer_repository.h
+    repositories/buyer_trade_items_repository.h
     repositories/character_activities_repository.h
     repositories/character_alternate_abilities_repository.h
     repositories/character_alt_currency_repository.h
