@@ -69,6 +69,7 @@
 #include "../common/repositories/alternate_currency_repository.h"
 #include "../common/repositories/graveyard_repository.h"
 #include "../common/repositories/trader_repository.h"
+#include "../common/repositories/buyer_repository.h"
 
 #include <time.h>
 
@@ -1199,7 +1200,7 @@ bool Zone::Init(bool is_static) {
 	//clear trader items if we are loading the bazaar
 	if (strncasecmp(short_name, "bazaar", 6) == 0) {
 		TraderRepository::Truncate(database);
-		database.DeleteBuyLines(0);
+		BuyerRepository::Truncate(database);
 	}
 
 	LoadVeteranRewards();
