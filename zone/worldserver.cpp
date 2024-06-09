@@ -4003,7 +4003,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 			break;
 		}
-		case ServerOP_BecomeBuyer: {
+		case ServerOP_BuyerMessaging: {
 			auto in = (BuyerMessaging_Struct *) pack->pBuffer;
 
 			switch (in->action) {
