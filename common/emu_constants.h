@@ -700,4 +700,8 @@ namespace HeroicBonusBucket
 	const std::string DexEnduranceRegen		= "HDEX-EnduranceRegen";
 }
 
+struct BuylineItemDetails_Struct {
+	uint64      item_cost;
+	uint32      item_quantity;
+};
 #endif /*COMMON_EMU_CONSTANTS_H*/
