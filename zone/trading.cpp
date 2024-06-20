@@ -2303,7 +2303,9 @@ void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 		std::string search_string(bsr.search_string);
 		BuyerLineSearch_Struct results{};
 
-		SetBarterWindowDirty(false);
+//		SetBarterWindowDirty(false);
+		SetBarterTime();
+
 		if (bsr.search_scope == 1) {
 			// Local Buyers
 			results = BuyerBuyLinesRepository::SearchBuyLines(database, search_string, 0, GetZoneID());
@@ -2420,6 +2422,7 @@ void Client::ShowBuyLines(const EQApplicationPacket *app)
 	}
 
 	if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
+		SetBarterTime();
 		bir->approval = buyer->WithCustomer(GetID());
 		QueuePacket(app);
 
@@ -2547,6 +2550,12 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				if (!buyer) {
 					return;
 				}
+
+				auto buyer_time = BuyerRepository::GetTransactionDate(database, buyer->CharacterID());
+				if (buyer_time > GetBarterTime()) {
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_DataOutOfDate);
+					break;
+				}
 				//check that the buyer has all the items
 				//check that the buyer has the money
 				//chcek that the buyer has the inventory space to receive the item
@@ -2632,6 +2641,8 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					);
 					return;
 				}
+
+				BuyerRepository::UpdateTransactionDate(database, sell_line.buyer_id, time(nullptr));
 
 				//Seller
 				for (auto const &ti: sell_line.trade_items) {
@@ -2740,10 +2751,16 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					break;
 				}
 
-				if (IsBarterWindowDirty()) {
+				auto buyer_time = BuyerRepository::GetTransactionDate(database, sell_line.buyer_id);
+				if (buyer_time > GetBarterTime()) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_DataOutOfDate);
 					break;
 				}
+
+//				if (IsBarterWindowDirty()) {
+//					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_DataOutOfDate);
+//					break;
+//				}
 
 				if (sell_line.trade_items.size() > 0) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SameZone);
@@ -2758,11 +2775,12 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
 				if (!buy_item) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SellerDoesNotHaveItem);
-					SetBarterWindowDirty(false);
+//					SetBarterWindowDirty(false);
 					break;
 				}
 
-				SetBarterWindowDirty(true);
+//				SetBarterWindowDirty(true);
+				BuyerRepository::UpdateTransactionDate(database, sell_line.buyer_id, time(nullptr));
 				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
 
 				auto server_packet = std::make_unique<ServerPacket>(
