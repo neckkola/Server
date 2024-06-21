@@ -2303,7 +2303,6 @@ void Client::SendBuyerResults(BarterSearchRequest_Struct& bsr) {
 		std::string search_string(bsr.search_string);
 		BuyerLineSearch_Struct results{};
 
-//		SetBarterWindowDirty(false);
 		SetBarterTime();
 
 		if (bsr.search_scope == 1) {
@@ -2751,16 +2750,17 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 					break;
 				}
 
+				if (GetParcelCount() >= RuleI(Parcel, ParcelMaxItems)) {
+					Message(Chat::Red, "You have too many parcels to receive the coin for this buy line.");
+					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_Failure);
+					return;
+				}
+
 				auto buyer_time = BuyerRepository::GetTransactionDate(database, sell_line.buyer_id);
 				if (buyer_time > GetBarterTime()) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_DataOutOfDate);
 					break;
 				}
-
-//				if (IsBarterWindowDirty()) {
-//					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_DataOutOfDate);
-//					break;
-//				}
 
 				if (sell_line.trade_items.size() > 0) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SameZone);
@@ -2775,13 +2775,10 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 				auto buy_item = buy_item_slot_id == INVALID_INDEX ? nullptr : GetInv().GetItem(buy_item_slot_id);
 				if (!buy_item) {
 					SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Failure, Barter_SellerDoesNotHaveItem);
-//					SetBarterWindowDirty(false);
 					break;
 				}
 
-//				SetBarterWindowDirty(true);
 				BuyerRepository::UpdateTransactionDate(database, sell_line.buyer_id, time(nullptr));
-				SendBarterBuyerClientMessage(this, sell_line, Barter_SellerTransactionComplete, Barter_Success, Barter_Success);
 
 				auto server_packet = std::make_unique<ServerPacket>(
 					ServerOP_BuyerMessaging,
@@ -2791,6 +2788,7 @@ void Client::SellToBuyer(const EQApplicationPacket *app)
 
 				data->action           = Barter_SellItem;
 				data->buyer_entity_id  = sell_line.buyer_entity_id;
+				data->buyer_id         = sell_line.buyer_id;
 				data->seller_entity_id = GetID();
 				data->buy_item_id      = sell_line.item_id;
 				data->buy_item_qty     = sell_line.item_quantity;
@@ -2849,6 +2847,10 @@ void Client::ToggleBuyerMode(bool status)
 	data->entity_id = GetID();
 
 	if (status && IsInBuyerSpace()) {
+		if (GetParcelCount() >= (float)RuleI(Parcel, ParcelMaxItems) * .8f) {
+			Message(Chat::Yellow, fmt::format("Please note:  You have {}/{} parcels, which will limit bought item delivery.", GetParcelCount(), RuleI(Parcel, ParcelMaxItems)).c_str());
+		}
+
 		SetBuyerID(CharacterID());
 
 		BuyerRepository::Buyer b{};
@@ -4084,12 +4086,12 @@ void Client::SendWindowUpdatesToSellerAndBuyer(BuyerLineSellItem_Struct& blsi)
 		bli.item_toggle          = 1;
 		bli.slot                 = blsi.slot;
 		strn0cpy(bli.item_name, blsi.item_name, sizeof(bli.item_name));
-		for (auto const &b : bli.trade_items) {
+		for (auto const &b : blsi.trade_items) {
 			BuyerLineTradeItems_Struct blti{};
-			blti.item_id       = bli.item_id;
-			blti.item_icon     = bli.item_icon;
-			blti.item_quantity = bli.item_quantity;
-			strn0cpy(blti.item_name, bli.item_name, sizeof(blti.item_name));
+			blti.item_id       = b.item_id;
+			blti.item_icon     = b.item_icon;
+			blti.item_quantity = b.item_quantity;
+			strn0cpy(blti.item_name, b.item_name, sizeof(blti.item_name));
 			bli.trade_items.push_back(blti);
 		}
 		{ ar(bli); }
