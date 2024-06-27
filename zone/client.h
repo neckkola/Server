@@ -240,6 +240,7 @@ public:
 	#include "client_packet.h"
 
 	Client(EQStreamInterface * ieqs);
+	Client();
 	~Client();
 
 	void ReconnectUCS();

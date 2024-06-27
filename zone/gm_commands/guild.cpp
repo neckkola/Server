@@ -598,9 +598,135 @@ void command_guild(Client* c, const Seperator* sep)
 			c->Message(Chat::White, "Usage: #guild test [Guild ID]");
 		}
 		else {
-			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
-			c->SendGuildMembersList();
+//			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+//			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			c->SendGuildMembersList();
+
+
+			NewSpawn_Struct     ns{};
+			PlayerProfile_Struct pp{};
+			ExtendedProfile_Struct m_epp{};
+			EQ::TintProfile re{};
+
+			//			database.LoadCharacterData(c->CharacterID(), &pp, &m_epp);
+			Client                 *spawn;
+//
+//			spawn->SetName("Tester");
+//			spawn->SetHP(c->GetHP());
+//			//spawn->SetMaxHP();
+//
+			spawn = c;
+//			//spawn->SetDeity(c->GetDeity());
+//			//spawn->SetLevel(c->GetLevel());
+//
+			spawn->SetPosition(c->GetX(), c->GetY(), c->GetZ());
+
+			memset(&ns, 0, sizeof(NewSpawn_Struct));
+			spawn->SetBecomeNPC(true);
+			spawn->SetBuyerID(23);
+			spawn->FillSpawnStruct(&ns, c);
+			spawn->SetPosition(c->GetX() + 10, c->GetY(), c->GetZ());
+			entity_list.AddClient(spawn);
+
+			spawn->SetSpawned();
+
+			auto outapp = new EQApplicationPacket();
+			c->CreateSpawnPacket(outapp);
+			outapp->priority = 6;
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
+//			npc_type->current_hp       = c->GetHP();
+//			npc_type->max_hp           = c->GetMaxHP();
+//			npc_type->deity            = c->GetDeity();
+//			npc_type->level            = c->GetLevel();
+//			npc_type->npc_id           = 0;
+//			npc_type->loottable_id     = 0;
+//			npc_type->texture          = c->GetTexture();
+//			npc_type->light            = 0;
+//			npc_type->runspeed         = 1.25f;
+//			npc_type->d_melee_texture1 = 2;
+//			npc_type->d_melee_texture2 = 2;
+//			npc_type->merchanttype     = 0;
+//
+//
+//			npc_type->STR = 0;
+//			npc_type->STA = 0;
+//			npc_type->DEX = 0;
+//			npc_type->AGI = 0;
+//			npc_type->INT = 0;
+//			npc_type->WIS = 0;
+//			npc_type->CHA = 0;
+//
+//			npc_type->attack_delay = 3000;
+//
+//			npc_type->prim_melee_type = static_cast<uint8>(EQ::skills::SkillHandtoHand);
+//			npc_type->sec_melee_type  = static_cast<uint8>(EQ::skills::SkillHandtoHand);
+
+//			spawn = c;
+//			auto            bulk_zone_spawn_packet = new BulkZoneSpawnPacket(c, 1);
+//			const glm::vec4 &client_position       = c->GetPosition();
+
+//			memset(&ns, 0, sizeof(NewSpawn_Struct));
+//			spawn->SetBecomeNPC(false);
+//			spawn->SetBuyerID(23);
+//			c->FillSpawnStruct(&ns, spawn);
+//			spawn->SetPosition(c->GetX() + 10, c->GetY(), c->GetZ());
+//			entity_list.AddClient(spawn);
+//
+//			spawn->SetSpawned();
+//
+//			auto outapp = new EQApplicationPacket();
+//			c->CreateSpawnPacket(outapp);
+//			outapp->priority = 6;
+//			entity_list.QueueClients(nullptr, outapp, false);
+//			safe_delete(outapp);
+//
+//
+////			bulk_zone_spawn_packet->AddSpawn(&ns);
+//
+//			spawn->SendArmorAppearance(c);
+
+			//Time to create the NPC!!
+//			auto npc_type = new NPCType{};
+//
+//			strn0cpy(npc_type->name, "Testter", 64);
+//
+//			npc_type->current_hp       = c->GetHP();
+//			npc_type->max_hp           = c->GetMaxHP();
+//			npc_type->race             = c->GetRace();
+//			npc_type->gender           = c->GetGender();
+//			npc_type->class_           = c->GetClass();
+//			npc_type->deity            = c->GetDeity();
+//			npc_type->level            = c->GetLevel();
+//			npc_type->npc_id           = 0;
+//			npc_type->loottable_id     = 0;
+//			npc_type->texture          = c->GetTexture();
+//			npc_type->light            = 0;
+//			npc_type->runspeed         = 1.25f;
+//			npc_type->d_melee_texture1 = 2;
+//			npc_type->d_melee_texture2 = 2;
+//			npc_type->merchanttype     = 0;
+//			npc_type->bodytype         = c->GetBodyType();
+//
+//
+//			npc_type->STR = 0;
+//			npc_type->STA = 0;
+//			npc_type->DEX = 0;
+//			npc_type->AGI = 0;
+//			npc_type->INT = 0;
+//			npc_type->WIS = 0;
+//			npc_type->CHA = 0;
+//
+//			npc_type->attack_delay = 3000;
+//
+//			npc_type->prim_melee_type = static_cast<uint8>(EQ::skills::SkillHandtoHand);
+//			npc_type->sec_melee_type  = static_cast<uint8>(EQ::skills::SkillHandtoHand);
+//
+//			auto npc = new NPC(npc_type, nullptr, c->GetPosition(), GravityBehavior::Water);
+//			npc->GiveNPCTypeData(npc_type);
+////
+//			entity_list.AddNPC(npc);
 		}
 	}
 }

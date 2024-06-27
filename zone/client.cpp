@@ -13305,3 +13305,311 @@ std::string Client::GetAccountBucketRemaining(std::string bucket_name)
 
 	return DataBucket::GetDataRemaining(k);
 }
+
+
+Client::Client() : Mob(
+	"No name", // in_name
+	"", // in_lastname
+	0, // in_cur_hp
+	0, // in_max_hp
+	Gender::Male, // in_gender
+	Race::Doug, // in_race
+	Class::None, // in_class
+	BodyType::Humanoid, // in_bodytype
+	Deity::Unknown, // in_deity
+	0, // in_level
+	0, // in_npctype_id
+	0.0f, // in_size
+	0.7f, // in_runspeed
+	glm::vec4(), // position
+	0, // in_light
+	0xFF, // in_texture
+	0xFF, // in_helmtexture
+	0, // in_ac
+	0, // in_atk
+	0, // in_str
+	0, // in_sta
+	0, // in_dex
+	0, // in_agi
+	0, // in_int
+	0, // in_wis
+	0, // in_cha
+	0, // in_haircolor
+	0, // in_beardcolor
+	0, // in_eyecolor1
+	0, // in_eyecolor2
+	0, // in_hairstyle
+	0, // in_luclinface
+	0, // in_beard
+	0, // in_drakkin_heritage
+	0, // in_drakkin_tattoo
+	0, // in_drakkin_details
+	EQ::TintProfile(), // in_armor_tint
+	0xff, // in_aa_title
+	0, // in_see_invis
+	0, // in_see_invis_undead
+	0, // in_see_hide
+	0, // in_see_improved_hide
+	0, // in_hp_regen
+	0, // in_mana_regen
+	0, // in_qglobal
+	0, // in_maxlevel
+	0, // in_scalerate
+	0, // in_armtexture
+	0, // in_bracertexture
+	0, // in_handtexture
+	0, // in_legtexture
+	0, // in_feettexture
+	0, // in_usemodel
+	false, // in_always_aggros_foes
+	0, // in_heroic_strikethrough
+	false // in_keeps_sold_items
+),
+										  hpupdate_timer(2000),
+										  camp_timer(29000),
+										  process_timer(100),
+										  consume_food_timer(CONSUMPTION_TIMER),
+										  zoneinpacket_timer(1000),
+										  linkdead_timer(RuleI(Zone,ClientLinkdeadMS)),
+										  dead_timer(2000),
+										  global_channel_timer(1000),
+										  fishing_timer(8000),
+										  endupkeep_timer(1000),
+										  autosave_timer(RuleI(Character, AutosaveIntervalS) * 1000),
+										  client_scan_npc_aggro_timer(RuleI(Aggro, ClientAggroCheckIdleInterval)),
+										  client_zone_wide_full_position_update_timer(5 * 60 * 1000),
+										  tribute_timer(Tribute_duration),
+										  proximity_timer(ClientProximity_interval),
+										  TaskPeriodic_Timer(RuleI(TaskSystem, PeriodicCheckTimer) * 1000),
+										  charm_update_timer(6000),
+										  rest_timer(1),
+										  pick_lock_timer(1000),
+										  charm_class_attacks_timer(3000),
+										  charm_cast_timer(3500),
+										  qglobal_purge_timer(30000),
+										  TrackingTimer(2000),
+										  RespawnFromHoverTimer(0),
+										  merc_timer(RuleI(Mercs, UpkeepIntervalMS)),
+										  ItemQuestTimer(500),
+										  anon_toggle_timer(250),
+										  afk_toggle_timer(250),
+										  helm_toggle_timer(250),
+										  aggro_meter_timer(AGGRO_METER_UPDATE_MS),
+										  m_Proximity(FLT_MAX, FLT_MAX, FLT_MAX), //arbitrary large number
+										  m_ZoneSummonLocation(-2.0f,-2.0f,-2.0f,-2.0f),
+										  m_AutoAttackPosition(0.0f, 0.0f, 0.0f, 0.0f),
+										  m_AutoAttackTargetLocation(0.0f, 0.0f, 0.0f),
+										  last_region_type(RegionTypeUnsupported),
+										  m_dirtyautohaters(false),
+										  mob_close_scan_timer(6000),
+										  position_update_timer(10000),
+										  consent_throttle_timer(2000),
+										  tmSitting(0),
+										  parcel_timer(RuleI(Parcel, ParcelDeliveryDelay))
+{
+	for (auto client_filter = FilterNone; client_filter < _FilterCount; client_filter = eqFilterType(client_filter + 1)) {
+		SetFilter(client_filter, FilterShow);
+	}
+
+	cheat_manager.SetClient(this);
+	mMovementManager->AddClient(this);
+	character_id = 0;
+	conn_state = NoPacketsReceived;
+	client_data_loaded = false;
+	berserk = false;
+	dead = false;
+	eqs = nullptr;
+	ip = 0; //eqs->GetRemoteIP();
+	port = 0; //ntohs(eqs->GetRemotePort());
+	client_state = CLIENT_CONNECTED;
+	SetTrader(true);
+	Haste = 0;
+	SetCustomerID(0);
+	SetTraderID(0);
+	TrackingID = 0;
+	WID = 0;
+	account_id = 0;
+	admin = AccountStatus::Player;
+	lsaccountid = 0;
+	guild_id = GUILD_NONE;
+	guildrank = 0;
+	guild_tribute_opt_in = 0;
+	GuildBanker = false;
+	memset(lskey, 0, sizeof(lskey));
+	strcpy(account_name, "");
+	tellsoff = false;
+	last_reported_mana = 0;
+	last_reported_endurance = 0;
+	last_reported_endurance_percent = 0;
+	last_reported_mana_percent = 0;
+	gm_hide_me = false;
+	AFK = false;
+	LFG = false;
+	LFGFromLevel = 0;
+	LFGToLevel = 0;
+	LFGMatchFilter = false;
+	LFGComments[0] = '\0';
+	LFP = false;
+	gmspeed = 0;
+	gminvul = false;
+	playeraction = 0;
+	SetTarget(0);
+	auto_attack = false;
+	auto_fire = false;
+	runmode = false;
+	linkdead_timer.Disable();
+	zonesummon_id = 0;
+	zonesummon_instance_id = 0;
+	zonesummon_ignorerestrictions = 0;
+	bZoning              = false;
+	m_lock_save_position = false;
+	zone_mode            = ZoneUnsolicited;
+	casting_spell_id = 0;
+	npcflag = false;
+	npclevel = 0;
+	fishing_timer.Disable();
+	dead_timer.Disable();
+	camp_timer.Disable();
+	autosave_timer.Disable();
+	GetMercTimer()->Disable();
+	instalog = false;
+	m_pp.autosplit = false;
+	// initialise haste variable
+	m_tradeskill_object = nullptr;
+	delaytimer = false;
+	PendingRezzXP = -1;
+	PendingRezzDBID = 0;
+	PendingRezzSpellID = 0;
+	numclients++;
+	// emuerror;
+	UpdateWindowTitle(nullptr);
+	horseId = 0;
+	tgb = false;
+	tribute_master_id = 0xFFFFFFFF;
+	tribute_timer.Disable();
+	task_state         = nullptr;
+	TotalSecondsPlayed = 0;
+	keyring.clear();
+	bind_sight_target = nullptr;
+	p_raid_instance = nullptr;
+	mercid = 0;
+	mercSlot = 0;
+	InitializeMercInfo();
+	SetMerc(0);
+	if (RuleI(World, PVPMinLevel) > 0 && level >= RuleI(World, PVPMinLevel) && m_pp.pvp == 0) SetPVP(true, false);
+	dynamiczone_removal_timer.Disable();
+
+	//for good measure:
+	memset(&m_pp, 0, sizeof(m_pp));
+	memset(&m_epp, 0, sizeof(m_epp));
+	PendingTranslocate = false;
+	PendingSacrifice = false;
+	controlling_boat_id = 0;
+	controlled_mob_id = 0;
+	qGlobals = nullptr;
+
+	if (!RuleB(Character, PerCharacterQglobalMaxLevel) && !RuleB(Character, PerCharacterBucketMaxLevel)) {
+		SetClientMaxLevel(0);
+	} else if (RuleB(Character, PerCharacterQglobalMaxLevel)) {
+		SetClientMaxLevel(GetCharMaxLevelFromQGlobal());
+	} else if (RuleB(Character, PerCharacterBucketMaxLevel)) {
+		SetClientMaxLevel(GetCharMaxLevelFromBucket());
+	}
+
+	KarmaUpdateTimer = new Timer(RuleI(Chat, KarmaUpdateIntervalMS));
+	GlobalChatLimiterTimer = new Timer(RuleI(Chat, IntervalDurationMS));
+	AttemptedMessages = 0;
+	TotalKarma = 0;
+	m_ClientVersion = EQ::versions::ClientVersion::Unknown;
+	m_ClientVersionBit = 0;
+	AggroCount = 0;
+	ooc_regen = false;
+	AreaHPRegen = 1.0f;
+	AreaManaRegen = 1.0f;
+	AreaEndRegen = 1.0f;
+	XPRate = 100;
+	current_endurance = 0;
+
+	CanUseReport = true;
+	aa_los_them_mob = nullptr;
+	los_status = false;
+	los_status_facing = false;
+	HideCorpseMode = HideCorpseNone;
+	PendingGuildInvitation = false;
+
+	InitializeBuffSlots();
+
+	adventure_request_timer = nullptr;
+	adventure_create_timer = nullptr;
+	adventure_leave_timer = nullptr;
+	adventure_door_timer = nullptr;
+	adv_requested_data = nullptr;
+	adventure_stats_timer = nullptr;
+	adventure_leaderboard_timer = nullptr;
+	adv_data = nullptr;
+	adv_requested_theme = LDoNThemes::Unused;
+	adv_requested_id = 0;
+	adv_requested_member_count = 0;
+
+	for(int i = 0; i < XTARGET_HARDCAP; ++i)
+	{
+		XTargets[i].Type = Auto;
+		XTargets[i].ID = 0;
+		XTargets[i].Name[0] = 0;
+		XTargets[i].dirty = false;
+	}
+	MaxXTargets = 5;
+	XTargetAutoAddHaters = true;
+	m_autohatermgr.SetOwner(this, nullptr, nullptr);
+	m_activeautohatermgr = &m_autohatermgr;
+
+	initial_respawn_selection = 0;
+	alternate_currency_loaded = false;
+
+	interrogateinv_flag = false;
+
+	trapid = 0;
+
+	for (int i = 0; i < InnateSkillMax; ++i)
+		m_pp.InnateSkills[i] = InnateDisabled;
+
+	temp_pvp = false;
+
+	moving = false;
+
+	environment_damage_modifier = 0;
+	invulnerable_environment_damage = false;
+
+	// rate limiter
+	m_list_task_timers_rate_limit.Start(1000);
+
+	// gm
+	SetDisplayMobInfoWindow(true);
+	SetDevToolsEnabled(true);
+
+	bot_owner_options[booDeathMarquee] = false;
+	bot_owner_options[booStatsUpdate] = false;
+	bot_owner_options[booSpawnMessageSay] = false;
+	bot_owner_options[booSpawnMessageTell] = true;
+	bot_owner_options[booSpawnMessageClassSpecific] = true;
+	bot_owner_options[booAutoDefend] = RuleB(Bots, AllowOwnerOptionAutoDefend);
+	bot_owner_options[booBuffCounter] = false;
+	bot_owner_options[booMonkWuMessage] = false;
+
+	m_parcel_platinum         = 0;
+	m_parcel_gold             = 0;
+	m_parcel_silver           = 0;
+	m_parcel_copper           = 0;
+	m_parcel_count            = 0;
+	m_parcel_enabled          = true;
+	m_parcel_merchant_engaged = false;
+	m_parcels.clear();
+
+	m_buyer_id = 0;
+
+	SetBotPulling(false);
+	SetBotPrecombat(false);
+
+	AI_Init();
+
+}
