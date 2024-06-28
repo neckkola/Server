@@ -96,6 +96,9 @@ struct AppearanceStruct {
 class DataBucketKey;
 class Mob : public Entity {
 public:
+	Mob* GetMob() { return this; }
+	void SetMob(Mob* m) { this = &m; }
+
 	enum CLIENT_CONN_STATUS { CLIENT_CONNECTING, CLIENT_CONNECTED, CLIENT_LINKDEAD,
 						CLIENT_KICKED, DISCONNECTED, CLIENT_ERROR, CLIENT_CONNECTINGALL };
 	enum eStandingPetOrder { SPO_Follow, SPO_Sit, SPO_Guard, SPO_FeignDeath };
@@ -587,6 +590,7 @@ public:
 	inline void ChangeDrakkinTattoo(uint8 in) { drakkin_tattoo = in; }
 	inline void ChangeDrakkinDetails(uint8 in) { drakkin_details = in; }
 	inline uint32 GetArmorTint(uint8 i) const { return armor_tint.Slot[(i < EQ::textures::materialCount) ? i : 0].Color; }
+	EQ::TintProfile GetArmorTintProfile() { return armor_tint; }
 	inline uint8 GetClass() const { return class_; }
 	inline uint8 GetLevel() const { return level; }
 	inline uint8 GetOrigLevel() const { return orig_level; }
