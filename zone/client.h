@@ -2238,6 +2238,28 @@ public:
 	const std::string &GetMailKeyFull() const;
 	const std::string &GetMailKey() const;
 	void ShowZoneShardMenu();
+
+	Client* operator=(Client& in) {
+		this->playeraction = in.playeraction;
+		this->client_state = in.client_state;
+		this->character_id = in.character_id;
+		this->WID          = in.WID;
+		this->account_id   = in.account_id;
+		this->lsaccountid  = in.lsaccountid;
+		this->admin        = in.admin;
+		this->guild_id     = in.guild_id;
+		this->guildrank    = in.guildrank;
+		this->LFG          = in.LFG;
+		this->AFK          = in.AFK;
+		this->m_buyer_id   = in.m_buyer_id;
+		this->runspeed     = in.runspeed;
+		this->m_pp = in.m_pp;
+		this->m_epp = in.m_epp;
+		this->SetBodyType(in.GetBodyType(), false);
+		strn0cpy(this->account_name, in.account_name, 30);
+
+		return this;
+	}
 };
 
 #endif

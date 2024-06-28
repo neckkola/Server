@@ -607,18 +607,17 @@ void command_guild(Client* c, const Seperator* sep)
 			PlayerProfile_Struct pp{};
 			ExtendedProfile_Struct m_epp{};
 			EQ::TintProfile re{};
-
 			//			database.LoadCharacterData(c->CharacterID(), &pp, &m_epp);
 			Client                 *spawn;
-//
-//			spawn->SetName("Tester");
-//			spawn->SetHP(c->GetHP());
-//			//spawn->SetMaxHP();
-//
+			EQStreamInterface* eqsi{};
+			eqsi = nullptr;
+
+			auto cl = new Client(eqsi);
+			cl = c;
 			spawn = c;
-//			//spawn->SetDeity(c->GetDeity());
-//			//spawn->SetLevel(c->GetLevel());
-//
+
+
+
 			spawn->SetPosition(c->GetX(), c->GetY(), c->GetZ());
 
 			memset(&ns, 0, sizeof(NewSpawn_Struct));
