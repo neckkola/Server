@@ -3598,7 +3598,7 @@ bool Client::IsInBuyerSpace()
 	}
 
 	for (auto const& d:entity_list.GetDoorsList()) {
-		if (d.second->GetOpenType() == 155) {
+		if (d.second->GetOpenType() == DoorType::BuyerStall) {
 			if (IsWithinSquare(d.second->GetPosition(), d.second->GetSize(), GetPosition())) {
 				return true;
 			}
