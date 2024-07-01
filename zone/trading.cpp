@@ -3997,6 +3997,10 @@ bool Client::ValidateBuyLineItems(std::map<uint32, BuylineItemDetails_Struct> &i
 
 	for (auto const &i: item_map) {
 		auto item = database.GetItem(i.first);
+		if (!item) {
+			buyer_error = true;
+			break;
+		}
 
 		if (i.second.item_cost > 0) {
 			auto buy_item_slot_id = GetInv().HasItem(i.first, i.second.item_quantity, invWherePersonal);
