@@ -240,7 +240,6 @@ public:
 	#include "client_packet.h"
 
 	Client(EQStreamInterface * ieqs);
-	Client();
 	~Client();
 
 	void ReconnectUCS();
@@ -392,6 +391,8 @@ public:
 	void   SetBuyerID(uint32 id) { m_buyer_id = id; }
 	uint32 GetBuyerID() { return m_buyer_id; }
 	bool   IsBuyer() { return m_buyer_id != 0 ? true : false; }
+	bool   IsOffline() { return m_offline; }
+	void   SetOffline(bool status) { m_offline = status; }
 	void   SetBarterTime() { m_barter_time = time(nullptr); }
 	uint32 GetBarterTime() { return m_barter_time; }
 	void   SetBuyerWelcomeMessage(const char* welcome_message);
@@ -1979,6 +1980,7 @@ private:
 	uint8 mercSlot; // selected merc slot
 	uint32                                                         m_trader_count{};
 	uint32                                                         m_buyer_id;
+	bool                                                           m_offline;
 	uint32                                                         m_barter_time;
 	int32                                                          m_parcel_platinum;
 	int32                                                          m_parcel_gold;
@@ -2274,26 +2276,53 @@ public:
 	void ShowZoneShardMenu();
 	void Handle_OP_ChangePetName(const EQApplicationPacket *app);
 
-	Client* operator=(Client& in) {
-		this->playeraction = in.playeraction;
-		this->client_state = in.client_state;
-		this->character_id = in.character_id;
-		this->WID          = in.WID;
-		this->account_id   = in.account_id;
-		this->lsaccountid  = in.lsaccountid;
-		this->admin        = in.admin;
-		this->guild_id     = in.guild_id;
-		this->guildrank    = in.guildrank;
-		this->LFG          = in.LFG;
-		this->AFK          = in.AFK;
-		this->m_buyer_id   = in.m_buyer_id;
-		this->runspeed     = in.runspeed;
-		this->m_pp = in.m_pp;
-		this->m_epp = in.m_epp;
+	Client* operator*=(Client& in) {
+		this->guild_id   = in.guild_id;
+		this->guildrank  = in.guildrank;
+		this->LFG        = in.LFG;
+		this->AFK        = in.AFK;
+		this->m_buyer_id = in.m_buyer_id;
 		this->SetBodyType(in.GetBodyType(), false);
-		strn0cpy(this->account_name, in.account_name, 30);
+		this->race    = in.race;
+		this->class_  = in.class_;
+		this->size    = in.size;
+		this->deity   = in.deity;
+		this->texture = in.texture;
+		this->m_inv = std::move(in.m_inv);
+		this->m_ClientVersion = in.m_ClientVersion;
+		this->m_ClientVersionBit = in.m_ClientVersionBit;
+		this->character_id = in.character_id;
 
 		return this;
+	}
+
+	Mob* GetMob() {
+		return Mob::GetMob();
+	}
+
+	void CopyMob(Client& in) {
+		this->guild_id   = in.guild_id;
+		this->guildrank  = in.guildrank;
+		this->LFG        = in.LFG;
+		this->AFK        = in.AFK;
+		this->m_buyer_id = in.m_buyer_id;
+		this->SetBodyType(in.GetBodyType(), false);
+		this->race               = in.race;
+		this->class_             = in.class_;
+		this->size               = in.size;
+		this->deity              = in.deity;
+		this->texture            = in.texture;
+		this->m_ClientVersion    = in.m_ClientVersion;
+		this->m_ClientVersionBit = in.m_ClientVersionBit;
+		this->character_id       = in.character_id;
+		this->m_buyer_id = 44;
+
+		auto lookup = in.m_inv.GetLookup();
+		m_inv.SetInventoryVersion(in.m_ClientVersion);
+
+
+
+		Mob::CopyMob(*in.GetMob());
 	}
 };
 
