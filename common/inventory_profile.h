@@ -234,7 +234,7 @@ namespace EQ
 		int16 _HasItemByLoreGroup(std::map<int16, ItemInstance*>& bucket, uint32 loregroup);
 		int16 _HasItemByLoreGroup(ItemInstQueue& iqueue, uint32 loregroup);
 
-
+	public:
 		// Player inventory
 		std::map<int16, ItemInstance*>	m_worn;		// Items worn by character
 		std::map<int16, ItemInstance*>	m_inv;		// Items in character personal inventory
