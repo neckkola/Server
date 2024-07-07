@@ -6402,6 +6402,11 @@ struct BazaarSearchMessaging_Struct {
 	}
 };
 
+struct BuylineItemDetails_Struct {
+	uint64      item_cost;
+	uint32      item_quantity;
+};
+
 // Restore structure packing to default
 #pragma pack()
 
