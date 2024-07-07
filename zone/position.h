@@ -23,6 +23,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/geometric.hpp>
+#include "../common/types.h"
 
 std::string to_string(const glm::vec4 &position);
 std::string to_string(const glm::vec3 &position);
