@@ -37,6 +37,8 @@ class EvolveInfo;			// Stores information about an evolving item family
 
 #include <map>
 
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
 
 // Specifies usage type for item inside EQ::ItemInstance
 enum ItemInstTypes
@@ -57,6 +59,7 @@ enum OrnamentationAugmentTypes {
 };
 
 class SharedDatabase;
+class Database;
 
 // ########################################
 // Class: EQ::ItemInstance
@@ -74,7 +77,8 @@ namespace EQ
 		/////////////////////////
 
 		// Constructors/Destructor
-		ItemInstance(const ItemData* item = nullptr, int16 charges = 0);
+		ItemInstance(SharedDatabase* db = nullptr, const ItemData* item = nullptr, int16 charges = 0);
+		ItemInstance(SharedDatabase& db, const ItemData* item = nullptr, int16 charges = 0, uint64 guid = 0);
 
 		ItemInstance(SharedDatabase *db, uint32 item_id, int16 charges = 0);
 
@@ -189,6 +193,8 @@ namespace EQ
 		void SetCustomData(const std::string &identifier, float value);
 		void SetCustomData(const std::string &identifier, bool value);
 		void DeleteCustomData(const std::string& identifier);
+		void AddNextItemSerialNumber(std::string& new_id);
+		uint32 GetNextItemInstSerialNumberValue();
 
 		// Allows treatment of this object as though it were a pointer to m_item
 		operator bool() const { return (m_item != nullptr); }
@@ -235,6 +241,8 @@ namespace EQ
 
 		inline int32 GetSerialNumber() const { return m_SerialNumber; }
 		inline void SetSerialNumber(int32 id) { m_SerialNumber = id; }
+		void SetGUID(std::string& guid) { m_guid = guid; }
+		std::string GetGUID() const { return m_guid; }
 
 		std::map<std::string, ::Timer>& GetTimers() { return m_timers; }
 		void SetTimer(std::string name, uint32 time);
@@ -343,6 +351,7 @@ namespace EQ
 		uint32				m_ornament_hero_model {0};
 		uint32				m_recast_timestamp {0};
 		int                 m_task_delivered_count {0};
+		std::string         m_guid{};
 
 		// Items inside of this item (augs or contents) {};
 		std::map<uint8, ItemInstance*>		m_contents {}; // Zero-based index: min=0, max=9

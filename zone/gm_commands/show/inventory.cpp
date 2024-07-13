@@ -164,12 +164,12 @@ void ShowInventory(Client *c, const Seperator *sep)
 				c->Message(
 					Chat::White,
 					fmt::format(
-						"Slot {} | {} ({}/{}){}",
+						"Slot {} | {} ({}/{})(guid:{}){}",
 						((scope_bit & peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main),
 						linker.GenerateLink(),
 						item_data->ID,
 						c->GetInv().GetItem(((scope_bit &peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main))->GetSerialNumber(),
-						(
+						c->GetInv().GetItem(((scope_bit &peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main))->GetGUID(),						(
 							inst_main->IsStackable() && inst_main->GetCharges() > 0 ?
 							fmt::format(
 								" (Stack of {})",
@@ -229,7 +229,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 				c->Message(
 					Chat::White,
 					fmt::format(
-						"Slot {} Bag Slot {}/{} | {} ({}/{}){}",
+						"Slot {} Bag Slot {}/{} | {} ({}/{})(guid:{}){}",
 						(
 							(scope_bit & peekWorld) ?
 							INVALID_INDEX :
@@ -240,6 +240,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 						linker.GenerateLink(),
 						item_data->ID,
 						c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetSerialNumber(),
+						c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetGUID(),
 						(
 							inst_sub->IsStackable() && inst_sub->GetCharges() > 0 ?
 							fmt::format(
@@ -264,7 +265,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 						c->Message(
 							Chat::White,
 							fmt::format(
-								"Slot {} Bag Slot {} (Augment Slot {}) | {} ({}){}",
+								"Slot {} Bag Slot {} (Augment Slot {}) | {} ({})(guid:{}){}",
 								(
 									(scope_bit & peekWorld) ?
 									INVALID_INDEX :
@@ -274,7 +275,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 								augment_index,
 								linker.GenerateLink(),
 								item_data->ID,
-								(
+								c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetGUID(),								(
 									inst_sub->IsStackable() && inst_sub->GetCharges() > 0 ?
 									fmt::format(
 										" (Stack of {})",

@@ -51,6 +51,7 @@
 #include "../common/repositories/reports_repository.h"
 #include "../common/repositories/variables_repository.h"
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/global_item_id_repository.h"
 
 // Disgrace: for windows compile
 #ifdef _WINDOWS
@@ -77,6 +78,7 @@
 #include "zone_store.h"
 #include "repositories/merchantlist_temp_repository.h"
 #include "repositories/bot_data_repository.h"
+#include "repositories/global_item_id_repository.h"
 #include "repositories/trader_repository.h"
 #include "repositories/buyer_repository.h"
 
@@ -2128,4 +2130,18 @@ void Database::ClearTraderDetails()
 void Database::ClearBuyerDetails()
 {
 	BuyerRepository::DeleteBuyer(*this, 0);
+}
+
+void Database::ResetGlobalItemIndex()
+{
+	GlobalItemIdRepository::Truncate(*this);
+
+	auto e = GlobalItemIdRepository::NewEntity();
+	e.number = 1;
+
+	GlobalItemIdRepository::InsertOne(*this, e);
+}
+uint64 Database::GetNextGlobalItemIdLimit()
+{
+	return GlobalItemIdRepository::GetNextSerialNumberRange(*this);
 }

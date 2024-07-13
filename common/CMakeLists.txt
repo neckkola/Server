@@ -220,6 +220,7 @@ SET(repositories
     repositories/base/base_fishing_repository.h
     repositories/base/base_forage_repository.h
     repositories/base/base_friends_repository.h
+    repositories/base/base_global_item_id_repository.h
     repositories/base/base_global_loot_repository.h
     repositories/base/base_gm_ips_repository.h
     repositories/base/base_graveyard_repository.h
@@ -403,6 +404,7 @@ SET(repositories
     repositories/fishing_repository.h
     repositories/forage_repository.h
     repositories/friends_repository.h
+    repositories/global_item_id_repository.h
     repositories/global_loot_repository.h
     repositories/gm_ips_repository.h
     repositories/graveyard_repository.h

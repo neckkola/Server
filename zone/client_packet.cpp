@@ -1300,6 +1300,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 			firstlogon = Strings::ToInt(row[3]);
 	}
 
+	auto c = entity_list.GetClientByCharID(cid);
 	if (RuleB(Character, SharedBankPlat))
 		m_pp.platinum_shared = database.GetSharedPlatinum(AccountID());
 
@@ -1307,7 +1308,7 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
 	// item loss will occur when they use the 'empty' slots, if this is not done
 	m_inv.SetGMInventory(true);
-	loaditems = database.GetInventory(cid, &m_inv); /* Load Character Inventory */
+	loaditems = database.GetInventory(cid, &m_inv, c); /* Load Character Inventory */
 	database.LoadCharacterBandolier(cid, &m_pp); /* Load Character Bandolier */
 	database.LoadCharacterBindPoint(cid, &m_pp); /* Load Character Bind */
 	database.LoadCharacterMaterialColor(cid, &m_pp); /* Load Character Material */
@@ -7840,7 +7841,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 			GuildBankDepositAck(true, sentAction);
 			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 				GetInv().PopItem(EQ::invslot::slotCursor);
-				PushItemOnCursor(CursorItem, true);
+				PushItemOnCursor(*CursorItemInst, true);
 			}
 
 			return;
@@ -7874,7 +7875,7 @@ void Client::Handle_OP_GuildBank(const EQApplicationPacket *app)
 
 			if (ClientVersion() >= EQ::versions::ClientVersion::RoF) {
 				GetInv().PopItem(EQ::invslot::slotCursor);
-				PushItemOnCursor(CursorItem, true);
+				PushItemOnCursor(*CursorItemInst, true);
 			}
 			return;
 		}

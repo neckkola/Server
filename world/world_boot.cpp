@@ -293,6 +293,9 @@ bool WorldBoot::DatabaseLoadRoutines(int argc, char **argv)
 	database.ClearTraderDetails();
 	database.ClearBuyerDetails();
 	LogInfo("Clearing buyer table details");
+	database.ResetGlobalItemIndex();
+	LogInfo("Resetting global item index to 1");
+
 
 	if (!content_db.LoadItems(hotfix_name)) {
 		LogError("Error: Could not load item data. But ignoring");

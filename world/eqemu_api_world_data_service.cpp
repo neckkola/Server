@@ -29,6 +29,9 @@
 #include "worlddb.h"
 #include "wguild_mgr.h"
 #include "world_config.h"
+#include <boost/interprocess/shared_memory_object.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+
 
 extern ZSList            zoneserver_list;
 extern ClientList        client_list;
@@ -285,6 +288,9 @@ void EQEmuApiWorldDataService::get(Json::Value &r, const std::vector<std::string
 	if (m == "get_guild_details") {
 		callGetGuildDetails(r, args);
 	}
+	if (m == "get_global_item_guid") {
+		callGetGlobalItemGUID(r);
+	}
 	if (m == "lock_status") {
 		r["locked"] = WorldConfig::get()->Locked;
 	}
@@ -341,4 +347,17 @@ void EQEmuApiWorldDataService::callGetGuildDetails(Json::Value &response, const 
 	client_list.GetGuildClientList(response, guild_id);
 
 	response.append(row);
+}
+
+void EQEmuApiWorldDataService::callGetGlobalItemGUID(Json::Value &response)
+{
+	// boost::interprocess::shared_memory_object shm(boost::interprocess::open_or_create, "GlobalItemGUID", boost::interprocess::read_only);
+	// boost::interprocess::mapped_region region(shm, boost::interprocess::read_only);
+	//
+	// auto x = (uint64_t*)region.get_address();
+	//
+	// Json::Value r;
+	// r["CurrentGlobalItemGUID"] = *(uint64*)x;
+	//
+	// response.append(r);
 }

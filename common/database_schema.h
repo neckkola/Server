@@ -337,6 +337,7 @@ namespace DatabaseSchema {
 			"dynamic_zones",
 			"expedition_lockouts",
 			"expeditions",
+			"global_item_id",
 			"gm_ips",
 			"group_id",
 			"group_leaders",
