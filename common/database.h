@@ -246,6 +246,8 @@ public:
 	void ClearGuildOnlineStatus();
 	void ClearTraderDetails();
 	void ClearBuyerDetails();
+	void ResetGlobalItemIndex();
+	uint64 GetNextGlobalItemIdLimit();
 
 
 	/* Database Variables */

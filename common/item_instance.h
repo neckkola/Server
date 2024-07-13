@@ -74,8 +74,12 @@ namespace EQ
 		/////////////////////////
 
 		// Constructors/Destructor
-		ItemInstance(const ItemData* item = nullptr, int16 charges = 0);
-
+		ItemInstance(SharedDatabase* db = nullptr, const ItemData* item = nullptr, int16 charges = 0);
+		ItemInstance(SharedDatabase& db, const ItemData* item = nullptr, int16 charges = 0, uint64 guid = 0);
+		static uint32 GetCurrentSerialNumber();
+		static void SetSerialNumber(uint32 in);
+		static void AddGUIDToMap(uint64 in);
+		static void ClearGUIDMap();
 		ItemInstance(SharedDatabase *db, uint32 item_id, int16 charges = 0);
 
 		ItemInstance(ItemInstTypes use_type);
@@ -235,6 +239,8 @@ namespace EQ
 
 		inline int32 GetSerialNumber() const { return m_SerialNumber; }
 		inline void SetSerialNumber(int32 id) { m_SerialNumber = id; }
+		void SetGUID(uint64 guid) { m_guid = guid; }
+		uint64 GetGUID() const { return m_guid; }
 
 		std::map<std::string, ::Timer>& GetTimers() { return m_timers; }
 		void SetTimer(std::string name, uint32 time);
@@ -343,6 +349,7 @@ namespace EQ
 		uint32				m_ornament_hero_model {0};
 		uint32				m_recast_timestamp {0};
 		int                 m_task_delivered_count {0};
+		uint64              m_guid{};
 
 		// Items inside of this item (augs or contents) {};
 		std::map<uint8, ItemInstance*>		m_contents {}; // Zero-based index: min=0, max=9

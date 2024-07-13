@@ -42,10 +42,12 @@
 #include "repositories/faction_association_repository.h"
 #include "repositories/starting_items_repository.h"
 #include "path_manager.h"
+#include "../world/client.h"
 #include "repositories/loottable_repository.h"
 #include "repositories/character_item_recast_repository.h"
 #include "repositories/character_corpses_repository.h"
 #include "repositories/skill_caps_repository.h"
+#include "repositories/inventory_repository.h"
 
 namespace ItemField
 {
@@ -300,15 +302,15 @@ bool SharedDatabase::UpdateInventorySlot(uint32 char_id, const EQ::ItemInstance*
 	// Update/Insert item
 	const std::string query = StringFormat("REPLACE INTO inventory "
 	                                       "(charid, slotid, itemid, charges, instnodrop, custom_data, color, "
-	                                       "augslot1, augslot2, augslot3, augslot4, augslot5, augslot6, ornamenticon, ornamentidfile, ornament_hero_model) "
+	                                       "augslot1, augslot2, augslot3, augslot4, augslot5, augslot6, ornamenticon, ornamentidfile, ornament_hero_model, guid) "
 	                                       "VALUES( %lu, %lu, %lu, %lu, %lu, '%s', %lu, "
-	                                       "%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu)",
+	                                       "%lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu, %lu, '%lu')",
 	                                       static_cast<unsigned long>(char_id), static_cast<unsigned long>(slot_id), static_cast<unsigned long>(inst->GetItem()->ID),
 	                                       static_cast<unsigned long>(charges), static_cast<unsigned long>(inst->IsAttuned() ? 1 : 0),
 	                                       inst->GetCustomDataString().c_str(), static_cast<unsigned long>(inst->GetColor()),
 	                                       static_cast<unsigned long>(augslot[0]), static_cast<unsigned long>(augslot[1]), static_cast<unsigned long>(augslot[2]),
 	                                       static_cast<unsigned long>(augslot[3]), static_cast<unsigned long>(augslot[4]), static_cast<unsigned long>(augslot[5]), static_cast<unsigned long>(inst->GetOrnamentationIcon()),
-	                                       static_cast<unsigned long>(inst->GetOrnamentationIDFile()), static_cast<unsigned long>(inst->GetOrnamentHeroModel()));
+	                                       static_cast<unsigned long>(inst->GetOrnamentationIDFile()), static_cast<unsigned long>(inst->GetOrnamentHeroModel()), inst->GetGUID());
 	const auto results = QueryDatabase(query);
 
     // Save bag contents, if slot supports bag contents
@@ -645,24 +647,29 @@ bool SharedDatabase::GetSharedBank(uint32 id, EQ::InventoryProfile *inv, bool is
 }
 
 // Overloaded: Retrieve character inventory based on character id (zone entry)
-bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
+bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv, Client* c)
 {
 	if (!char_id || !inv)
 		return false;
 
 	// Retrieve character inventory
-	const std::string query =
-	    StringFormat("SELECT slotid, itemid, charges, color, augslot1, augslot2, augslot3, augslot4, augslot5, "
-			 "augslot6, instnodrop, custom_data, ornamenticon, ornamentidfile, ornament_hero_model FROM "
-			 "inventory WHERE charid = %i ORDER BY slotid",
-			 char_id);
-	auto results = QueryDatabase(query);
-	if (!results.Success()) {
-		LogError("If you got an error related to the 'instnodrop' field, run the "
-						    "following SQL Queries:\nalter table inventory add instnodrop "
-						    "tinyint(1) unsigned default 0 not null;\n");
+	auto results = InventoryRepository::GetWhere(*this, fmt::format("`charid` = '{}' ORDER BY `slotid`;", char_id));
+	if (results.empty()) {
+		LogError("Error loading inventory for char_id {} from the database.", char_id);
 		return false;
 	}
+	// const std::string query =
+	//     StringFormat("SELECT slotid, itemid, charges, color, augslot1, augslot2, augslot3, augslot4, augslot5, "
+	// 		 "augslot6, instnodrop, custom_data, ornamenticon, ornamentidfile, ornament_hero_model, guid FROM "
+	// 		 "inventory WHERE charid = %i ORDER BY slotid",
+	// 		 char_id);
+	// auto results = QueryDatabase(query);
+	// if (!results.Success()) {
+	// 	LogError("If you got an error related to the 'instnodrop' field, run the "
+	// 					    "following SQL Queries:\nalter table inventory add instnodrop "
+	// 					    "tinyint(1) unsigned default 0 not null;\n");
+	// 	return false;
+	// }
 
 	const auto timestamps = GetItemRecastTimestamps(char_id);
 
@@ -670,17 +677,42 @@ bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
 	const auto pmask = inv->GetLookup()->PossessionsBitmask;
 	const auto bank_size = inv->GetLookup()->InventoryTypeSize.Bank;
 
-	for (auto& row = results.begin(); row != results.end(); ++row) {
-		int16 slot_id = Strings::ToInt(row[0]);
+	for (auto const& row: results) {
+		if (row.guid != 0) {
+			EQ::ItemInstance::AddGUIDToMap(row.guid);
+		}
+	}
 
-		if (slot_id <= EQ::invslot::POSSESSIONS_END && slot_id >= EQ::invslot::POSSESSIONS_BEGIN) { // Titanium thru UF check
+	std::vector<InventoryRepository::Inventory> queue{};
+	for (auto& row : results) {
+		int16 slot_id                = row.slotid;
+		uint32 item_id               = row.itemid;
+		const uint16 charges         = row.charges;
+		const uint32 color           = row.color;
+		const bool instnodrop        = row.instnodrop && static_cast<uint16>(row.instnodrop);
+		const uint32 ornament_icon   = row.ornamenticon;
+		const uint32 ornament_idfile = row.ornamentidfile;
+		uint32 ornament_hero_model   = row.ornament_hero_model;
+		uint32 aug[EQ::invaug::SOCKET_COUNT];
+
+		aug[0] = row.augslot1;
+		aug[1] = row.augslot2;
+		aug[2] = row.augslot3;
+		aug[3] = row.augslot4;
+		aug[4] = row.augslot5;
+		aug[5] = row.augslot6;
+
+		if (slot_id <= EQ::invslot::POSSESSIONS_END &&
+			slot_id >= EQ::invslot::POSSESSIONS_BEGIN) { // Titanium thru UF check
 			if (((static_cast<uint64>(1) << slot_id) & pmask) == 0) {
 				cv_conflict = true;
 				continue;
 			}
 		}
-		else if (slot_id <= EQ::invbag::GENERAL_BAGS_END && slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN) { // Titanium thru UF check
-			const auto parent_slot = EQ::invslot::GENERAL_BEGIN + ((slot_id - EQ::invbag::GENERAL_BAGS_BEGIN) / EQ::invbag::SLOT_COUNT);
+		else if (slot_id <= EQ::invbag::GENERAL_BAGS_END &&
+				 slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN) { // Titanium thru UF check
+			const auto parent_slot = EQ::invslot::GENERAL_BEGIN +
+									 ((slot_id - EQ::invbag::GENERAL_BAGS_BEGIN) / EQ::invbag::SLOT_COUNT);
 			if (((static_cast<uint64>(1) << parent_slot) & pmask) == 0) {
 				cv_conflict = true;
 				continue;
@@ -700,41 +732,21 @@ bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
 			}
 		}
 
-		uint32 item_id = Strings::ToUnsignedInt(row[1]);
-		const uint16 charges = Strings::ToUnsignedInt(row[2]);
-		const uint32 color = Strings::ToUnsignedInt(row[3]);
-
-		uint32 aug[EQ::invaug::SOCKET_COUNT];
-
-		aug[0] = Strings::ToUnsignedInt(row[4]);
-		aug[1] = Strings::ToUnsignedInt(row[5]);
-		aug[2] = Strings::ToUnsignedInt(row[6]);
-		aug[3] = Strings::ToUnsignedInt(row[7]);
-		aug[4] = Strings::ToUnsignedInt(row[8]);
-		aug[5] = Strings::ToUnsignedInt(row[9]);
-
-		const bool instnodrop = (row[10] && static_cast<uint16>(Strings::ToUnsignedInt(row[10])));
-
-		const uint32 ornament_icon = Strings::ToUnsignedInt(row[12]);
-		const uint32 ornament_idfile = Strings::ToUnsignedInt(row[13]);
-		uint32 ornament_hero_model = Strings::ToUnsignedInt(row[14]);
-
 		const EQ::ItemData *item = GetItem(item_id);
 
 		if (!item) {
 			LogError("Warning: charid [{}] has an invalid item_id [{}] in inventory slot [{}]", char_id, item_id,
-				slot_id);
+					 slot_id);
 			continue;
 		}
 
-		EQ::ItemInstance *inst = CreateBaseItem(item, charges);
+		auto inst = CreateBaseItem(item, charges);
 
 		if (inst == nullptr)
 			continue;
 
-		if (row[11]) {
-			std::string data_str(row[11]);
-			inst->SetCustomDataString(data_str);
+		if (!row.custom_data.empty()) {
+			inst->SetCustomDataString(row.custom_data);
 		}
 
 		inst->SetOrnamentIcon(ornament_icon);
@@ -784,6 +796,10 @@ bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
 			put_slot_id = inv->PutItem(slot_id, *inst);
 		}
 
+		row.guid = inst->GetGUID();
+		queue.push_back(row);
+
+		//SaveInventory(char_id, inst, slot_id);
 		safe_delete(inst);
 
 		// Save ptr to item in inventory
@@ -792,6 +808,142 @@ bool SharedDatabase::GetInventory(uint32 char_id, EQ::InventoryProfile *inv)
 				char_id, item_id, slot_id);
 		}
 	}
+
+	if (!queue.empty()) {
+		InventoryRepository::ReplaceMany(*this, queue);
+	}
+
+	EQ::ItemInstance::ClearGUIDMap();
+
+//	for (auto& row = results.begin(); row != results.end(); ++row) {
+		// int16 slot_id = Strings::ToInt(row[0]);
+		//
+		// if (slot_id <= EQ::invslot::POSSESSIONS_END &&
+		// 	slot_id >= EQ::invslot::POSSESSIONS_BEGIN) { // Titanium thru UF check
+		// 	if (((static_cast<uint64>(1) << slot_id) & pmask) == 0) {
+		// 		cv_conflict = true;
+		// 		continue;
+		// 	}
+		// }
+		// else if (slot_id <= EQ::invbag::GENERAL_BAGS_END &&
+		// 		 slot_id >= EQ::invbag::GENERAL_BAGS_BEGIN) { // Titanium thru UF check
+		// 	const auto parent_slot = EQ::invslot::GENERAL_BEGIN +
+		// 							 ((slot_id - EQ::invbag::GENERAL_BAGS_BEGIN) / EQ::invbag::SLOT_COUNT);
+		// 	if (((static_cast<uint64>(1) << parent_slot) & pmask) == 0) {
+		// 		cv_conflict = true;
+		// 		continue;
+		// 	}
+		// }
+		// else if (slot_id <= EQ::invslot::BANK_END && slot_id >= EQ::invslot::BANK_BEGIN) { // Titanium check
+		// 	if ((slot_id - EQ::invslot::BANK_BEGIN) >= bank_size) {
+		// 		cv_conflict = true;
+		// 		continue;
+		// 	}
+		// }
+		// else if (slot_id <= EQ::invbag::BANK_BAGS_END && slot_id >= EQ::invbag::BANK_BAGS_BEGIN) { // Titanium check
+		// 	const auto parent_index = ((slot_id - EQ::invbag::BANK_BAGS_BEGIN) / EQ::invbag::SLOT_COUNT);
+		// 	if (parent_index >= bank_size) {
+		// 		cv_conflict = true;
+		// 		continue;
+		// 	}
+		// }
+		//
+		// uint32       item_id = Strings::ToUnsignedInt(row[1]);
+		// const uint16 charges = Strings::ToUnsignedInt(row[2]);
+		// const uint32 color   = Strings::ToUnsignedInt(row[3]);
+		//
+		// uint32 aug[EQ::invaug::SOCKET_COUNT];
+		//
+		// aug[0] = Strings::ToUnsignedInt(row[4]);
+		// aug[1] = Strings::ToUnsignedInt(row[5]);
+		// aug[2] = Strings::ToUnsignedInt(row[6]);
+		// aug[3] = Strings::ToUnsignedInt(row[7]);
+		// aug[4] = Strings::ToUnsignedInt(row[8]);
+		// aug[5] = Strings::ToUnsignedInt(row[9]);
+		//
+		// const bool instnodrop = (row[10] && static_cast<uint16>(Strings::ToUnsignedInt(row[10])));
+		//
+		// const uint32 ornament_icon       = Strings::ToUnsignedInt(row[12]);
+		// const uint32 ornament_idfile     = Strings::ToUnsignedInt(row[13]);
+		// uint32       ornament_hero_model = Strings::ToUnsignedInt(row[14]);
+		//
+		// const EQ::ItemData *item = GetItem(item_id);
+		//
+		// if (!item) {
+		// 	LogError("Warning: charid [{}] has an invalid item_id [{}] in inventory slot [{}]", char_id, item_id,
+		// 			 slot_id);
+		// 	continue;
+		// }
+		//
+		// auto inst = CreateBaseItem(item, charges);
+		//
+		// if (inst == nullptr)
+		// 	continue;
+		//
+		// if (row[11]) {
+		// 	std::string data_str(row[11]);
+		// 	inst->SetCustomDataString(data_str);
+		// }
+		//
+		// inst->SetOrnamentIcon(ornament_icon);
+		// inst->SetOrnamentationIDFile(ornament_idfile);
+		// inst->SetOrnamentHeroModel(item->HerosForgeModel);
+		//
+		// if (instnodrop || (inst->GetItem()->Attuneable && slot_id >= EQ::invslot::EQUIPMENT_BEGIN && slot_id <= EQ::invslot::EQUIPMENT_END))
+		// 	inst->SetAttuned(true);
+		//
+		// if (color > 0)
+		// 	inst->SetColor(color);
+		//
+		// if (charges == 0x7FFF)
+		// 	inst->SetCharges(-1);
+		// else if (charges == 0 && inst->IsStackable()) // Stackable items need a minimum charge of 1 remain moveable.
+		// 	inst->SetCharges(1);
+		// else
+		// 	inst->SetCharges(charges);
+		//
+		// if (item->RecastDelay) {
+		// 	if (item->RecastType != RECAST_TYPE_UNLINKED_ITEM && timestamps.count(item->RecastType)) {
+		// 		inst->SetRecastTimestamp(timestamps.at(item->RecastType));
+		// 	} else if (item->RecastType == RECAST_TYPE_UNLINKED_ITEM && timestamps.count(item->ID)) {
+		// 		inst->SetRecastTimestamp(timestamps.at(item->ID));
+		// 	}
+		// 	else {
+		// 		inst->SetRecastTimestamp(0);
+		// 	}
+		// }
+		//
+		// if (item->IsClassCommon()) {
+		// 	for (int i = EQ::invaug::SOCKET_BEGIN; i <= EQ::invaug::SOCKET_END; i++) {
+		// 		if (aug[i])
+		// 			inst->PutAugment(this, i, aug[i]);
+		// 	}
+		// }
+		//
+		// int16 put_slot_id;
+		// if (slot_id >= 8000 && slot_id <= 8999) {
+		// 	put_slot_id = inv->PushCursor(*inst);
+		// } else if (slot_id >= 3111 && slot_id <= 3179) {
+		// 	// Admins: please report any occurrences of this error
+		// 	LogError("Warning: Defunct location for item in inventory: charid={}, item_id={}, slot_id={} .. pushing to cursor...",
+		// 		char_id, item_id, slot_id);
+		// 	put_slot_id = inv->PushCursor(*inst);
+		// } else {
+		// 	put_slot_id = inv->PutItem(slot_id, *inst);
+		// }
+		//
+		// // if (guid.length() < 4) {
+		//  	SaveInventory(char_id, inst, slot_id);
+		// // }
+		//
+		// safe_delete(inst);
+		//
+		// // Save ptr to item in inventory
+		// if (put_slot_id == INVALID_INDEX) {
+		// 	LogError("Warning: Invalid slot_id for item in inventory: charid=[{}], item_id=[{}], slot_id=[{}]",
+		// 		char_id, item_id, slot_id);
+		// }
+//	}
 
 	if (cv_conflict) {
 		const std::string& char_name = GetCharName(char_id);
@@ -1486,7 +1638,7 @@ EQ::ItemInstance* SharedDatabase::CreateBaseItem(const EQ::ItemData* item, int16
 			charges = 1;
 		}
 
-		inst = new EQ::ItemInstance(item, charges);
+		inst = new EQ::ItemInstance(*this, item, charges);
 
 		if (!inst) {
 			LogError("Error: valid item data returned a null reference for EQ::ItemInstance creation in SharedDatabase::CreateBaseItem()");

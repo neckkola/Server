@@ -1128,6 +1128,7 @@ enum ExpSource
 #define PARCEL_MONEY_ITEM_ID 99990 // item id of money
 #define PARCEL_LIMIT         5
 #define PARCEL_BEGIN_SLOT    1
+#define SERIAL_NUMBER_RANGE  1000
 
 namespace DoorType {
 	constexpr uint32 BuyerStall = 155;

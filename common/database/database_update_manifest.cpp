@@ -5718,6 +5718,26 @@ COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
 AUTO_INCREMENT=1;
 )"
+	},
+	ManifestEntry{
+		.version     = 9282,
+		.description = "2024_08_04_add_global_item_id_support.sql",
+		.check       = "SHOW TABLES LIKE 'items_global_id''",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+CREATE TABLE `items_global_item_id` (
+	`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`next_number` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	PRIMARY KEY (`id`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB
+AUTO_INCREMENT=1;
+
+ALTER TABLE `inventory`
+	ADD COLUMN `guid` BIGINT UNSIGNED NULL DEFAULT '0' AFTER `ornament_hero_model`;
+)"
 	}
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{

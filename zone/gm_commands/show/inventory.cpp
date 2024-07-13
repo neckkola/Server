@@ -63,6 +63,8 @@ void ShowInventory(Client *c, const Seperator *sep)
 	const bool is_trade        = !strcasecmp(sep->arg[2], "trade");
 	const bool is_tribute      = !strcasecmp(sep->arg[2], "trib");
 	const bool is_world        = !strcasecmp(sep->arg[2], "world");
+	const bool is_serial       = !strcasecmp(sep->arg[2], "serial");
+	const bool is_set          = !strcasecmp(sep->arg[2], "set");
 
 	if (is_all) {
 		scope_mask = (peekOutOfScope - 1);
@@ -90,6 +92,12 @@ void ShowInventory(Client *c, const Seperator *sep)
 		scope_mask |= peekTrade;
 	} else if (is_world) {
 		scope_mask |= peekWorld;
+	} else if (is_serial) {
+		SendShowCurrentSerialNumber(c);
+		return;
+	} else if (is_set) {
+		SetCurrentSerialNumber(Strings::ToUnsignedInt(sep->arg[3]));
+		return;
 	} else {
 		SendShowInventorySubCommands(c);
 		return;
@@ -164,12 +172,12 @@ void ShowInventory(Client *c, const Seperator *sep)
 				c->Message(
 					Chat::White,
 					fmt::format(
-						"Slot {} | {} ({}/{}){}",
+						"Slot {} | {} ({}/{})(guid:{}){}",
 						((scope_bit & peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main),
 						linker.GenerateLink(),
 						item_data->ID,
 						c->GetInv().GetItem(((scope_bit &peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main))->GetSerialNumber(),
-						(
+						c->GetInv().GetItem(((scope_bit &peekWorld) ? (EQ::invslot::WORLD_BEGIN + index_main) : index_main))->GetGUID(),						(
 							inst_main->IsStackable() && inst_main->GetCharges() > 0 ?
 							fmt::format(
 								" (Stack of {})",
@@ -229,7 +237,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 				c->Message(
 					Chat::White,
 					fmt::format(
-						"Slot {} Bag Slot {}/{} | {} ({}/{}){}",
+						"Slot {} Bag Slot {}/{} | {} ({}/{})(guid:{}){}",
 						(
 							(scope_bit & peekWorld) ?
 							INVALID_INDEX :
@@ -240,6 +248,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 						linker.GenerateLink(),
 						item_data->ID,
 						c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetSerialNumber(),
+						c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetGUID(),
 						(
 							inst_sub->IsStackable() && inst_sub->GetCharges() > 0 ?
 							fmt::format(
@@ -264,7 +273,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 						c->Message(
 							Chat::White,
 							fmt::format(
-								"Slot {} Bag Slot {} (Augment Slot {}) | {} ({}){}",
+								"Slot {} Bag Slot {} (Augment Slot {}) | {} ({})(guid:{}){}",
 								(
 									(scope_bit & peekWorld) ?
 									INVALID_INDEX :
@@ -274,7 +283,7 @@ void ShowInventory(Client *c, const Seperator *sep)
 								augment_index,
 								linker.GenerateLink(),
 								item_data->ID,
-								(
+								c->GetInv().GetItem(EQ::InventoryProfile::CalcSlotId(index_main, sub_index))->GetGUID(),								(
 									inst_sub->IsStackable() && inst_sub->GetCharges() > 0 ?
 									fmt::format(
 										" (Stack of {})",
@@ -449,4 +458,15 @@ void SendShowInventorySubCommands(Client* c) {
 	c->Message(Chat::White, "Usage: #show inventory trade - Shows items in Trade slots");
 	c->Message(Chat::White, "Usage: #show inventory world - Shows items in World slots");
 	c->Message(Chat::White, "Usage: #show inventory all - Shows items in all slots");
+}
+#include "../common/item_instance.h"
+
+void SendShowCurrentSerialNumber(Client* c)
+{
+	c->Message(Chat::White, fmt::format("Current Serial Number is: {}.", EQ::ItemInstance::GetCurrentSerialNumber()).c_str());
+}
+
+void SetCurrentSerialNumber(uint32 in)
+{
+	EQ::ItemInstance::SetSerialNumber(in);
 }

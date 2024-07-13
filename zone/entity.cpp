@@ -4690,7 +4690,7 @@ uint16 EntityList::CreateGroundObject(uint32 item_id, const glm::vec4& position,
 		return 0;
 	}
 
-	auto inst = new EQ::ItemInstance(is, is->MaxCharges);
+	auto inst = new EQ::ItemInstance(database, is, is->MaxCharges);
 	if (!inst) {
 		return 0;
 	}

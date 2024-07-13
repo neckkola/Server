@@ -25,17 +25,28 @@
 #include "rulesys.h"
 #include "shareddb.h"
 #include "strings.h"
-
+//#include "database.h"
 //#include "../common/light_source.h"
 
 #include <limits.h>
 
 //#include <iostream>
 
-int32 NextItemInstSerialNumber = 1;
+int64 next_item_serial_number = 0;
+int64 free_serial_numbers = 0;
+std::unordered_set<uint64> guids{};
 
-static inline int32 GetNextItemInstSerialNumber() {
+void EQ::ItemInstance::AddGUIDToMap(uint64 in)
+{
+	guids.emplace(in);
+}
 
+void EQ::ItemInstance::ClearGUIDMap()
+{
+	guids.clear();
+}
+
+static int64 GetNextItemInstSerialNumber(SharedDatabase& database) {
 	// The Bazaar relies on each item a client has up for Trade having a unique
 	// identifier. This 'SerialNumber' is sent in Serialized item packets and
 	// is used in Bazaar packets to identify the item a player is buying or inspecting.
@@ -46,19 +57,21 @@ static inline int32 GetNextItemInstSerialNumber() {
 	// NextItemInstSerialNumber is the next one to hand out.
 	//
 	// It is very unlikely to reach 2,147,483,647. Maybe we should call abort(), rather than wrapping back to 1.
-	if(NextItemInstSerialNumber >= INT_MAX)
-		NextItemInstSerialNumber = 1;
-	else
-		NextItemInstSerialNumber++;
 
-	return NextItemInstSerialNumber;
+	next_item_serial_number++;
+
+	while (guids.contains(next_item_serial_number)) {
+		next_item_serial_number++;
+	}
+
+	return next_item_serial_number;
 }
 
 //
 // class EQ::ItemInstance
 //
-EQ::ItemInstance::ItemInstance(const ItemData* item, int16 charges) {
-
+EQ::ItemInstance::ItemInstance(SharedDatabase& db, const ItemData* item, int16 charges, uint64 guid)
+{
 	if (item) {
 		m_item = new ItemData(*item);
 	}
@@ -69,11 +82,28 @@ EQ::ItemInstance::ItemInstance(const ItemData* item, int16 charges) {
 		m_color = m_item->Color;
 	}
 
-	m_SerialNumber  = GetNextItemInstSerialNumber();
+	m_SerialNumber = GetNextItemInstSerialNumber(db);
+	m_guid         = m_SerialNumber;
 }
 
-EQ::ItemInstance::ItemInstance(SharedDatabase *db, uint32 item_id, int16 charges) {
+EQ::ItemInstance::ItemInstance(SharedDatabase *db, const ItemData* item, int16 charges)
+{
+	if (item) {
+		m_item = new ItemData(*item);
+	}
 
+	m_charges = charges;
+
+	if (m_item && m_item->IsClassCommon()) {
+		m_color = m_item->Color;
+	}
+
+	m_SerialNumber = GetNextItemInstSerialNumber(*db);
+	m_guid         = m_SerialNumber;
+}
+
+EQ::ItemInstance::ItemInstance(SharedDatabase *db, uint32 item_id, int16 charges)
+{
 	m_item     = db->GetItem(item_id);
 
 	if (m_item) {
@@ -88,7 +118,18 @@ EQ::ItemInstance::ItemInstance(SharedDatabase *db, uint32 item_id, int16 charges
 		m_color = 0;
 	}
 
-	m_SerialNumber  = GetNextItemInstSerialNumber();
+	m_SerialNumber  = GetNextItemInstSerialNumber(*db);
+	m_guid         = m_SerialNumber;
+}
+
+uint32 EQ::ItemInstance::GetCurrentSerialNumber()
+{
+	return next_item_serial_number;
+}
+
+void EQ::ItemInstance::SetSerialNumber(uint32 in)
+{
+	next_item_serial_number = in;
 }
 
 EQ::ItemInstance::ItemInstance(ItemInstTypes use_type) {
@@ -134,6 +175,7 @@ EQ::ItemInstance::ItemInstance(const ItemInstance& copy)
 	}
 
 	m_SerialNumber = copy.m_SerialNumber;
+	m_guid         = copy.m_guid;
 	m_custom_data  = copy.m_custom_data;
 	m_timers       = copy.m_timers;
 

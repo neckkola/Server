@@ -35,6 +35,8 @@ void SendNPCEditSubCommands(Client *c);
 void SendRuleSubCommands(Client *c);
 void SendGuildSubCommands(Client *c);
 void SendShowInventorySubCommands(Client *c);
+void SendShowCurrentSerialNumber(Client *c);
+void SetCurrentSerialNumber(uint32 in);
 void SendFixMobSubCommands(Client *c);
 void SendDataBucketsSubCommands(Client *c);
 void SendParcelsSubCommands(Client *c);

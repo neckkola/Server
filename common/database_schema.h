@@ -342,6 +342,7 @@ namespace DatabaseSchema {
 			"group_leaders",
 			"instance_list",
 			"ip_exemptions",
+			"items_global_item_id",
 			"lfguild",
 			"merc_buffs",
 			"merchantlist_temp",
