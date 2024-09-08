@@ -1816,6 +1816,7 @@ public:
 	void ProcessEvolvingItem(const uint64 exp, const Mob* mob);
 	void SendEvolvingPacket(int8 action, CharacterEvolvingItemsRepository::CharacterEvolvingItems item);
 	void DoEvolveItemToggle(const EQApplicationPacket* app);
+	void DoEvolveItemDisplayFinalResult(const EQApplicationPacket* app);
 
 protected:
 	friend class Mob;
