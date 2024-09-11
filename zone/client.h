@@ -1816,6 +1816,7 @@ public:
 	void DoEvolveItemToggle(const EQApplicationPacket* app);
 	void DoEvolveItemDisplayFinalResult(const EQApplicationPacket* app);
 	bool DoEvolveCheckProgression(const EQ::ItemInstance &inst);
+	void SendEvolveXPTransferWindow();
 
 protected:
 	friend class Mob;
