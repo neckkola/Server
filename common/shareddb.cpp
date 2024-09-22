@@ -822,7 +822,7 @@ bool SharedDatabase::GetInventory(Client *c)
 				inst->SetEvolveActivated(e.activated);
 				inst->SetEvolveEquiped(e.equiped);
 				inst->SetEvolveCurrentAmount(e.current_amount);
-				inst->SetEvolveProgression(e.progression);
+				inst->SetEvolveProgression2();
 				inst->SetEvolveFinalItemID(e.final_item_id);
 			}
 			else {
@@ -832,7 +832,7 @@ bool SharedDatabase::GetInventory(Client *c)
 				inst->SetEvolveActivated(t->activated);
 				inst->SetEvolveEquiped(t->equiped);
 				inst->SetEvolveCurrentAmount(t->current_amount);
-				inst->SetEvolveProgression(t->progression);
+				inst->SetEvolveProgression2();
 				inst->SetEvolveFinalItemID(t->final_item_id);
 			}
 		}
