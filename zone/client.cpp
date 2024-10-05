@@ -13106,8 +13106,3 @@ void Client::ShowZoneShardMenu()
 		number++;
 	}
 }
-
-std::map<uint32, CharacterEvolvingItemsRepository::CharacterEvolvingItems>* Client::GetEvolvingItems()
-{
-	return &m_evolving_items;
-}
