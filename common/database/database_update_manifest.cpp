@@ -5784,11 +5784,13 @@ CREATE TABLE `player_event_loot_items` (
 	`corpse_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
 	`created_at` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
-	INDEX `Index 2` (`item_id`, `npc_id`, `created_at`) USING BTREE
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
 AUTO_INCREMENT=1;
+
 
 UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 16;
 
@@ -5806,7 +5808,8 @@ CREATE TABLE `player_event_merchant_sell` (
 	`player_currency_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
 	`created_at` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
-	INDEX `Index 2` (`npc_id`, `created_at`, `item_id`) USING BTREE
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
@@ -5828,7 +5831,8 @@ CREATE TABLE `player_event_merchant_purchase` (
 	`player_currency_balance` BIGINT(20) UNSIGNED NULL DEFAULT '0',
 	`created_at` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
-	INDEX `Index 2` (`npc_id`, `created_at`, `item_id`) USING BTREE
+	INDEX `item_id_npc_id` (`item_id`, `npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
@@ -5851,7 +5855,8 @@ CREATE TABLE `player_event_npc_handin` (
 	`is_quest_handin` TINYINT(3) UNSIGNED NULL DEFAULT '0',
 	`created_at` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
-	INDEX `Index 2` (`created_at`, `npc_id`, `is_quest_handin`) USING BTREE
+	INDEX `npc_id_is_quest_handin` (`npc_id`, `is_quest_handin`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
@@ -5873,7 +5878,9 @@ CREATE TABLE `player_event_npc_handin_entries` (
 	`augment_6_id` INT(10) UNSIGNED NOT NULL DEFAULT '0',
 	`created_at` DATETIME NULL DEFAULT NULL,
 	PRIMARY KEY (`id`) USING BTREE,
-	INDEX `Index 2` (`created_at`, `player_event_npc_handin_id`, `type`, `item_id`) USING BTREE
+	INDEX `type_item_id` (`type`, `item_id`) USING BTREE,
+	INDEX `player_event_npc_handin_id` (`player_event_npc_handin_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
 )
 COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
