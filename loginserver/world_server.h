@@ -54,7 +54,7 @@ public:
 	void SerializeForClientServerList(class SerializeBuffer &out, bool use_local_ip, LSClientVersion version) const;
 
 private:
-
+	void SerializeForClientServerListLarion(class SerializeBuffer& out, bool use_local_ip) const;
 	void ProcessNewLSInfo(uint16_t opcode, const EQ::Net::Packet &packet);
 	void ProcessLSStatus(uint16_t opcode, const EQ::Net::Packet &packet);
 	void ProcessUserToWorldResponseLegacy(uint16_t opcode, const EQ::Net::Packet &packet);

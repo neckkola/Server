@@ -737,6 +737,342 @@ void WorldServer::SerializeForClientServerList(SerializeBuffer &out, bool use_lo
 	out.WriteUInt32(GetPlayersOnline());
 }
 
+void WorldServer::SerializeForClientServerListLarion(class SerializeBuffer& out, bool use_local_ip) const {
+	if (use_local_ip) {
+		out.WriteString(GetLocalIP());
+	}
+	else {
+		out.WriteString(GetRemoteIP());
+	}
+
+	out.WriteUInt32(9000);
+	out.WriteUInt32(0);
+
+	uint32_t flags = 32; //all servers i saw had this set
+	switch (GetServerListID()) {
+	case LS::ServerType::Legends:
+		flags += LS::ServerTypeFlags::Legends;
+		break;
+	case LS::ServerType::Preferred:
+		flags += LS::ServerTypeFlags::Preferred;
+		break;
+	default:
+		flags += LS::ServerTypeFlags::Standard;
+		break;
+	}
+
+	out.WriteUInt32(flags);
+	out.WriteUInt32(GetServerId());
+	out.WriteString(GetServerLongName());
+	out.WriteString("EN");
+	out.WriteString("US");
+
+	if (GetStatus() < 0) {
+		if (GetZonesBooted() == 0) {
+			out.WriteInt32(LS::ServerStatusFlags::Down);
+		}
+		else {
+			out.WriteInt32(LS::ServerStatusFlags::Locked);
+		}
+	}
+	else {
+		out.WriteInt32(LS::ServerStatusFlags::Up);
+	}
+
+	out.WriteUInt32(GetPlayersOnline());
+}
+
+// void WorldServer::SerializeForClientServerList(SerializeBuffer& out, bool use_local_ip, LSClientVersion version) const
+// {
+// 	if (version == cv_larion) {
+// 		SerializeForClientServerListLarion(out, use_local_ip);
+// 	}
+// 	else {
+// 		SerializeForClientServerListLegacy(out, use_local_ip);
+// 	}
+// }
+//
+// /**
+//  * @param in_server_list_id
+//  * @return
+//  */
+// WorldServer *WorldServer::SetServerListTypeId(unsigned int in_server_list_id)
+// {
+// 	m_server_list_type_id = in_server_list_id;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetServerDescription() const
+// {
+// 	return m_server_description;
+// }
+//
+// /**
+//  * @param in_server_description
+//  */
+// WorldServer *WorldServer::SetServerDescription(const std::string &in_server_description)
+// {
+// 	WorldServer::m_server_description = in_server_description;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @return
+//  */
+// bool WorldServer::IsServerAuthorized() const
+// {
+// 	return m_is_server_authorized;
+// }
+//
+// /**
+//  * @param in_is_server_authorized
+//  */
+// WorldServer *WorldServer::SetIsServerAuthorized(bool in_is_server_authorized)
+// {
+// 	WorldServer::m_is_server_authorized = in_is_server_authorized;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @return
+//  */
+// bool WorldServer::IsServerLoggedIn() const
+// {
+// 	return m_is_server_logged_in;
+// }
+//
+// /**
+//  * @param in_is_server_logged_in
+//  */
+// WorldServer *WorldServer::SetIsServerLoggedIn(bool in_is_server_logged_in)
+// {
+// 	WorldServer::m_is_server_logged_in = in_is_server_logged_in;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @return
+//  */
+// bool WorldServer::IsServerTrusted() const
+// {
+// 	return m_is_server_trusted;
+// }
+//
+// /**
+//  * @param in_is_server_trusted
+//  */
+// WorldServer *WorldServer::SetIsServerTrusted(bool in_is_server_trusted)
+// {
+// 	WorldServer::m_is_server_trusted = in_is_server_trusted;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_zones_booted
+//  */
+// WorldServer *WorldServer::SetZonesBooted(unsigned int in_zones_booted)
+// {
+// 	WorldServer::m_zones_booted = in_zones_booted;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_players_online
+//  */
+// WorldServer *WorldServer::SetPlayersOnline(unsigned int in_players_online)
+// {
+// 	WorldServer::m_players_online = in_players_online;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_server_status
+//  */
+// WorldServer *WorldServer::SetServerStatus(int in_server_status)
+// {
+// 	WorldServer::m_server_status = in_server_status;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_server_process_type
+//  */
+// WorldServer *WorldServer::SetServerProcessType(unsigned int in_server_process_type)
+// {
+// 	WorldServer::m_server_process_type = in_server_process_type;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_long_name
+//  */
+// WorldServer *WorldServer::SetLongName(const std::string &in_long_name)
+// {
+// 	WorldServer::m_long_name = in_long_name;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_short_name
+//  */
+// WorldServer *WorldServer::SetShortName(const std::string &in_short_name)
+// {
+// 	WorldServer::m_short_name = in_short_name;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_account_name
+//  */
+// WorldServer *WorldServer::SetAccountName(const std::string &in_account_name)
+// {
+// 	WorldServer::m_account_name = in_account_name;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_account_password
+//  */
+// WorldServer *WorldServer::SetAccountPassword(const std::string &in_account_password)
+// {
+// 	WorldServer::m_account_password = in_account_password;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_remote_ip
+//  */
+// WorldServer *WorldServer::SetRemoteIp(const std::string &in_remote_ip)
+// {
+// 	WorldServer::m_remote_ip_address = in_remote_ip;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_local_ip
+//  */
+// WorldServer *WorldServer::SetLocalIp(const std::string &in_local_ip)
+// {
+// 	WorldServer::m_local_ip = in_local_ip;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_protocol
+//  */
+// WorldServer *WorldServer::SetProtocol(const std::string &in_protocol)
+// {
+// 	WorldServer::m_protocol = in_protocol;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @param in_version
+//  */
+// WorldServer *WorldServer::SetVersion(const std::string &in_version)
+// {
+// 	WorldServer::m_version = in_version;
+//
+// 	return this;
+// }
+//
+// /**
+//  * @return
+//  */
+// int WorldServer::GetServerStatus() const
+// {
+// 	return m_server_status;
+// }
+//
+// /**
+//  * @return
+//  */
+// unsigned int WorldServer::GetServerListTypeId() const
+// {
+// 	return m_server_list_type_id;
+// }
+//
+// /**
+//  * @return
+//  */
+// unsigned int WorldServer::GetServerProcessType() const
+// {
+// 	return m_server_process_type;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetAccountName() const
+// {
+// 	return m_account_name;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetAccountPassword() const
+// {
+// 	return m_account_password;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetRemoteIp() const
+// {
+// 	return m_remote_ip_address;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetLocalIp() const
+// {
+// 	return m_local_ip;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetProtocol() const
+// {
+// 	return m_protocol;
+// }
+//
+// /**
+//  * @return
+//  */
+// const std::string &WorldServer::GetVersion() const
+// {
+// 	return m_version;
+// }
+//
+// void WorldServer::OnKeepAlive(EQ::Timer *t)
+// {
+// 	ServerPacket pack(ServerOP_KeepAlive, 0);
+// 	m_connection->SendPacket(&pack);
+// }
+
 void WorldServer::FormatWorldServerName(char *name, int8 server_list_type)
 {
 	std::string server_long_name = name;
