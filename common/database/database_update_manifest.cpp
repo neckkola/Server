@@ -5945,6 +5945,54 @@ COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
 AUTO_INCREMENT=1;
 
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 44;
+CREATE TABLE `player_event_killed_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 45;
+CREATE TABLE `player_event_killed_named_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+
+UPDATE `player_event_log_settings` SET `etl_enabled` = 1 WHERE `id` = 46;
+CREATE TABLE `player_event_killed_raid_npc` (
+	`id` BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+	`npc_id` INT(10) UNSIGNED NULL DEFAULT '0',
+	`npc_name` VARCHAR(64) NULL DEFAULT NULL COLLATE 'latin1_swedish_ci',
+	`combat_time_seconds` INT(10) UNSIGNED NULL DEFAULT '0',
+	`total_damage_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`total_heal_per_second_taken` BIGINT(20) UNSIGNED NULL DEFAULT '0',
+	`created_at` DATETIME NULL DEFAULT NULL,
+	PRIMARY KEY (`id`) USING BTREE,
+	INDEX `npc_id` (`npc_id`) USING BTREE,
+	INDEX `created_at` (`created_at`) USING BTREE
+)
+COLLATE='latin1_swedish_ci'
+ENGINE=InnoDB;
+
 )"
 	}
 // -- template; copy/paste this when you need to create a new entry
