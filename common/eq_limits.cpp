@@ -112,6 +112,15 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF2::constants::CHARACTER_CREATION_LIMIT,
 		RoF2::constants::SAY_LINK_BODY_SIZE,
 		RoF2::constants::MAX_BAZAAR_TRADERS
+	),
+	/*[ClientVersion::Larion] =*/
+	EQ::constants::LookupEntry(
+		Larion::constants::EXPANSION,
+		Larion::constants::EXPANSION_BIT,
+		Larion::constants::EXPANSIONS_MASK,
+		Larion::constants::CHARACTER_CREATION_LIMIT,
+		Larion::constants::SAY_LINK_BODY_SIZE,
+		Larion::INULL
 	)
 };
 
@@ -389,7 +398,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF2::invtype::VIEW_MOD_PC_SIZE,	RoF2::invtype::VIEW_MOD_BANK_SIZE,			RoF2::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF2::invtype::VIEW_MOD_LIMBO_SIZE,	RoF2::invtype::ALT_STORAGE_SIZE,			RoF2::invtype::ARCHIVED_SIZE,
 			RoF2::invtype::MAIL_SIZE,			RoF2::invtype::GUILD_TROPHY_TRIBUTE_SIZE,	RoF2::invtype::KRONO_SIZE,
-			RoF2::invtype::OTHER_SIZE
+			RoF2::invtype::OTHER_SIZE, RoF2::INULL, RoF2::INULL
 		),
 
 		RoF2::invslot::EQUIPMENT_BITMASK,
@@ -794,7 +803,7 @@ static const EQ::inventory::LookupEntry inventory_static_lookup_entries[EQ::vers
 			RoF2::invtype::VIEW_MOD_PC_SIZE,	RoF2::invtype::VIEW_MOD_BANK_SIZE,	RoF2::invtype::VIEW_MOD_SHARED_BANK_SIZE,
 			RoF2::invtype::VIEW_MOD_LIMBO_SIZE,	RoF2::INULL,						RoF2::INULL,
 			RoF2::INULL,						RoF2::INULL,						RoF2::INULL,
-			RoF2::INULL
+			RoF2::INULL, RoF2::INULL, RoF2::INULL
 		),
 
 		RoF2::INULL,
@@ -1272,6 +1281,19 @@ static const EQ::spells::LookupEntry spells_static_lookup_entries[EQ::versions::
 		RoF2::spells::NPC_BUFFS,
 		RoF2::spells::PET_BUFFS,
 		RoF2::spells::MERC_BUFFS
+	),
+	/*[ClientVersion::Larion] =*/
+	EQ::spells::LookupEntry(
+		Larion::spells::SPELL_ID_MAX,
+		Larion::spells::SPELLBOOK_SIZE,
+		UF::spells::SPELL_GEM_COUNT, // client translators are setup to allow the max value a client supports..however, the top 4 indices are not valid in this case
+		Larion::spells::LONG_BUFFS,
+		Larion::spells::SHORT_BUFFS,
+		Larion::spells::DISC_BUFFS,
+		Larion::spells::TOTAL_BUFFS,
+		Larion::spells::NPC_BUFFS,
+		Larion::spells::PET_BUFFS,
+		Larion::spells::MERC_BUFFS
 	)
 };
 
