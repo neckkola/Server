@@ -2235,6 +2235,7 @@ private:
 public:
 	const std::string &GetMailKeyFull() const;
 	const std::string &GetMailKey() const;
+	void ShowZoneShardMenu();
 };
 
 #endif
