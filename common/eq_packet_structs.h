@@ -6561,6 +6561,13 @@ struct EvolveGetNextItem {
 	uint32 max_transfer_level;
 };
 
+struct EqGuid
+{
+	uint32_t Id;
+	uint16_t WorldId;
+	uint16_t Reserved;
+};
+
 // Restore structure packing to default
 #pragma pack()
 
