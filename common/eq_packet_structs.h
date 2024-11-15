@@ -55,6 +55,13 @@ struct LoginInfo {
 /*488*/
 };
 
+struct EqGuid
+{
+	uint32_t Id;
+	uint16_t WorldId;
+	uint16_t Reserved;
+};
+
 struct EnterWorld_Struct {
 /*000*/	char	name[64];
 /*064*/	uint32	tutorial;		// 01 on "Enter Tutorial", 00 if not
@@ -326,6 +333,7 @@ union
 	bool buyer;
 	bool untargetable;
 	uint32 npc_tint_id;
+	EqGuid CharacterGuid;
 };
 
 struct PlayerState_Struct {
@@ -6559,13 +6567,6 @@ struct EvolveGetNextItem {
 	uint64 new_current_amount;
 	uint64 from_current_amount;
 	uint32 max_transfer_level;
-};
-
-struct EqGuid
-{
-	uint32_t Id;
-	uint16_t WorldId;
-	uint16_t Reserved;
 };
 
 // Restore structure packing to default
