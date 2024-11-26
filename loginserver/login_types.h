@@ -84,7 +84,7 @@ struct PlayEverquestResponse {
 enum LSClientVersion {
 	cv_titanium,
 	cv_sod,
-	cv_larion
+	cv_laurion
 };
 
 enum LSClientStatus {
