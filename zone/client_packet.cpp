@@ -4270,26 +4270,32 @@ void Client::Handle_OP_Camp(const EQApplicationPacket *app)
 	if (IsLFP())
 		worldserver.StopLFP(CharacterID());
 
-	if (GetGM())
-	{
-		if (RuleB(Character, EnableHackedFastCampForGM))
+	if (ClientVersion() >= EQ::versions::ClientVersion::Laurion) {
+		if (!GetGM()) {
+			camp_timer.Start(29000, true);
+		}
+
+		auto outapp = new EQApplicationPacket(OP_Camp, 1);
+		FastQueuePacket(&outapp);
+	}
+	else {
+		if (GetGM())
 		{
-			camp_timer.Start(100, true);
+			if (RuleB(Character, EnableHackedFastCampForGM))
+			{
+				camp_timer.Start(100, true);
+			}
+			else {
+				OnDisconnect(true);
+				return;
+			}
+
+			camp_timer.Start(29000, true);
+			if (RuleB(Bots, Enabled)) {
+				bot_camp_timer.Start((RuleI(Bots, CampTimer) * 1000), true);
+			}
 		}
-		else {
-			OnDisconnect(true);
-		}
-
-		return;
 	}
-
-	camp_timer.Start(29000, true);
-
-	if (RuleB(Bots, Enabled)) {
-		bot_camp_timer.Start((RuleI(Bots, CampTimer) * 1000), true);
-	}
-
-	return;
 }
 
 void Client::Handle_OP_CancelTask(const EQApplicationPacket *app)
