@@ -2838,10 +2838,10 @@ void NPC::SendPayload(int payload_id, std::string payload_value)
 	}
 }
 
-NPC_Emote_Struct* NPC::GetNPCEmote(uint32 emote_id, uint8 event_) {
-	std::vector<NPC_Emote_Struct*> emotes;
+std::shared_ptr<NPC_Emote_Struct> NPC::GetNPCEmote(uint32 emote_id, uint8 event_) {
+	std::vector<std::shared_ptr<NPC_Emote_Struct>> emotes;
 
-	for (auto& e : zone->npc_emote_list) {
+	for (auto &e : zone->npc_emote_list) {
 		if (e->emoteid == emote_id && e->event_ == event_) {
 			emotes.emplace_back(e);
 		}
@@ -2849,7 +2849,9 @@ NPC_Emote_Struct* NPC::GetNPCEmote(uint32 emote_id, uint8 event_) {
 
 	if (emotes.empty()) {
 		return nullptr;
-	} else if (emotes.size() == 1) {
+	}
+
+	if (emotes.size() == 1) {
 		return emotes.front();
 	}
 

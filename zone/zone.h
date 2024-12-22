@@ -198,11 +198,11 @@ public:
 	int32 MobsAggroCount() { return aggroedmobs; }
 	DynamicZone *GetDynamicZone();
 
-	IPathfinder                                   *pathing;
-	std::vector<NPC_Emote_Struct *>               npc_emote_list;
-	LinkedList<Spawn2 *>                          spawn2_list;
-	LinkedList<ZonePoint *>                       zone_point_list;
-	std::vector<ZonePointsRepository::ZonePoints> virtual_zone_point_list;
+	IPathfinder                                    *pathing;
+	std::vector<std::shared_ptr<NPC_Emote_Struct>> npc_emote_list;
+	LinkedList<Spawn2 *>                           spawn2_list;
+	LinkedList<ZonePoint *>                        zone_point_list;
+	std::vector<ZonePointsRepository::ZonePoints>  virtual_zone_point_list;
 
 	Map                   *zonemap;
 	MercTemplate *GetMercTemplate(uint32 template_id);
@@ -308,7 +308,8 @@ public:
 	void LoadMercenarySpells();
 	void LoadMercenaryTemplates();
 	void LoadNewMerchantData(uint32 merchantid);
-	void LoadNPCEmotes(std::vector<NPC_Emote_Struct*>* v);
+	//void LoadNPCEmotes(std::vector<NPC_Emote_Struct*>* v);
+	void LoadNPCEmotes(std::vector<std::shared_ptr<NPC_Emote_Struct>> *v);
 	void LoadTempMerchantData();
 	void LoadVeteranRewards();
 	void LoadZoneDoors();

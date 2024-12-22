@@ -479,7 +479,8 @@ public:
 	Timer *GetRefaceTimer() const { return reface_timer; }
 	const uint32 GetAltCurrencyType() const { return NPCTypedata->alt_currency_type; }
 
-	NPC_Emote_Struct* GetNPCEmote(uint32 emote_id, uint8 event_);
+//	NPC_Emote_Struct* GetNPCEmote(uint32 emote_id, uint8 event_);
+	std::shared_ptr<NPC_Emote_Struct> GetNPCEmote(uint32 emote_id, uint8 event_);
 	void DoNPCEmote(uint8 event_, uint32 emote_id, Mob* t = nullptr);
 	bool CanTalk();
 	void DoQuestPause(Mob* m);

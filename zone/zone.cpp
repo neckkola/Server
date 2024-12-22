@@ -2573,14 +2573,15 @@ void Zone::DoAdventureActions()
 
 }
 
-void Zone::LoadNPCEmotes(std::vector<NPC_Emote_Struct*>* v)
+void Zone::LoadNPCEmotes(std::vector<std::shared_ptr<NPC_Emote_Struct>> *v)
 {
 	v->clear();
 
 	const auto& l = NpcEmotesRepository::All(content_db);
 
 	for (const auto& e : l) {
-		auto n = new NPC_Emote_Struct;
+		//auto n = new NPC_Emote_Struct;
+		auto n = std::make_shared<NPC_Emote_Struct>();
 
 		n->emoteid = e.emoteid;
 		n->event_  = e.event_;
