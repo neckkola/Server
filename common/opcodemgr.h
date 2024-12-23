@@ -22,7 +22,6 @@
 #include "types.h"
 #include "mutex.h"
 #include "emu_opcodes.h"
-#include "memory"
 
 #include <map>
 
@@ -119,10 +118,10 @@ protected:
 	};
 	friend class NormalMemStrategy;
 
-	std::shared_ptr<uint16>    emu_to_eq;
-	std::shared_ptr<EmuOpcode> eq_to_emu;
-	uint32                     EQOpcodeCount;
-	uint32                     EmuOpcodeCount;
+	uint16 *emu_to_eq;
+	EmuOpcode *eq_to_emu;
+	uint32 EQOpcodeCount;
+	uint32 EmuOpcodeCount;
 };
 
 //always resolves everything to 0 or OP_Unknown

@@ -138,8 +138,8 @@ RegularOpcodeManager::RegularOpcodeManager()
 }
 
 RegularOpcodeManager::~RegularOpcodeManager() {
-//	safe_delete_array(emu_to_eq);
-//	safe_delete_array(eq_to_emu);
+	safe_delete_array(emu_to_eq);
+	safe_delete_array(eq_to_emu);
 }
 
 bool RegularOpcodeManager::LoadOpcodes(const char *filename, bool report_errors) {
@@ -148,16 +148,14 @@ bool RegularOpcodeManager::LoadOpcodes(const char *filename, bool report_errors)
 	MOpcodes.lock();
 
 	loaded = true;
-	eq_to_emu = std::shared_ptr<EmuOpcode>(new EmuOpcode[MAX_EQ_OPCODE]);
-	emu_to_eq = std::shared_ptr<uint16>(new uint16[_maxEmuOpcode]);
-	// eq_to_emu = std::make_shared<EmuOpcode[]>(MAX_EQ_OPCODE);
-	// emu_to_eq = std::make_shared<uint16[]>(_maxEmuOpcode);
+	eq_to_emu = new EmuOpcode[MAX_EQ_OPCODE];
+	emu_to_eq = new uint16[_maxEmuOpcode];
 	EQOpcodeCount = MAX_EQ_OPCODE;
 	EmuOpcodeCount = _maxEmuOpcode;
 
 	//dont need to set eq_to_emu cause every element should get a value
-	memset(eq_to_emu.get(), 0, sizeof(EmuOpcode)*MAX_EQ_OPCODE);
-	memset(emu_to_eq.get(), 0, sizeof(uint16)*_maxEmuOpcode);
+	memset(eq_to_emu, 0, sizeof(EmuOpcode)*MAX_EQ_OPCODE);
+	memset(emu_to_eq, 0, sizeof(uint16)*_maxEmuOpcode);
 
 	bool ret = LoadOpcodesFile(filename, &s, report_errors);
 	MOpcodes.unlock();
@@ -172,7 +170,7 @@ bool RegularOpcodeManager::ReloadOpcodes(const char *filename, bool report_error
 	s.it = this;
 	MOpcodes.lock();
 
-	memset(eq_to_emu.get(), 0, sizeof(uint16)*MAX_EQ_OPCODE);
+	memset(eq_to_emu, 0, sizeof(uint16)*MAX_EQ_OPCODE);
 
 	bool ret = LoadOpcodesFile(filename, &s, report_errors);
 
@@ -184,7 +182,7 @@ uint16 RegularOpcodeManager::EmuToEQ(const EmuOpcode emu_op) {
 	//opcode is checked for validity in GetEQOpcode
 	uint16 res;
 	MOpcodes.lock();
-	res = emu_to_eq.get()[emu_op];
+	res = emu_to_eq[emu_op];
 	MOpcodes.unlock();
 
 	LogNetcodeDetail("[Opcode Manager] Translate emu [{}] ({:#06x}) eq [{:#06x}]", OpcodeNames[emu_op], emu_op, res);
@@ -202,7 +200,7 @@ EmuOpcode RegularOpcodeManager::EQToEmu(const uint16 eq_op) {
 //		return(OP_Unknown);
 	EmuOpcode res;
 	MOpcodes.lock();
-	res = eq_to_emu.get()[eq_op];
+	res = eq_to_emu[eq_op];
 	MOpcodes.unlock();
 #ifdef DEBUG_TRANSLATE
 	fprintf(stderr, "M Translate EQ 0x%.4x to Emu %s (%d)\n", eq_op, OpcodeNames[res], res);
@@ -213,9 +211,9 @@ EmuOpcode RegularOpcodeManager::EQToEmu(const uint16 eq_op) {
 void RegularOpcodeManager::SetOpcode(EmuOpcode emu_op, uint16 eq_op) {
 
 	//clear out old mapping
-	uint16 oldop = emu_to_eq.get()[emu_op];
+	uint16 oldop = emu_to_eq[emu_op];
 	if(oldop != 0)
-		eq_to_emu.get()[oldop] = OP_Unknown;
+		eq_to_emu[oldop] = OP_Unknown;
 
 	//use our strategy, since we have it
 	NormalMemStrategy s;
@@ -226,8 +224,8 @@ void RegularOpcodeManager::SetOpcode(EmuOpcode emu_op, uint16 eq_op) {
 void RegularOpcodeManager::NormalMemStrategy::Set(EmuOpcode emu_op, uint16 eq_op) {
 	if(uint32(emu_op) >= it->EmuOpcodeCount || eq_op >= it->EQOpcodeCount)
 		return;
-	it->emu_to_eq.get()[emu_op] = eq_op;
-	it->eq_to_emu.get()[eq_op] = emu_op;
+	it->emu_to_eq[emu_op] = eq_op;
+	it->eq_to_emu[eq_op] = emu_op;
 }
 
 NullOpcodeManager::NullOpcodeManager()
