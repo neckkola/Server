@@ -658,7 +658,9 @@ int main(int argc, char **argv)
 	LogSys.CloseFileLogs();
 
 	safe_delete(QServ);
+	safe_delete(Config);
 	safe_delete(mutex);
+	safe_delete(spells);
 
 	return 0;
 }
