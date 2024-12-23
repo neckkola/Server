@@ -657,10 +657,12 @@ int main(int argc, char **argv)
 	LogInfo("Proper zone shutdown complete.");
 	LogSys.CloseFileLogs();
 
-	safe_delete(QServ);
-	safe_delete(Config);
 	safe_delete(mutex);
+
+	zone->UnloadLDoNTraps();
+	safe_delete(QServ);
 	safe_delete(spells);
+
 
 	return 0;
 }

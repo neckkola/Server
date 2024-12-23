@@ -2361,6 +2361,23 @@ void Zone::LoadLDoNTraps()
 	}
 }
 
+void Zone::UnloadLDoNTraps()
+{
+	for (auto &[key, data] : ldon_trap_list) {
+		if (data != nullptr) {
+			safe_delete(data);
+		}
+	}
+
+	for (auto &[key, list] : ldon_trap_entry_list) {
+		for (auto &l : list) {
+			if (l != nullptr) {
+				safe_delete(l);
+			}
+		}
+	}
+}
+
 void Zone::LoadLDoNTrapEntries()
 {
 	const auto& l = LdonTrapEntriesRepository::All(content_db);

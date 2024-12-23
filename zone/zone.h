@@ -303,6 +303,7 @@ public:
 	void LoadZoneBlockedSpells();
 	void LoadLDoNTrapEntries();
 	void LoadLDoNTraps();
+	void UnloadLDoNTraps();
 	void LoadLevelEXPMods();
 	void LoadGrids();
 	void LoadMercenarySpells();
