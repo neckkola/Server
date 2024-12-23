@@ -657,6 +657,7 @@ int main(int argc, char **argv)
 	LogInfo("Proper zone shutdown complete.");
 	LogSys.CloseFileLogs();
 
+	safe_delete(QServ);
 	safe_delete(mutex);
 
 	return 0;
