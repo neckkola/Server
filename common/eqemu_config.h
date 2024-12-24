@@ -139,7 +139,6 @@ class EQEmuConfig
 		}
 		virtual ~EQEmuConfig()
 		{
-			safe_delete(_config);
 		}
 
 	public:
