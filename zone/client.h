@@ -294,7 +294,7 @@ public:
 	void SendBazaarDone(uint32 trader_id);
 	void SendBulkBazaarTraders();
 	void SendBulkBazaarBuyers();
-	void DoBazaarInspect(const BazaarInspect_Struct &in);
+	void DoBazaarInspect(BazaarInspect_Struct &in);
 	void SendBazaarDeliveryCosts();
 	static std::string DetermineMoneyString(uint64 copper);
 
@@ -1128,6 +1128,10 @@ public:
 	void SetTrader(bool status) { trader = status; }
 	uint16 GetTraderID() { return trader_id; }
 	void SetTraderID(uint16 id) { trader_id = id; }
+	void SetTraderCount(uint32 no) { m_trader_count = no; }
+	uint32 GetTraderCount() { return m_trader_count; }
+	void IncrementTraderCount() { m_trader_count += 1; }
+	void DecrementTraderCount() { m_trader_count > 0 ? m_trader_count -= 1 : m_trader_count = 0; }
 
 	eqFilterMode GetFilter(eqFilterType filter_id) const { return ClientFilters[filter_id]; }
 	void SetFilter(eqFilterType filter_id, eqFilterMode filter_mode) { ClientFilters[filter_id] = filter_mode; }
@@ -1946,6 +1950,7 @@ private:
 	uint8 firstlogon;
 	uint32 mercid; // current merc
 	uint8 mercSlot; // selected merc slot
+	uint32                                                         m_trader_count{};
 	uint32                                                         m_buyer_id;
 	uint32                                                         m_barter_time;
 	int32                                                          m_parcel_platinum;
