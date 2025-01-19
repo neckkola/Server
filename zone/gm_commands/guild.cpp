@@ -622,7 +622,9 @@ void command_guild(Client* c, const Seperator* sep)
 
 			cl->SetPosition(c->GetX(), c->GetY(), c->GetZ());
 			cl->SetSpawned();
-			cl->SetBuyerID(cl->CharacterID());
+			//cl->SetBuyerID(cl->CharacterID());
+			cl->SetTraderID(cl->CharacterID());
+			cl->SetTrader(true);
 			cl->SetBecomeNPC(false);
 			cl->SetOffline(true);
 			entity_list.AddClient(cl);
