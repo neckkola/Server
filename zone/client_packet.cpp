@@ -81,6 +81,7 @@ extern PetitionList petition_list;
 extern EntityList entity_list;
 typedef void (Client::*ClientPacketProc)(const EQApplicationPacket *app);
 
+
 //Use a map for connecting opcodes since it dosent get used a lot and is sparse
 std::map<uint32, ClientPacketProc> ConnectingOpcodes;
 //Use a static array for connected, for speed
@@ -322,6 +323,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_MoveCoin] = &Client::Handle_OP_MoveCoin;
 	ConnectedOpcodes[OP_MoveItem] = &Client::Handle_OP_MoveItem;
 	ConnectedOpcodes[OP_MoveMultipleItems] = &Client::Handle_OP_MoveMultipleItems;
+	ConnectedOpcodes[OP_Offline] = &Client::Handle_OP_Offline;
 	ConnectedOpcodes[OP_OpenContainer] = &Client::Handle_OP_OpenContainer;
 	ConnectedOpcodes[OP_OpenGuildTributeMaster] = &Client::Handle_OP_OpenGuildTributeMaster;
 	ConnectedOpcodes[OP_OpenInventory] = &Client::Handle_OP_OpenInventory;
@@ -17286,4 +17288,9 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 		default: {
 		}
 	}
+}
+
+void Client::Handle_OP_Offline(const EQApplicationPacket *app)
+{
+	OnDisconnect(true);
 }
