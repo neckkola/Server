@@ -319,6 +319,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_MoveCoin] = &Client::Handle_OP_MoveCoin;
 	ConnectedOpcodes[OP_MoveItem] = &Client::Handle_OP_MoveItem;
 	ConnectedOpcodes[OP_MoveMultipleItems] = &Client::Handle_OP_MoveMultipleItems;
+	ConnectedOpcodes[OP_Offline] = &Client::Handle_OP_Offline;
 	ConnectedOpcodes[OP_OpenContainer] = &Client::Handle_OP_OpenContainer;
 	ConnectedOpcodes[OP_OpenGuildTributeMaster] = &Client::Handle_OP_OpenGuildTributeMaster;
 	ConnectedOpcodes[OP_OpenInventory] = &Client::Handle_OP_OpenInventory;
@@ -17163,4 +17164,9 @@ void Client::Handle_OP_ShopRetrieveParcel(const EQApplicationPacket *app)
 
     auto parcel_in = (ParcelRetrieve_Struct *)app->pBuffer;
     DoParcelRetrieve(*parcel_in);
+}
+
+void Client::Handle_OP_Offline(const EQApplicationPacket *app)
+{
+	OnDisconnect(true);
 }
