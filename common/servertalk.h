@@ -231,10 +231,12 @@
 #define ServerOP_LSPlayerJoinWorld	0x3007
 #define ServerOP_LSPlayerZoneChange	0x3008
 
-#define	ServerOP_UsertoWorldReqLeg	0xAB00
-#define	ServerOP_UsertoWorldRespLeg	0xAB01
-#define	ServerOP_UsertoWorldReq		0xAB02
-#define	ServerOP_UsertoWorldResp	0xAB03
+#define ServerOP_UsertoWorldReqLeg                0xAB00
+#define ServerOP_UsertoWorldRespLeg               0xAB01
+#define ServerOP_UsertoWorldReq                   0xAB02
+#define ServerOP_UsertoWorldResp                  0xAB03
+#define ServerOP_UsertoWorldCancelOfflineRequest  0xAB04
+#define ServerOP_UsertoWorldCancelOfflineResponse 0xAB05
 
 #define ServerOP_LauncherConnectInfo	0x3000
 #define ServerOP_LauncherZoneRequest	0x3001
@@ -391,12 +393,13 @@ enum {	QSG_LFGuild_PlayerMatches = 0, QSG_LFGuild_UpdatePlayerInfo, QSG_LFGuild_
 
 
 enum {
-	UserToWorldStatusWorldUnavail = 0,
-	UserToWorldStatusSuccess = 1,
-	UserToWorldStatusSuspended = -1,
-	UserToWorldStatusBanned = -2,
-	UserToWorldStatusWorldAtCapacity = -3,
-	UserToWorldStatusAlreadyOnline = -4
+	UserToWorldStatusWorldUnavail        = 0,
+	UserToWorldStatusSuccess             = 1,
+	UserToWorldStatusSuspended           = -1,
+	UserToWorldStatusBanned              = -2,
+	UserToWorldStatusWorldAtCapacity     = -3,
+	UserToWorldStatusAlreadyOnline       = -4,
+	UserToWorldStatusOffilineTraderBuyer = -5
 };
 
 /************ PACKET RELATED STRUCT ************/
@@ -589,6 +592,9 @@ struct ServerClientList_Struct {
 	uint8	LFGToLevel;
 	bool	LFGMatchFilter;
 	char	LFGComments[64];
+	bool    trader;
+	bool    buyer;
+	bool    offline;
 };
 
 struct ServerClientListKeepAlive_Struct {
@@ -646,7 +652,7 @@ struct ServerLSInfo_Struct {
 	uint8	servertype; // 0=world, 1=chat, 2=login, 3=MeshLogin
 };
 
-struct LoginserverNewWorldRequest {
+struct ServerNewLSInfo_Struct {
 	char	server_long_name[201]; // name the worldserver wants
 	char	server_short_name[50]; // shortname the worldserver wants
 	char	remote_ip_address[125];			// DNS address of the server
@@ -658,21 +664,21 @@ struct LoginserverNewWorldRequest {
 	uint8	server_process_type; // 0=world, 1=chat, 2=login, 3=MeshLogin
 };
 
-struct LoginserverAccountUpdate {            // for updating info on login server
-	char   world_account[31];            // account name for the worldserver
-	char   world_password[31];            // password for the name
-	uint32 user_account_id; // player account ID
-	char   user_account_name[31];            // player account name
-	char   user_account_password[51];            // player account password
-	char   user_email[101]; // player account email address
+struct ServerLSAccountUpdate_Struct {			// for updating info on login server
+	char	worldaccount[31];			// account name for the worldserver
+	char	worldpassword[31];			// password for the name
+	uint32	useraccountid; // player account ID
+	char	useraccount[31];			// player account name
+	char	userpassword[51];			// player account password
+	char	user_email[101]; // player account email address
 };
 
-struct LoginserverWorldStatusUpdate {
+struct ServerLSStatus_Struct {
 	int32 status;
 	int32 num_players;
 	int32 num_zones;
 };
-struct LoginserverZoneInfoUpdate {
+struct ZoneInfo_Struct {
 	uint32 zone;
 	uint16 count;
 	uint32 zone_wid;
@@ -1035,6 +1041,7 @@ struct ServerGuildMemberUpdate_Struct {
 	char   member_name[64];
 	uint32 zone_id;
 	uint32 last_seen;
+	uint32 offline_mode;
 };
 
 struct ServerGuildPermissionUpdate_Struct {
@@ -1788,6 +1795,8 @@ struct BazaarPurchaseMessaging_Struct {
 	uint32           buyer_id;
 	uint32           item_quantity_available;
 	uint32           id;
+	uint32           trader_zone_id;
+	uint32           trader_zone_instance_id;
 };
 
 #pragma pack()

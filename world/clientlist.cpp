@@ -358,7 +358,11 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 	while (iterator.MoreElements()) {
 		if (iterator.GetData()->GetID() == scl->wid) {
 			cle = iterator.GetData();
-			if (scl->remove == 2) {
+			if (scl->remove == 3) {
+				//cle->LeavingZone(zoneserver, CLE_Status::OfflineMode);
+				cle->Update(zoneserver, scl, CLE_Status::OfflineMode);
+			}
+			else if (scl->remove == 2) {
 				cle->LeavingZone(zoneserver, CLE_Status::Offline);
 			}
 			else if (scl->remove == 1) {
@@ -371,7 +375,11 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		}
 		iterator.Advance();
 	}
-	if (scl->remove == 2) {
+
+	if (scl->remove == 3) {
+		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::OfflineMode);
+	}
+	else if (scl->remove == 2) {
 		cle = new ClientListEntry(GetNextCLEID(), zoneserver, scl, CLE_Status::Online);
 	}
 	else if (scl->remove == 1) {
@@ -409,7 +417,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		" LFGFromLevel [{}]"
 		" LFGToLevel [{}]"
 		" LFGMatchFilter [{}]"
-		" LFGComments [{}]",
+		" LFGComments [{}]"
+		" Trader [{}]"
+		" Buyer [{}]"
+		" Offline [{}]",
 		scl->remove,
 		scl->wid,
 		scl->IP,
@@ -436,7 +447,10 @@ void ClientList::ClientUpdate(ZoneServer *zoneserver, ServerClientList_Struct *s
 		scl->LFGFromLevel,
 		scl->LFGToLevel,
 		scl->LFGMatchFilter,
-		scl->LFGComments
+		scl->LFGComments,
+		scl->trader,
+		scl->buyer,
+		scl->offline
 	);
 
 	clientlist.Insert(cle);
@@ -713,7 +727,15 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 					rankstring = 0;
 					iterator.Advance();
 					continue;
-				} else if (cle->GetGM()) {
+				} else if (cle->GetTrader())
+				{
+					rankstring = 12315;
+				}
+				else if (cle->GetBuyer())
+				{
+					rankstring = 6056;
+				}
+				else if (cle->GetGM()) {
 					if (cle->Admin() >= AccountStatus::GMImpossible) {
 						rankstring = 5021;
 					} else if (cle->Admin() >= AccountStatus::GMMgmt) {
@@ -804,6 +826,17 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 				char placcount[30]={0};
 				if (admin>=cle->Admin() && admin > AccountStatus::Player) {
 					strcpy(placcount,cle->AccountName());
+				}
+
+				if (cle->GetOffline()) {
+					if (cle->GetTrader()) {
+						pidstring = 0x0430;
+						rankstring = 0xFFFFFFFF;
+					}
+					if (cle->GetBuyer()) {
+						pidstring = 0x0420;
+						rankstring = 0xFFFFFFFF;
+					}
 				}
 
 				memcpy(bufptr,&formatstring, sizeof(uint32));
@@ -1333,9 +1366,16 @@ bool ClientList::IsAccountInGame(uint32 iLSID) {
 	LinkedListIterator<ClientListEntry*> iterator(clientlist);
 	iterator.Reset();
 	while (iterator.MoreElements()) {
-		if (iterator.GetData()->LSID() == iLSID && iterator.GetData()->Online() == CLE_Status::InZone) {
+		LogDebug("IsAccountInGame iLSID {} Online {}",
+			iterator.GetData()->LSID(),
+			static_cast<uint32>(iterator.GetData()->Online())
+		);
+		if (iterator.GetData()->LSID() == iLSID &&
+			iterator.GetData()->Online() == CLE_Status::InZone
+		) {
 			return true;
 		}
+
 		iterator.Advance();
 	}
 
@@ -1579,6 +1619,9 @@ void ClientList::OnTick(EQ::Timer *t)
 		outclient["LFGMatchFilter"] = cle->GetLFGMatchFilter();
 		outclient["LFGComments"] = cle->GetLFGComments();
 		outclient["ClientVersion"] = cle->GetClientVersion();
+		outclient["Trader"] = cle->GetTrader();
+		outclient["Buyer"] = cle->GetBuyer();
+		outclient["OfflineMode"] = cle->GetOffline();
 		out["data"].append(outclient);
 
 		Iterator.Advance();
@@ -1657,6 +1700,9 @@ void ClientList::GetClientList(Json::Value &response)
 		row["race"]             = cle->race();
 		row["tells_off"]        = cle->TellsOff();
 		row["zone"]             = cle->zone();
+		row["Trader"]           = cle->GetTrader();
+		row["Buyer"]            = cle->GetBuyer();
+		row["OfflineMode"]      = cle->GetOffline();
 
 		response.append(row);
 

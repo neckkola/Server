@@ -216,3 +216,4 @@ const std::list<std::unique_ptr<WorldServer>> &WorldServerManager::GetWorldServe
 {
 	return m_world_servers;
 }
+

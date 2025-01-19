@@ -600,38 +600,45 @@ void command_guild(Client* c, const Seperator* sep)
 			c->Message(Chat::White, "Usage: #guild test [Guild ID]");
 		}
 		else {
-			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
-			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			auto guild_id = Strings::ToUnsignedInt(sep->arg[2]);
+//			auto guild    = guild_mgr.GetGuildByGuildID(guild_id);
+//			c->SendGuildMembersList();
 
-			PlayerEvent::LootItemEvent e{};
-			e.charges      = -1;
-			e.corpse_name  = "Test Corpse Name";
-			e.item_id      = 123456789;
-			e.item_name    = "Test Item Name";
-			e.npc_id       = 987654321;
-			e.augment_1_id = 11;
-			e.augment_2_id = 0;
-			e.augment_3_id = 0;
-			e.augment_4_id = 44;
-			e.augment_5_id = 55;
-			e.augment_6_id = 66;
 
-			RecordPlayerEventLogWithClient(c, PlayerEvent::LOOT_ITEM, e);
+			NewSpawn_Struct     ns{};
+			PlayerProfile_Struct pp{};
+			ExtendedProfile_Struct m_epp{};
+			EQ::TintProfile re{};
+			//			database.LoadCharacterData(c->CharacterID(), &pp, &m_epp);
+			Client                 *spawn;
+			EQStreamInterface* eqsi{};
+			eqsi = nullptr;
 
-			PlayerEvent::DestroyItemEvent e2{};
-			e2.charges     = -1;
-			e2.attuned     = true;
-			e.augment_1_id = 11;
-			e.augment_2_id = 0;
-			e.augment_3_id = 0;
-			e.augment_4_id = 44;
-			e.augment_5_id = 55;
-			e.augment_6_id = 66;
-			e2.item_id     = 123456789;
-			e2.item_name   = "Test Item Destroy Name";
-			e2.reason      = "Test Item Destroy Reason";
+			auto cl = new Client(eqsi);
 
-			RecordPlayerEventLogWithClient(c, PlayerEvent::ITEM_DESTROY, e2);
+			database.LoadCharacterData(c->CharacterID(), &cl->GetPP(), &cl->GetEPP());
+			cl->Clone(*c);
+
+			cl->GetInv().SetGMInventory(true);
+			database.GetInventory(cl);
+
+			cl->SetPosition(c->GetX(), c->GetY(), c->GetZ());
+			cl->SetSpawned();
+			//cl->SetBuyerID(cl->CharacterID());
+			cl->SetTraderID(cl->CharacterID());
+			cl->SetTrader(true);
+			cl->SetBecomeNPC(false);
+			cl->SetOffline(true);
+			entity_list.AddClient(cl);
+			//entity_list.SendZoneSpawns(c);
+			//cl->SendArmorAppearance(c);
+
+			auto outapp = new EQApplicationPacket();
+			cl->CreateSpawnPacket(outapp);
+			outapp->priority = 6;
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
 		}
 	}
 }

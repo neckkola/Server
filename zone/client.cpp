@@ -510,10 +510,10 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	client_data_loaded = false;
 	berserk = false;
 	dead = false;
-	eqs = ieqs;
-	ip = eqs->GetRemoteIP();
-	port = ntohs(eqs->GetRemotePort());
-	client_state = CLIENT_CONNECTING;
+	eqs                = ieqs ? ieqs : nullptr;
+	ip                 = eqs ? eqs->GetRemoteIP() : 0;
+	port               = eqs ? ntohs(eqs->GetRemotePort()) : 0;
+	client_state       = eqs ? CLIENT_CONNECTING : CLIENT_CONNECTED;
 	SetTrader(false);
 	Haste = 0;
 	SetCustomerID(0);
@@ -700,6 +700,7 @@ Client::Client(EQStreamInterface *ieqs) : Mob(
 	m_parcels.clear();
 
 	m_buyer_id = 0;
+	m_offline  = false;
 
 	SetBotPulling(false);
 	SetBotPrecombat(false);
@@ -725,10 +726,12 @@ Client::~Client() {
 		zone->ClearEXPModifier(this);
 	}
 
-	if (!IsZoning()) {
-		if(IsInAGuild()) {
+	if (!IsZoning() && IsInAGuild()) {
 			guild_mgr.UpdateDbMemberOnline(CharacterID(), false);
-			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr));
+		if (IsOffline()) {
+			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), GetZoneID(), time(nullptr), 1);
+		} else {
+			guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), 0, time(nullptr), 0);
 		}
 	}
 
@@ -740,11 +743,11 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if(IsTrader()) {
+	if(IsTrader() && !IsOffline()) {
 		TraderEndTrader();
 	}
 
-	if(IsBuyer()) {
+	if(IsBuyer() && !IsOffline()) {
 		ToggleBuyerMode(false);
 	}
 
@@ -776,7 +779,9 @@ Client::~Client() {
 	if(isgrouped && !bZoning && is_zone_loaded)
 		LeaveGroup();
 
-	UpdateWho(2);
+	if (!IsOffline() && !IsTrader()) {
+		UpdateWho(2);
+	}
 
 	if(IsHoveringForRespawn())
 	{
@@ -2084,6 +2089,9 @@ void Client::UpdateWho(uint8 remove)
 	s->race        = GetRace();
 	s->class_      = GetClass();
 	s->level       = GetLevel();
+	s->trader      = IsTrader();
+	s->buyer       = IsBuyer();
+	s->offline     = IsOffline();
 
 	if (m_pp.anon == 0) {
 		s->anon = 0;
@@ -2152,7 +2160,7 @@ void Client::FriendsWho(char *FriendsString) {
 void Client::UpdateAdmin(bool from_database) {
 	int16 tmp = admin;
 	if (from_database) {
-		admin = database.GetAccountStatus(account_id);
+		admin = database.GetAccountStatus(account_id).status;
 	}
 
 	if (tmp == admin && from_database) {
@@ -2461,13 +2469,14 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	Mob::FillSpawnStruct(ns, ForWho);
 
 	// Populate client-specific spawn information
-	ns->spawn.afk       = AFK;
-	ns->spawn.lfg       = LFG; // afk and lfg are cleared on zoning on live
-	ns->spawn.anon      = m_pp.anon;
-	ns->spawn.gm        = GetGM() ? 1 : 0;
-	ns->spawn.guildID   = GuildID();
-	ns->spawn.trader    = IsTrader();
-	ns->spawn.buyer     = IsBuyer();
+	ns->spawn.afk     = AFK;
+	ns->spawn.lfg     = LFG; // afk and lfg are cleared on zoning on live
+	ns->spawn.anon    = m_pp.anon;
+	ns->spawn.gm      = GetGM() ? 1 : 0;
+	ns->spawn.guildID = GuildID();
+	ns->spawn.trader  = IsTrader();
+	ns->spawn.buyer   = IsBuyer();
+	ns->spawn.offline = IsOffline();
 //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
 //	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
 	ns->spawn.show_name = true;

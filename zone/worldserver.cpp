@@ -61,6 +61,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/patches/patches.h"
 #include "../common/skill_caps.h"
 #include "queryserv.h"
+#include "../common/repositories/account_repository.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 
 extern EntityList             entity_list;
 extern Zone                  *zone;
@@ -4019,8 +4021,21 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 					.charges              = in->trader_buy_struct.quantity,
 					.total_cost           = (in->trader_buy_struct.price * in->trader_buy_struct.quantity),
 					.player_money_balance = trader_pc->GetCarriedMoney(),
+					.offline_purchase     = trader_pc->IsOffline(),
 				};
 				RecordPlayerEventLogWithClient(trader_pc, PlayerEvent::TRADER_SELL, e);
+			}
+
+			if (trader_pc->IsOffline()) {
+				auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+				e.character_id = trader_pc->CharacterID();
+				e.item_name    = in->trader_buy_struct.item_name;
+				e.price        = in->trader_buy_struct.price * in->trader_buy_struct.quantity;
+				e.quantity     = in->trader_buy_struct.quantity;
+				e.type         = TRADER_TRANSACTION;
+				e.buyer_name   = in->trader_buy_struct.buyer_name;
+
+				CharacterOfflineTransactionsRepository::InsertOne(database, e);
 			}
 
 			trader_pc->RemoveItemBySerialNumber(item_sn, in->trader_buy_struct.quantity);
@@ -4272,6 +4287,18 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 						RecordPlayerEventLogWithClient(buyer, PlayerEvent::BARTER_TRANSACTION, e);
 					}
 
+					if (buyer->IsOffline()) {
+						auto e         = CharacterOfflineTransactionsRepository::NewEntity();
+						e.character_id = buyer->CharacterID();
+						e.item_name    = sell_line.item_name;
+						e.price        = (uint64) sell_line.item_cost * (uint64) in->seller_quantity;
+						e.quantity     = sell_line.seller_quantity;
+						e.type         = BUYER_TRANSACTION;
+						e.buyer_name   = sell_line.seller_name;
+
+						CharacterOfflineTransactionsRepository::InsertOne(database, e);
+					}
+
 					in->action = Barter_BuyerTransactionComplete;
 					worldserver.SendPacket(pack);
 
@@ -4332,7 +4359,80 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 
 					break;
 				}
+				break;
 			}
+			break;
+		}
+		case ServerOP_UsertoWorldCancelOfflineRequest: {
+			auto in     = reinterpret_cast<UsertoWorldResponse_Struct *>(pack->pBuffer);
+			auto client = entity_list.GetClientByLSID(in->lsaccountid);
+			if (!client) {
+				LogError("Step 5 - 3 - In zone.  Could not find client.  Old Do-Nothing.  Now send back to world.");
+
+				auto e = AccountRepository::GetWhere(database, fmt::format("`lsaccount_id` = '{}'", in->lsaccountid));
+				auto r = e.front();
+				r.offline = 0;
+				AccountRepository::UpdateOne(database, r);
+
+				auto sp          = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
+				auto out         = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
+				sp->opcode       = ServerOP_UsertoWorldCancelOfflineResponse;
+				out->FromID      = in->FromID;
+				out->lsaccountid = in->lsaccountid;
+				out->response    = in->response;
+				out->ToID        = in->ToID;
+				out->worldid     = in->worldid;
+				strn0cpy(out->login, in->login, 64);
+
+				worldserver.SendPacket(sp);
+				safe_delete(sp);
+				break;
+			}
+
+			LogError("Step 5-1 - In zone");
+
+			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
+
+			if (client->IsThereACustomer()) {
+				auto customer = entity_list.GetClientByID(client->GetCustomerID());
+				if (customer) {
+					auto end_session = new EQApplicationPacket(OP_ShopEnd);
+					customer->FastQueuePacket(&end_session);
+				}
+			}
+
+			if (client->IsTrader()) {
+				client->TraderEndTrader();
+			}
+
+			if (client->IsBuyer()) {
+				client->ToggleBuyerMode(false);
+			}
+
+			client->UpdateWho(2);
+
+			auto outapp = new EQApplicationPacket();
+			client->CreateDespawnPacket(outapp, false);
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
+			entity_list.RemoveMob(client->CastToMob()->GetID());
+
+			auto sp          = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
+			auto out         = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
+			sp->opcode       = ServerOP_UsertoWorldCancelOfflineResponse;
+			out->FromID      = in->FromID;
+			out->lsaccountid = in->lsaccountid;
+			out->response    = in->response;
+			out->ToID        = in->ToID;
+			out->worldid     = in->worldid;
+			strn0cpy(out->login, in->login, 64);
+
+			LogError("Step 5-2 - Respond back to world");
+
+			worldserver.SendPacket(sp);
+			safe_delete(sp);
+			break;
 		}
 		default: {
 			LogInfo("Unknown ZS Opcode [{}] size [{}]", (int) pack->opcode, pack->size);

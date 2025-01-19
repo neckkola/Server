@@ -70,9 +70,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/repositories/tradeskill_recipe_entries_repository.h"
 
 #include "../common/events/player_event_logs.h"
+#include "../common/repositories/character_offline_transactions_repository.h"
 #include "../common/repositories/character_stats_record_repository.h"
-#include "dialogue_window.h"
 #include "../common/rulesys.h"
+#include "dialogue_window.h"
 
 extern QueryServ* QServ;
 extern Zone* zone;
@@ -323,6 +324,7 @@ void MapOpcodes()
 	ConnectedOpcodes[OP_MoveCoin] = &Client::Handle_OP_MoveCoin;
 	ConnectedOpcodes[OP_MoveItem] = &Client::Handle_OP_MoveItem;
 	ConnectedOpcodes[OP_MoveMultipleItems] = &Client::Handle_OP_MoveMultipleItems;
+	ConnectedOpcodes[OP_Offline] = &Client::Handle_OP_Offline;
 	ConnectedOpcodes[OP_OpenContainer] = &Client::Handle_OP_OpenContainer;
 	ConnectedOpcodes[OP_OpenGuildTributeMaster] = &Client::Handle_OP_OpenGuildTributeMaster;
 	ConnectedOpcodes[OP_OpenInventory] = &Client::Handle_OP_OpenInventory;
@@ -826,6 +828,54 @@ void Client::CompleteConnect()
 		if (IsPetNameChangeAllowed() && !RuleB(Pets, AlwaysAllowPetRename)) {
 			InvokeChangePetName(false);
 		}
+
+		auto offline_transactions_trader = CharacterOfflineTransactionsRepository::GetWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+		);
+		if (offline_transactions_trader.size() > 0) {
+			Message(Chat::Yellow, "You sold the following items while in offline trader mode:");
+
+			for (auto const &t: offline_transactions_trader) {
+				Message(
+					Chat::Yellow,
+					fmt::format("You sold {} {}{} to {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price)
+					).c_str()
+				);
+			}
+
+			CharacterOfflineTransactionsRepository::DeleteWhere(
+				database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), TRADER_TRANSACTION)
+			);
+		}
+
+		auto offline_transactions_buyer = CharacterOfflineTransactionsRepository::GetWhere(
+			database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
+		);
+		if (offline_transactions_buyer.size() > 0) {
+			Message(Chat::Yellow, "You bought the following items while in offline buyer mode:");
+
+			for (auto const &t: offline_transactions_buyer) {
+				Message(
+					Chat::Yellow,
+					fmt::format("You bought {} {}{} from {} for {}.",
+					t.quantity,
+					t.item_name,
+					t.quantity > 1 ? "s" : "",
+					t.buyer_name,
+					DetermineMoneyString(t.price)
+					).c_str()
+				);
+			}
+
+			CharacterOfflineTransactionsRepository::DeleteWhere(
+				database, fmt::format("`character_id` = '{}' AND `type` = '{}'", CharacterID(), BUYER_TRANSACTION)
+			);
+		}
 	}
 
 	if(ClientVersion() == EQ::versions::ClientVersion::RoF2 && RuleB(Parcel, EnableParcelMerchants)) {
@@ -871,7 +921,7 @@ void Client::CompleteConnect()
 			SendGuildMembersList();
 		}
 
-		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr));
+		guild_mgr.SendGuildMemberUpdateToWorld(GetName(), GuildID(), zone->GetZoneID(), time(nullptr), 0);
 
 		SendGuildList();
 		if (GetGuildListDirty()) {
@@ -17091,4 +17141,51 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 		default: {
 		}
 	}
+}
+
+void Client::Handle_OP_Offline(const EQApplicationPacket *app)
+{
+	if (IsThereACustomer()) {
+		auto customer = entity_list.GetClientByID(GetCustomerID());
+		if (customer) {
+			auto end_session = new EQApplicationPacket(OP_ShopEnd);
+			customer->FastQueuePacket(&end_session);
+		}
+	}
+
+	AccountRepository::SetOfflineStatus(database, AccountID(), true);
+	SetOffline(true);
+
+	EQStreamInterface *eqsi           = nullptr;
+	auto               offline_client = new Client(eqsi);
+
+	database.LoadCharacterData(CharacterID(), &offline_client->GetPP(), &offline_client->GetEPP());
+	offline_client->Clone(*this);
+	offline_client->GetInv().SetGMInventory(true);
+	offline_client->SetPosition(GetX(), GetY(), GetZ());
+	offline_client->SetHeading(GetHeading());
+	offline_client->SetSpawned();
+	offline_client->SetBecomeNPC(false);
+	offline_client->SetOffline(true);
+	entity_list.AddClient(offline_client);
+
+	if (IsBuyer()) {
+		offline_client->SetBuyerID(offline_client->CharacterID());
+		if (!BuyerRepository::UpdateBuyerEntityID(database, CharacterID(), GetID(), offline_client->GetID())) {
+			entity_list.RemoveMob(offline_client->CastToMob()->GetID());
+			return;
+		}
+	}
+	else {
+		offline_client->SetTrader(true);
+	}
+
+	OnDisconnect(true);
+
+	auto outapp = new EQApplicationPacket();
+	offline_client->CreateSpawnPacket(outapp);
+	entity_list.QueueClients(nullptr, outapp, false);
+	safe_delete(outapp);
+
+	offline_client->UpdateWho(3);
 }

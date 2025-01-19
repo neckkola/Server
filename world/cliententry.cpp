@@ -164,9 +164,9 @@ void ClientListEntry::LSUpdate(ZoneServer *iZS)
 	if (WorldConfig::get()->UpdateStats) {
 		auto pack = new ServerPacket;
 		pack->opcode  = ServerOP_LSZoneInfo;
-		pack->size    = sizeof(LoginserverZoneInfoUpdate);
+		pack->size    = sizeof(ZoneInfo_Struct);
 		pack->pBuffer = new uchar[pack->size];
-		auto *zone = (LoginserverZoneInfoUpdate *) pack->pBuffer;
+		ZoneInfo_Struct *zone = (ZoneInfo_Struct *) pack->pBuffer;
 		zone->count    = iZS->NumPlayers();
 		zone->zone     = iZS->GetZoneID();
 		zone->zone_wid = iZS->GetID();
@@ -174,7 +174,6 @@ void ClientListEntry::LSUpdate(ZoneServer *iZS)
 		safe_delete(pack);
 	}
 }
-
 void ClientListEntry::LSZoneChange(ZoneToZone_Struct *ztz)
 {
 	if (WorldConfig::get()->UpdateStats) {
@@ -182,7 +181,7 @@ void ClientListEntry::LSZoneChange(ZoneToZone_Struct *ztz)
 		pack->opcode  = ServerOP_LSPlayerZoneChange;
 		pack->size    = sizeof(ServerLSPlayerZoneChange_Struct);
 		pack->pBuffer = new uchar[pack->size];
-		auto *zonechange = (ServerLSPlayerZoneChange_Struct *) pack->pBuffer;
+		ServerLSPlayerZoneChange_Struct *zonechange = (ServerLSPlayerZoneChange_Struct *) pack->pBuffer;
 		zonechange->lsaccount_id = LSID();
 		zonechange->from         = ztz->current_zone_id;
 		zonechange->to           = ztz->requested_zone_id;
@@ -217,18 +216,21 @@ void ClientListEntry::Update(ZoneServer *iZS, ServerClientList_Struct *scl, CLE_
 		pLSID = scl->LSAccountID;
 		strn0cpy(plskey, scl->lskey, sizeof(plskey));
 	}
-	padmin         = scl->Admin;
-	plevel         = scl->level;
-	pclass_        = scl->class_;
-	prace          = scl->race;
-	panon          = scl->anon;
-	ptellsoff      = scl->tellsoff;
-	pguild_id      = scl->guild_id;
-	pguild_rank    = scl->guild_rank;
+	padmin                = scl->Admin;
+	plevel                = scl->level;
+	pclass_               = scl->class_;
+	prace                 = scl->race;
+	panon                 = scl->anon;
+	ptellsoff             = scl->tellsoff;
+	pguild_id             = scl->guild_id;
+	pguild_rank           = scl->guild_rank;
 	pguild_tribute_opt_in = scl->guild_tribute_opt_in;
-	pLFG           = scl->LFG;
-	gm             = scl->gm;
-	pClientVersion = scl->ClientVersion;
+	pLFG                  = scl->LFG;
+	gm                    = scl->gm;
+	pClientVersion        = scl->ClientVersion;
+	pTrader               = scl->trader;
+	pBuyer                = scl->buyer;
+	pOffline              = scl->offline;
 
 	// Fields from the LFG Window
 	if ((scl->LFGFromLevel != 0) && (scl->LFGToLevel != 0)) {
@@ -246,6 +248,10 @@ void ClientListEntry::LeavingZone(ZoneServer *iZS, CLE_Status iOnline)
 	if (iZS != 0 && iZS != pzoneserver) {
 		return;
 	}
+
+	pOffline = false;
+	pTrader  = false;
+	pBuyer   = false;
 	SetOnline(iOnline);
 
 	shared_task_manager.RemoveActiveInvitationByCharacterID(CharID());
@@ -287,6 +293,8 @@ void ClientListEntry::ClearVars(bool iAll)
 	pLFG           = 0;
 	gm             = 0;
 	pClientVersion = 0;
+	pOffline       = false;
+
 	for (auto& elem : tell_queue) {
 		safe_delete_array(elem);
 	}

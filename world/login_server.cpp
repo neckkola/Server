@@ -1,8 +1,23 @@
+/*	EQEMu: Everquest Server Emulator
+Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY except by those people which sell it, which
+are required to give you total support for your newly bought product;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+*/
 #include "../common/global_define.h"
 #include <iostream>
-#include <string.h>
 #include <stdio.h>
-#include <iomanip>
 #include <stdlib.h>
 #include "../common/version.h"
 #include "../common/servertalk.h"
@@ -19,6 +34,9 @@
 #include "clientlist.h"
 #include "cliententry.h"
 #include "world_config.h"
+#include "../common/repositories/account_repository.h"
+#include "../common/repositories/trader_repository.h"
+
 
 extern ZSList        zoneserver_list;
 extern ClientList    client_list;
@@ -48,7 +66,7 @@ void LoginServer::ProcessUsertoWorldReqLeg(uint16_t opcode, EQ::Net::Packet &p)
 
 	UsertoWorldRequestLegacy_Struct *utwr  = (UsertoWorldRequestLegacy_Struct *) p.Data();
 	uint32                          id     = database.GetAccountIDFromLSID("eqemu", utwr->lsaccountid);
-	int16                           status = database.GetAccountStatus(id);
+	int16                           status = database.GetAccountStatus(id).status;
 
 	LogDebug(
 		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",
@@ -109,7 +127,7 @@ void LoginServer::ProcessUsertoWorldReqLeg(uint16_t opcode, EQ::Net::Packet &p)
 
 	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
 		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
-			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+			LogDebug("User already online account_id [{0}] legacy", utwr->lsaccountid);
 			utwrs->response = UserToWorldStatusAlreadyOnline;
 			SendPacket(&outpack);
 			return;
@@ -126,14 +144,19 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 	const WorldConfig *Config = WorldConfig::get();
 	LogNetcode("Received ServerPacket from LS OpCode {:#04x}", opcode);
 
-	UsertoWorldRequest_Struct *utwr  = (UsertoWorldRequest_Struct *) p.Data();
-	uint32                    id     = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
-	int16                     status = database.GetAccountStatus(id);
+	auto   utwr          = static_cast<UsertoWorldRequest_Struct *>(p.Data());
+	uint32 id            = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
+	auto   status_record = database.GetAccountStatus(id);
+	auto   client        = client_list.FindCLEByAccountID(id);
+
+	if (client) {
+		client->SetOffline(status_record.offline);
+	}
 
 	LogDebug(
 		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",
 		id,
-		status,
+		status_record.status,
 		utwr->lsaccountid,
 		utwr->worldid,
 		utwr->FromID,
@@ -155,7 +178,7 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 	utwrs->response = UserToWorldStatusSuccess;
 
 	if (Config->Locked == true) {
-		if (status < (RuleI(GM, MinStatusToBypassLockedServer))) {
+		if (status_record.status < (RuleI(GM, MinStatusToBypassLockedServer))) {
 			LogDebug(
 				"Server locked and status is not high enough for account_id [{0}]",
 				utwr->lsaccountid
@@ -164,33 +187,41 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 			SendPacket(&outpack);
 			return;
 		}
+
 	}
 
 	int32 x = Config->MaxClients;
-	if ((int32) numplayers >= x && x != -1 && x != 255 && status < (RuleI(GM, MinStatusToBypassLockedServer))) {
+	if ((int32) numplayers >= x && x != -1 && x != 255 && status_record.status < (RuleI(GM, MinStatusToBypassLockedServer))) {
 		LogDebug("World at capacity account_id [{0}]", utwr->lsaccountid);
 		utwrs->response = UserToWorldStatusWorldAtCapacity;
 		SendPacket(&outpack);
 		return;
 	}
 
-	if (status == -1) {
+	if (status_record.status == -1) {
 		LogDebug("User suspended account_id [{0}]", utwr->lsaccountid);
 		utwrs->response = UserToWorldStatusSuspended;
 		SendPacket(&outpack);
 		return;
 	}
 
-	if (status == -2) {
+	if (status_record.status == -2) {
 		LogDebug("User banned account_id [{0}]", utwr->lsaccountid);
 		utwrs->response = UserToWorldStatusBanned;
 		SendPacket(&outpack);
 		return;
 	}
 
+	if (status_record.offline) {
+		LogDebug("User has an offline character for account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusOffilineTraderBuyer;
+		SendPacket(&outpack);
+		return;
+	}
+
 	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
 		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
-			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+			LogDebug("User already online account_id [{0}] non-legacy", utwr->lsaccountid);
 			utwrs->response = UserToWorldStatusAlreadyOnline;
 			SendPacket(&outpack);
 			return;
@@ -522,6 +553,15 @@ bool LoginServer::Connect()
 			)
 		);
 		m_client->OnMessage(
+			ServerOP_UsertoWorldCancelOfflineRequest,
+			std::bind(
+				&LoginServer::ProcessUserToWorldCancelOfflineRequest,
+				this,
+				std::placeholders::_1,
+				std::placeholders::_2
+			)
+		);
+		m_client->OnMessage(
 			ServerOP_LSClientAuthLeg,
 			std::bind(
 				&LoginServer::ProcessLSClientAuthLegacy,
@@ -591,11 +631,11 @@ void LoginServer::SendInfo()
 
 	auto pack = new ServerPacket;
 	pack->opcode  = ServerOP_NewLSInfo;
-	pack->size    = sizeof(LoginserverNewWorldRequest);
+	pack->size    = sizeof(ServerNewLSInfo_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
 
-	auto *l = (LoginserverNewWorldRequest *) pack->pBuffer;
+	auto *l = (ServerNewLSInfo_Struct *) pack->pBuffer;
 	strcpy(l->protocol_version, EQEMU_PROTOCOL_VERSION);
 	strcpy(l->server_version, LOGIN_VERSION);
 	strcpy(l->server_long_name, Config->LongName.c_str());
@@ -639,10 +679,10 @@ void LoginServer::SendStatus()
 
 	auto pack = new ServerPacket;
 	pack->opcode  = ServerOP_LSStatus;
-	pack->size    = sizeof(LoginserverWorldStatusUpdate);
+	pack->size    = sizeof(ServerLSStatus_Struct);
 	pack->pBuffer = new uchar[pack->size];
 	memset(pack->pBuffer, 0, pack->size);
-	auto loginserver_status = (LoginserverWorldStatusUpdate *) pack->pBuffer;
+	auto loginserver_status = (ServerLSStatus_Struct *) pack->pBuffer;
 
 	if (WorldConfig::get()->Locked) {
 		loginserver_status->status = -2;
@@ -660,6 +700,9 @@ void LoginServer::SendStatus()
 	delete pack;
 }
 
+/**
+ * @param pack
+ */
 void LoginServer::SendPacket(ServerPacket *pack)
 {
 	if (m_legacy_client) {
@@ -677,16 +720,86 @@ void LoginServer::SendAccountUpdate(ServerPacket *pack)
 		return;
 	}
 
-	auto *req = (LoginserverAccountUpdate *) pack->pBuffer;
+	auto *ls_account_update = (ServerLSAccountUpdate_Struct *) pack->pBuffer;
 	if (CanUpdate()) {
 		LogInfo(
 			"Sending ServerOP_LSAccountUpdate packet to loginserver: [{0}]:[{1}]",
 			m_loginserver_address,
 			m_loginserver_port
 		);
-		strn0cpy(req->world_account, m_login_account.c_str(), 30);
-		strn0cpy(req->world_password, m_login_password.c_str(), 30);
+		strn0cpy(ls_account_update->worldaccount, m_login_account.c_str(), 30);
+		strn0cpy(ls_account_update->worldpassword, m_login_password.c_str(), 30);
 		SendPacket(pack);
 	}
 }
 
+void LoginServer::ProcessUserToWorldCancelOfflineRequest(uint16_t opcode, EQ::Net::Packet &p)
+{
+	auto const Config = WorldConfig::get();
+	LogNetcode("Received ServerPacket from LS OpCode {:#04x}", opcode);
+
+	auto   utwr          = static_cast<UsertoWorldRequest_Struct *>(p.Data());
+	uint32 id            = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
+	auto   status_record = database.GetAccountStatus(id);
+
+	LogError("Step 4 - In World CancelOfflineRequest");
+	LogDebug(
+		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",
+		id,
+		status_record.status,
+		utwr->lsaccountid,
+		utwr->worldid,
+		utwr->FromID,
+		utwr->ToID,
+		utwr->IPAddr
+	);
+
+
+	ServerPacket server_packet;
+	server_packet.size    = sizeof(UsertoWorldResponse_Struct);
+	server_packet.pBuffer = new uchar[server_packet.size];
+	memset(server_packet.pBuffer, 0, server_packet.size);
+
+	auto utwrs         = reinterpret_cast<UsertoWorldResponse_Struct *>(server_packet.pBuffer);
+	utwrs->lsaccountid = utwr->lsaccountid;
+	utwrs->ToID        = utwr->FromID;
+	utwrs->worldid     = utwr->worldid;
+	utwrs->response    = UserToWorldStatusSuccess;
+	strn0cpy(utwrs->login, utwr->login, 64);
+
+	if (Config->Locked == true) {
+		if (status_record.status < RuleI(GM, MinStatusToBypassLockedServer)) {
+			LogDebug("Server locked and status is not high enough for account_id [{0}]", utwr->lsaccountid);
+			server_packet.opcode = ServerOP_UsertoWorldCancelOfflineResponse;
+			utwrs->response      = UserToWorldStatusWorldUnavail;
+			SendPacket(&server_packet);
+			return;
+		}
+	}
+
+	int32 x = Config->MaxClients;
+	if (static_cast<int32>(numplayers) >= x && x != -1 && x != 255 &&
+		status_record.status < RuleI(GM, MinStatusToBypassLockedServer)) {
+		LogDebug("World at capacity account_id [{0}]", utwr->lsaccountid);
+		server_packet.opcode = ServerOP_UsertoWorldCancelOfflineResponse;
+		utwrs->response      = UserToWorldStatusWorldAtCapacity;
+		SendPacket(&server_packet);
+		return;
+	}
+
+	auto trader = TraderRepository::GetAccountZoneIdAndInstanceIdByAccountId(database, id);
+
+	if (trader.id && zoneserver_list.IsZoneBootedByZoneIdAndInstanceId(trader.char_zone_id, trader.char_zone_instance_id)) {
+		LogError("Step 5 - In World Checking if zone is booted");
+
+		server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;
+		zoneserver_list.SendPacketToBootedZones(&server_packet);
+		return;
+	}
+
+	LogError("Step 5b - Zone not booted, returning to login server");
+	AccountRepository::SetOfflineStatus(database, id, false);
+	TraderRepository::DeleteWhere(database, fmt::format("`char_id` = '{}'", trader.char_id));
+	server_packet.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
+	SendPacket(&server_packet);
+}
