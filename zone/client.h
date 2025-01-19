@@ -2315,7 +2315,8 @@ public:
 		this->m_ClientVersion    = in.m_ClientVersion;
 		this->m_ClientVersionBit = in.m_ClientVersionBit;
 		this->character_id       = in.character_id;
-		this->m_buyer_id = 44;
+		//this->m_buyer_id = 44;
+		this->trader_id = 44;
 
 		auto lookup = in.m_inv.GetLookup();
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
