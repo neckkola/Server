@@ -6747,6 +6747,17 @@ COLLATE='latin1_swedish_ci'
 ENGINE=InnoDB
 ;
 )"
+	},
+	ManifestEntry{
+		.version = 9302,
+		.description = "2025_01_27_offline_account_status.sql",
+		.check       = "SHOW COLUMNS FROM `account` LIKE 'offline'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+ALTER TABLE `account`
+	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `expansion`;
+)"
 	}
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
