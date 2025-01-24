@@ -78,6 +78,20 @@ bool Client::Process()
 				Handle_Play((const char *) app->pBuffer);
 				break;
 			}
+			case OP_CancelOfflineTrader: {
+				if (app->Size() < sizeof(CancelOfflineTrader_Struct)) {
+					LogError("Play received but it is too small, discarding");
+					break;
+				}
+
+				
+				LogError("Hit CancelOfflineTrader Mode Packet.");
+
+				server.server_manager->SendUserToWorldRequest(m_play_server_id, m_account_id, m_loginserver_name);
+
+				//Handle_Play((const char *) app->pBuffer);
+				break;
+			}
 		}
 
 		delete app;
