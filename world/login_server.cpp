@@ -206,6 +206,13 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 		return;
 	}
 
+	if (status == UserToWorldStatusOffilineTraderBuyer) {
+		LogDebug("User has an offline character for account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusOffilineTraderBuyer;
+		SendPacket(&outpack);
+		return;
+	}
+
 	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
 		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
 			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);

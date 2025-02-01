@@ -403,12 +403,13 @@ enum {	QSG_LFGuild_PlayerMatches = 0, QSG_LFGuild_UpdatePlayerInfo, QSG_LFGuild_
 #define ServerOP_Speech			0x5500
 
 enum {
-	UserToWorldStatusWorldUnavail = 0,
-	UserToWorldStatusSuccess = 1,
-	UserToWorldStatusSuspended = -1,
-	UserToWorldStatusBanned = -2,
-	UserToWorldStatusWorldAtCapacity = -3,
-	UserToWorldStatusAlreadyOnline = -4
+	UserToWorldStatusWorldUnavail        = 0,
+	UserToWorldStatusSuccess             = 1,
+	UserToWorldStatusSuspended           = -1,
+	UserToWorldStatusBanned              = -2,
+	UserToWorldStatusWorldAtCapacity     = -3,
+	UserToWorldStatusAlreadyOnline       = -4,
+	UserToWorldStatusOffilineTraderBuyer = -5
 };
 
 /************ PACKET RELATED STRUCT ************/

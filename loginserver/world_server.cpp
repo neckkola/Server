@@ -1,8 +1,6 @@
 #include "world_server.h"
 #include "../common/ip_util.h"
-#include "../common/repositories/trader_repository.h"
 #include "../common/strings.h"
-#include "../world/worlddb.h"
 #include "login_server.h"
 #include "login_types.h"
 
@@ -327,6 +325,10 @@ void WorldServer::ProcessUserToWorldResponse(uint16_t opcode, const EQ::Net::Pac
 			case UserToWorldStatusAlreadyOnline:
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACTIVE_CHARACTER;
 				break;
+			case UserToWorldStatusOffilineTraderBuyer:
+				r->base_reply.success = false;
+				r->base_reply.error_str_id = LS::ErrStr::ERROR_OFFLINE_TRADER;
+				break;
 			default:
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_UNKNOWN;
 				break;
@@ -340,10 +342,6 @@ void WorldServer::ProcessUserToWorldResponse(uint16_t opcode, const EQ::Net::Pac
 			r->base_reply.error_str_id
 		);
 
-		auto trader_id = TraderRepository::GetWhere(database, fmt::format("`char_id` = {};", c->))
-		r->base_reply.success = false;
-		r->base_reply.error_str_id = LS::ErrStr::ERROR_OFFLINE_TRADER;
-				
 		c->SendPlayResponse(outapp);
 		delete outapp;
 	}

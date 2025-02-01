@@ -84,10 +84,30 @@ bool Client::Process()
 					break;
 				}
 
-				
-				LogError("Hit CancelOfflineTrader Mode Packet.");
 
-				server.server_manager->SendUserToWorldRequest(m_play_server_id, m_account_id, m_loginserver_name);
+				safe_delete_array(app->pBuffer);
+				unsigned char* buffer = new unsigned char[sizeof(PlayEverquestRequest_Struct)];
+				auto data = (PlayEverquestRequest_Struct *) buffer;
+				data->base_header.sequence = m_play_sequence_id;
+				data->server_number = m_play_server_id;
+				app->pBuffer = buffer;
+				app->size = sizeof(PlayEverquestRequest_Struct);
+
+				auto outapp = new EQApplicationPacket(OP_Test, sizeof(PlayEverquestResponse_Struct));
+				auto out    = (PlayEverquestResponse_Struct *) outapp->pBuffer;
+				out->base_header.sequence = m_play_sequence_id++;
+				out->server_number        = 6;
+				m_connection->QueuePacket(outapp);
+				safe_delete(outapp);
+
+				LogError("Hit CancelOfflineTrbader Mode Packet.");
+
+
+				Handle_Play((const char *) app->pBuffer);
+
+				//
+				// m_play_sequence_id++;
+				// server.server_manager->SendUserToWorldRequest(m_play_server_id, m_account_id, m_loginserver_name);
 
 				//Handle_Play((const char *) app->pBuffer);
 				break;

@@ -6378,7 +6378,17 @@ CREATE INDEX idx_trader_active_transaction ON trader (active_transaction);
 )",
 		.content_schema_update = false
 	},
-
+	ManifestEntry{
+		.version = 9296,
+		.description = "2025_01_27_offline_account_status.sql",
+		.check       = "SHOW COLUMNS FROM `account` LIKE 'offline'",
+		.condition   = "empty",
+		.match       = "",
+		.sql         = R"(
+ALTER TABLE `account`
+	ADD COLUMN `offline` TINYINT(1) UNSIGNED NOT NULL DEFAULT '0' AFTER `expansion`;
+)"
+	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,
