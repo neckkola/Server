@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "clientlist.h"
 #include "cliententry.h"
 #include "world_config.h"
+#include "../common/repositories/account_repository.h"
 
 
 extern ZSList        zoneserver_list;
@@ -547,6 +548,15 @@ bool LoginServer::Connect()
 			)
 		);
 		m_client->OnMessage(
+			ServerOP_UsertoWorldCancelOfflineRequest,
+			std::bind(
+				&LoginServer::ProcessUsertoWorldCancelOfflineRequest,
+				this,
+				std::placeholders::_1,
+				std::placeholders::_2
+			)
+		);
+		m_client->OnMessage(
 			ServerOP_LSClientAuthLeg,
 			std::bind(
 				&LoginServer::ProcessLSClientAuthLegacy,
@@ -718,3 +728,92 @@ void LoginServer::SendAccountUpdate(ServerPacket *pack)
 	}
 }
 
+void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Net::Packet &p)
+{
+	const WorldConfig *Config = WorldConfig::get();
+	LogNetcode("Received ServerPacket from LS OpCode {:#04x}", opcode);
+
+	UsertoWorldRequest_Struct *utwr  = (UsertoWorldRequest_Struct *) p.Data();
+	uint32                    id     = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
+	AccountRepository::SetOfflineStatus(database, id, false);
+	int16                     status = database.GetAccountStatus(id);
+
+	LogDebug(
+		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",
+		id,
+		status,
+		utwr->lsaccountid,
+		utwr->worldid,
+		utwr->FromID,
+		utwr->ToID,
+		utwr->IPAddr
+	);
+
+
+	ServerPacket outpack;
+	outpack.opcode  = ServerOP_UsertoWorldResp;
+	outpack.size    = sizeof(UsertoWorldResponse_Struct);
+	outpack.pBuffer = new uchar[outpack.size];
+	memset(outpack.pBuffer, 0, outpack.size);
+
+	UsertoWorldResponse_Struct *utwrs = (UsertoWorldResponse_Struct *) outpack.pBuffer;
+	utwrs->lsaccountid = utwr->lsaccountid;
+	utwrs->ToID        = utwr->FromID;
+	strn0cpy(utwrs->login, utwr->login, 64);
+	utwrs->worldid  = utwr->worldid;
+	utwrs->response = UserToWorldStatusSuccess;
+
+	if (Config->Locked == true) {
+		if (status < (RuleI(GM, MinStatusToBypassLockedServer))) {
+			LogDebug(
+				"Server locked and status is not high enough for account_id [{0}]",
+				utwr->lsaccountid
+			);
+			utwrs->response = UserToWorldStatusWorldUnavail;
+			SendPacket(&outpack);
+			return;
+		}
+	}
+
+	int32 x = Config->MaxClients;
+	if ((int32) numplayers >= x && x != -1 && x != 255 && status < (RuleI(GM, MinStatusToBypassLockedServer))) {
+		LogDebug("World at capacity account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusWorldAtCapacity;
+		SendPacket(&outpack);
+		return;
+	}
+
+	if (status == -1) {
+		LogDebug("User suspended account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusSuspended;
+		SendPacket(&outpack);
+		return;
+	}
+
+	if (status == -2) {
+		LogDebug("User banned account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusBanned;
+		SendPacket(&outpack);
+		return;
+	}
+
+	if (status == UserToWorldStatusOffilineTraderBuyer) {
+		LogDebug("User has an offline character for account_id [{0}]", utwr->lsaccountid);
+		utwrs->response = UserToWorldStatusOffilineTraderBuyer;
+		SendPacket(&outpack);
+		return;
+	}
+
+	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
+		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
+			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+			utwrs->response = UserToWorldStatusAlreadyOnline;
+			SendPacket(&outpack);
+			return;
+		}
+	}
+
+	LogDebug("Sent response to account_id [{0}]", utwr->lsaccountid);
+
+	SendPacket(&outpack);
+}

@@ -618,7 +618,7 @@ void command_guild(Client* c, const Seperator* sep)
 			cl->CopyMob(*c);
 
 			cl->GetInv().SetGMInventory(true);
-			auto loaditems = database.GetInventory(c->CharacterID(), &cl->GetInv());
+			auto loaditems = database.GetInventory(c);
 
 			cl->SetPosition(c->GetX(), c->GetY(), c->GetZ());
 			cl->SetSpawned();

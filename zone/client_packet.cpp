@@ -17292,5 +17292,6 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 {
+	AccountRepository::SetOfflineStatus(database, AccountID(), true);
 	OnDisconnect(true);
 }

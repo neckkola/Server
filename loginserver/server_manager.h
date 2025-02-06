@@ -37,6 +37,11 @@ public:
 		unsigned int client_account_id,
 		const std::string &client_loginserver
 	);
+	void SendUserToWorldCancelOfflineRequest(
+		unsigned int server_id,
+		unsigned int client_account_id,
+		const std::string &client_loginserver
+	);
 
 	/**
 	 * Creates a server list packet for the client

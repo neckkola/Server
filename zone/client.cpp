@@ -13378,8 +13378,8 @@ Client::Client() : Mob(
 										  fishing_timer(8000),
 										  endupkeep_timer(1000),
 										  autosave_timer(RuleI(Character, AutosaveIntervalS) * 1000),
-										  client_scan_npc_aggro_timer(RuleI(Aggro, ClientAggroCheckIdleInterval)),
-										  client_zone_wide_full_position_update_timer(5 * 60 * 1000),
+										  m_client_npc_aggro_scan_timer(RuleI(Aggro, ClientAggroCheckIdleInterval)),
+										  m_client_bulk_npc_pos_update_timer(60 * 1000),
 										  tribute_timer(Tribute_duration),
 										  proximity_timer(ClientProximity_interval),
 										  TaskPeriodic_Timer(RuleI(TaskSystem, PeriodicCheckTimer) * 1000),
@@ -13403,8 +13403,7 @@ Client::Client() : Mob(
 										  m_AutoAttackTargetLocation(0.0f, 0.0f, 0.0f),
 										  last_region_type(RegionTypeUnsupported),
 										  m_dirtyautohaters(false),
-										  mob_close_scan_timer(6000),
-										  position_update_timer(10000),
+										  m_position_update_timer(10000),
 										  consent_throttle_timer(2000),
 										  tmSitting(0),
 										  parcel_timer(RuleI(Parcel, ParcelDeliveryDelay))
@@ -13461,7 +13460,6 @@ Client::Client() : Mob(
 	runmode = false;
 	linkdead_timer.Disable();
 	zonesummon_id = 0;
-	zonesummon_instance_id = 0;
 	zonesummon_ignorerestrictions = 0;
 	bZoning              = false;
 	m_lock_save_position = false;
@@ -13549,7 +13547,7 @@ Client::Client() : Mob(
 	adventure_stats_timer = nullptr;
 	adventure_leaderboard_timer = nullptr;
 	adv_data = nullptr;
-	adv_requested_theme = LDoNThemes::Unused;
+	adv_requested_theme = LDoNTheme::Unused;
 	adv_requested_id = 0;
 	adv_requested_member_count = 0;
 

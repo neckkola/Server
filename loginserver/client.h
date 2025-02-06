@@ -70,6 +70,7 @@ public:
 	 * @param data
 	 */
 	void Handle_Play(const char *data);
+	void Handle_CancelOfflineStatus(const char *data);
 
 	/**
 	 * Sends a server list packet to the client

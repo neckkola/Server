@@ -84,7 +84,6 @@ bool Client::Process()
 					break;
 				}
 
-
 				safe_delete_array(app->pBuffer);
 				unsigned char* buffer = new unsigned char[sizeof(PlayEverquestRequest_Struct)];
 				auto data = (PlayEverquestRequest_Struct *) buffer;
@@ -100,10 +99,12 @@ bool Client::Process()
 				m_connection->QueuePacket(outapp);
 				safe_delete(outapp);
 
-				LogError("Hit CancelOfflineTrbader Mode Packet.");
+				Handle_CancelOfflineStatus((const char *) app->pBuffer);
+
+				LogError("Hit CancelOfflineTrader Mode Packet.");
 
 
-				Handle_Play((const char *) app->pBuffer);
+//				Handle_Play((const char *) app->pBuffer);
 
 				//
 				// m_play_sequence_id++;
@@ -336,6 +337,30 @@ void Client::Handle_Play(const char *data)
 	m_play_sequence_id = sequence_in;
 	m_play_server_id   = server_id_in;
 	server.server_manager->SendUserToWorldRequest(server_id_in, m_account_id, m_loginserver_name);
+}
+
+void Client::Handle_CancelOfflineStatus(const char *data)
+{
+	if (m_client_status != cs_logged_in) {
+		LogError("Client sent a play request when they were not logged in, discarding");
+		return;
+	}
+
+	const auto *play        = (const PlayEverquestRequest_Struct *) data;
+	auto       server_id_in = (unsigned int) play->server_number;
+	auto       sequence_in  = (unsigned int) play->base_header.sequence;
+
+	LogInfo(
+		"[Handle_Play] Cancel Offline Status Request received from client [{}] server number [{}] sequence [{}]",
+		GetAccountName(),
+		server_id_in,
+		sequence_in
+	);
+
+	m_play_server_id   = (unsigned int) play->server_number;
+	m_play_sequence_id = sequence_in;
+	m_play_server_id   = server_id_in;
+	server.server_manager->SendUserToWorldCancelOfflineRequest(server_id_in, m_account_id, m_loginserver_name);
 }
 
 /**
