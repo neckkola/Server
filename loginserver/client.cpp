@@ -88,14 +88,14 @@ bool Client::Process()
 				safe_delete_array(app->pBuffer);
 				unsigned char* buffer = new unsigned char[sizeof(PlayEverquestRequest_Struct)];
 				auto data = (PlayEverquestRequest_Struct *) buffer;
-				data->base_header.sequence = m_play_sequence_id;
+				data->base_header.sequence = m_play_sequence_id + 2;
 				data->server_number = m_play_server_id;
 				app->pBuffer = buffer;
 				app->size = sizeof(PlayEverquestRequest_Struct);
 
 				auto outapp = new EQApplicationPacket(OP_Test, sizeof(PlayEverquestResponse_Struct));
 				auto out    = (PlayEverquestResponse_Struct *) outapp->pBuffer;
-				out->base_header.sequence = m_play_sequence_id++;
+				out->base_header.sequence = m_play_sequence_id + 1;
 				out->server_number        = 6;
 				m_connection->QueuePacket(outapp);
 				safe_delete(outapp);
