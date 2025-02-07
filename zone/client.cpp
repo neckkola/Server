@@ -430,7 +430,7 @@ Client::~Client() {
 	if (merc)
 		merc->Depop();
 
-	if(IsTrader()) {
+	if(IsTrader() && !IsOffline()) {
 		TraderEndTrader();
 	}
 

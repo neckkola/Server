@@ -1930,7 +1930,8 @@ public:
 	Mob* GetMob() { return this; }
 
 	void CopyMob(Mob& in) {
-		strn0cpy(name, fmt::format("{}-COPY",in.name).c_str(), 64);
+		//strn0cpy(name, fmt::format("{}-COPY",in.name).c_str(), 64);
+		strn0cpy(name, in.name, 64);
 		strn0cpy(orig_name, in.orig_name, 64);
 		strn0cpy(lastname, in.lastname, 64);
 		current_hp    = in.current_hp;
@@ -2030,11 +2031,6 @@ public:
 
 
 	}
-
-
-	//	Mob& operator=(Mob& other){
-	//	}
-
 };
 
 #endif

@@ -2282,17 +2282,18 @@ public:
 		this->guildrank  = in.guildrank;
 		this->LFG        = in.LFG;
 		this->AFK        = in.AFK;
+		this->trader_id  = in.trader_id;
 		this->m_buyer_id = in.m_buyer_id;
 		this->SetBodyType(in.GetBodyType(), false);
-		this->race    = in.race;
-		this->class_  = in.class_;
-		this->size    = in.size;
-		this->deity   = in.deity;
-		this->texture = in.texture;
-		this->m_inv = std::move(in.m_inv);
-		this->m_ClientVersion = in.m_ClientVersion;
+		this->race               = in.race;
+		this->class_             = in.class_;
+		this->size               = in.size;
+		this->deity              = in.deity;
+		this->texture            = in.texture;
+		this->m_inv              = std::move(in.m_inv);
+		this->m_ClientVersion    = in.m_ClientVersion;
 		this->m_ClientVersionBit = in.m_ClientVersionBit;
-		this->character_id = in.character_id;
+		this->character_id       = in.character_id;
 
 		return this;
 	}
@@ -2306,6 +2307,7 @@ public:
 		this->guildrank  = in.guildrank;
 		this->LFG        = in.LFG;
 		this->AFK        = in.AFK;
+		this->trader_id  = in.trader_id;
 		this->m_buyer_id = in.m_buyer_id;
 		this->SetBodyType(in.GetBodyType(), false);
 		this->race               = in.race;
@@ -2316,13 +2318,13 @@ public:
 		this->m_ClientVersion    = in.m_ClientVersion;
 		this->m_ClientVersionBit = in.m_ClientVersionBit;
 		this->character_id       = in.character_id;
-		//this->m_buyer_id = 44;
-		this->trader_id = 44;
-
-		auto lookup = in.m_inv.GetLookup();
+		this->account_id         = in.account_id;
+		this->lsaccountid        = in.lsaccountid;
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
+		//this->m_inv              = in.m_inv;
 
-
+		//this->m_buyer_id = 44;
+		//auto lookup = in.m_inv.GetLookup();
 
 		Mob::CopyMob(*in.GetMob());
 	}

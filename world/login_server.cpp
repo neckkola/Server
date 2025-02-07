@@ -735,6 +735,7 @@ void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 
 	UsertoWorldRequest_Struct *utwr  = (UsertoWorldRequest_Struct *) p.Data();
 	uint32                    id     = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
+
 	AccountRepository::SetOfflineStatus(database, id, false);
 	int16                     status = database.GetAccountStatus(id);
 
@@ -751,7 +752,6 @@ void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 
 
 	ServerPacket outpack;
-	outpack.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
 	outpack.size    = sizeof(UsertoWorldResponse_Struct);
 	outpack.pBuffer = new uchar[outpack.size];
 	memset(outpack.pBuffer, 0, outpack.size);
@@ -769,6 +769,7 @@ void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 				"Server locked and status is not high enough for account_id [{0}]",
 				utwr->lsaccountid
 			);
+			outpack.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
 			utwrs->response = UserToWorldStatusWorldUnavail;
 			SendPacket(&outpack);
 			return;
@@ -778,42 +779,46 @@ void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 	int32 x = Config->MaxClients;
 	if ((int32) numplayers >= x && x != -1 && x != 255 && status < (RuleI(GM, MinStatusToBypassLockedServer))) {
 		LogDebug("World at capacity account_id [{0}]", utwr->lsaccountid);
+		outpack.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
 		utwrs->response = UserToWorldStatusWorldAtCapacity;
 		SendPacket(&outpack);
 		return;
 	}
 
-	if (status == -1) {
-		LogDebug("User suspended account_id [{0}]", utwr->lsaccountid);
-		utwrs->response = UserToWorldStatusSuspended;
-		SendPacket(&outpack);
-		return;
-	}
+	outpack.opcode  = ServerOP_UsertoWorldCancelOfflineRequest;
+	zoneserver_list.SendPacketToBootedZones(&outpack);
 
-	if (status == -2) {
-		LogDebug("User banned account_id [{0}]", utwr->lsaccountid);
-		utwrs->response = UserToWorldStatusBanned;
-		SendPacket(&outpack);
-		return;
-	}
-
-	if (status == UserToWorldStatusOffilineTraderBuyer) {
-		LogDebug("User has an offline character for account_id [{0}]", utwr->lsaccountid);
-		utwrs->response = UserToWorldStatusOffilineTraderBuyer;
-		SendPacket(&outpack);
-		return;
-	}
-
-	if (RuleB(World, EnforceCharacterLimitAtLogin)) {
-		if (client_list.IsAccountInGame(utwr->lsaccountid)) {
-			LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
-			utwrs->response = UserToWorldStatusAlreadyOnline;
-			SendPacket(&outpack);
-			return;
-		}
-	}
-
-	LogDebug("Sent response to account_id [{0}]", utwr->lsaccountid);
-
-	SendPacket(&outpack);
+	// if (status == -1) {
+	// 	LogDebug("User suspended account_id [{0}]", utwr->lsaccountid);
+	// 	utwrs->response = UserToWorldStatusSuspended;
+	// 	SendPacket(&outpack);
+	// 	return;
+	// }
+	//
+	// if (status == -2) {
+	// 	LogDebug("User banned account_id [{0}]", utwr->lsaccountid);
+	// 	utwrs->response = UserToWorldStatusBanned;
+	// 	SendPacket(&outpack);
+	// 	return;
+	// }
+	//
+	// if (status == UserToWorldStatusOffilineTraderBuyer) {
+	// 	LogDebug("User has an offline character for account_id [{0}]", utwr->lsaccountid);
+	// 	utwrs->response = UserToWorldStatusOffilineTraderBuyer;
+	// 	SendPacket(&outpack);
+	// 	return;
+	// }
+	//
+	// if (RuleB(World, EnforceCharacterLimitAtLogin)) {
+	// 	if (client_list.IsAccountInGame(utwr->lsaccountid)) {
+	// 		LogDebug("User already online account_id [{0}]", utwr->lsaccountid);
+	// 		utwrs->response = UserToWorldStatusAlreadyOnline;
+	// 		SendPacket(&outpack);
+	// 		return;
+	// 	}
+	// }
+	//
+	// LogDebug("Sent response to account_id [{0}]", utwr->lsaccountid);
+	//
+	// SendPacket(&outpack);
 }

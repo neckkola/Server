@@ -17292,6 +17292,31 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 {
+	SetOffline(true);
 	AccountRepository::SetOfflineStatus(database, AccountID(), true);
+
+	EQStreamInterface *eqsi = nullptr;
+	auto               cl   = new Client(eqsi);
+
+	database.LoadCharacterData(CharacterID(), &cl->GetPP(), &cl->GetEPP());
+	cl->CopyMob(*this);
+	cl->GetInv().SetGMInventory(true);
+	cl->SetPosition(GetX(), GetY(), GetZ());
+	cl->SetHeading(GetHeading());
+	cl->SetSpawned();
+	// cl->SetBuyerID(cl->CharacterID());
+	// cl->SetTraderID(CharacterID());
+	cl->SetTrader(true);
+	cl->SetBecomeNPC(false);
+	cl->SetOffline(true);
+	entity_list.AddClient(cl);
+
 	OnDisconnect(true);
+
+	auto outapp = new EQApplicationPacket();
+	cl->CreateSpawnPacket(outapp);
+	outapp->priority = 6;
+	entity_list.QueueClients(nullptr, outapp, false);
+	safe_delete(outapp);
+
 }

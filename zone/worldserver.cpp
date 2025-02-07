@@ -37,29 +37,30 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/servertalk.h"
 #include "../common/profanity_manager.h"
 
+#include "../common/events/player_event_logs.h"
+#include "../common/patches/patches.h"
+#include "../common/repositories/account_repository.h"
+#include "../common/repositories/guild_tributes_repository.h"
+#include "../common/shared_tasks.h"
+#include "../common/skill_caps.h"
+#include "bot_command.h"
 #include "client.h"
 #include "command.h"
 #include "corpse.h"
+#include "dialogue_window.h"
 #include "entity.h"
 #include "expedition.h"
-#include "quest_parser_collection.h"
 #include "guild_mgr.h"
 #include "mob.h"
 #include "petitions.h"
+#include "quest_parser_collection.h"
 #include "raids.h"
+#include "shared_task_zone_messaging.h"
 #include "string_ids.h"
 #include "titles.h"
 #include "worldserver.h"
 #include "zone.h"
 #include "zone_config.h"
-#include "../common/shared_tasks.h"
-#include "shared_task_zone_messaging.h"
-#include "dialogue_window.h"
-#include "bot_command.h"
-#include "../common/events/player_event_logs.h"
-#include "../common/repositories/guild_tributes_repository.h"
-#include "../common/patches/patches.h"
-#include "../common/skill_caps.h"
 
 extern EntityList entity_list;
 extern Zone* zone;
@@ -4326,6 +4327,30 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				}
 			}
 		}
+		case ServerOP_UsertoWorldCancelOfflineRequest: {
+			auto in = reinterpret_cast<UsertoWorldResponse_Struct *>(pack->pBuffer);
+
+			auto client = entity_list.GetClientByLSID(in->lsaccountid);
+			if (!client) {
+				break;
+			}
+
+			AccountRepository::SetOfflineStatus(database, in->lsaccountid, false);
+			client->Depop();
+
+			auto sp = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
+			auto out = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
+			sp->opcode = ServerOP_UsertoWorldCancelOfflineResponse;
+			out->FromID = in->FromID;
+			out->lsaccountid = in->lsaccountid;
+			out->response = in->response;
+			out->ToID = in->ToID;
+			out->worldid = in->worldid;
+			strn0cpy(out->login, in->login, 64);
+			worldserver.SendPacket(sp);
+
+		break;
+	}
 		default: {
 			LogInfo("Unknown ZS Opcode [{}] size [{}]", (int) pack->opcode, pack->size);
 			break;
