@@ -751,7 +751,7 @@ void LoginServer::ProcessUsertoWorldCancelOfflineRequest(uint16_t opcode, EQ::Ne
 
 
 	ServerPacket outpack;
-	outpack.opcode  = ServerOP_UsertoWorldResp;
+	outpack.opcode  = ServerOP_UsertoWorldCancelOfflineResponse;
 	outpack.size    = sizeof(UsertoWorldResponse_Struct);
 	outpack.pBuffer = new uchar[outpack.size];
 	memset(outpack.pBuffer, 0, outpack.size);

@@ -231,11 +231,12 @@
 #define ServerOP_LSPlayerJoinWorld	0x3007
 #define ServerOP_LSPlayerZoneChange	0x3008
 
-#define ServerOP_UsertoWorldReqLeg               0xAB00
-#define ServerOP_UsertoWorldRespLeg              0xAB01
-#define ServerOP_UsertoWorldReq                  0xAB02
-#define ServerOP_UsertoWorldResp                 0xAB03
-#define ServerOP_UsertoWorldCancelOfflineRequest 0xAB04
+#define ServerOP_UsertoWorldReqLeg                0xAB00
+#define ServerOP_UsertoWorldRespLeg               0xAB01
+#define ServerOP_UsertoWorldReq                   0xAB02
+#define ServerOP_UsertoWorldResp                  0xAB03
+#define ServerOP_UsertoWorldCancelOfflineRequest  0xAB04
+#define ServerOP_UsertoWorldCancelOfflineResponse 0xAB05
 
 #define ServerOP_LauncherConnectInfo	0x3000
 #define ServerOP_LauncherZoneRequest	0x3001
