@@ -85,15 +85,14 @@ bool Client::Process()
 				}
 
 				safe_delete_array(app->pBuffer);
-				unsigned char* buffer = new unsigned char[sizeof(PlayEverquestRequest_Struct)];
-				auto data = (PlayEverquestRequest_Struct *) buffer;
+				auto buffer                = new unsigned char[sizeof(PlayEverquestRequest_Struct)];
+				auto data                  = (PlayEverquestRequest_Struct *) buffer;
 				data->base_header.sequence = GetPlaySequence();
-				data->server_number = GetPlayServerID();
-				app->pBuffer = buffer;
-				app->size = sizeof(PlayEverquestRequest_Struct);
+				data->server_number        = GetPlayServerID();
+				app->pBuffer               = buffer;
+				app->size                  = sizeof(PlayEverquestRequest_Struct);
 
 				Handle_CancelOfflineStatus((const char *) app->pBuffer);
-
 				LogError("Hit CancelOfflineTrader Mode Packet.");
 
 				break;

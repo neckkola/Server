@@ -372,17 +372,13 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 			"Received application packet from server that had opcode ServerOP_UsertoWorldCancelOfflineResp, "
 			"but was too small. Discarded to avoid buffer overrun"
 		);
-
 		return;
 	}
 
 	auto user_to_world_response = (UsertoWorldResponse_Struct *) packet.Data();
 	LogDebug("Trying to find client with user id of [{0}]", user_to_world_response->lsaccountid);
 
-	Client *c = server.client_manager->GetClient(
-		user_to_world_response->lsaccountid,
-		user_to_world_response->login
-	);
+	auto const c = server.client_manager->GetClient(user_to_world_response->lsaccountid, user_to_world_response->login);
 
 	if (c) {
 		LogDebug("Found client with user id of [{0}] and account name of {1}",
@@ -390,19 +386,16 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 				 c->GetAccountName().c_str()
 		);
 
-		auto client_packet         = EQApplicationPacket(OP_Test, sizeof(PlayEverquestResponse_Struct));
-		auto client_packet_payload = (PlayEverquestResponse_Struct *) client_packet.pBuffer;
+		auto client_packet         = EQApplicationPacket(OP_CancelOfflineTraderResponse, sizeof(PlayEverquestResponse_Struct));
+		auto client_packet_payload = reinterpret_cast<PlayEverquestResponse_Struct *>(client_packet.pBuffer);
+
 		client_packet_payload->base_header.sequence = c->GetPlaySequence();
 		client_packet_payload->server_number        = c->GetPlayServerID();
 
 		c->SendPlayResponse(&client_packet);
 
-		auto *outapp = new EQApplicationPacket(
-			OP_PlayEverquestResponse,
-			sizeof(PlayEverquestResponse_Struct)
-		);
-
-		auto *r = (PlayEverquestResponse_Struct *) outapp->pBuffer;
+		auto outapp = new EQApplicationPacket(OP_PlayEverquestResponse, sizeof(PlayEverquestResponse_Struct));
+		auto r      = reinterpret_cast<PlayEverquestResponse_Struct *>(outapp->pBuffer);
 		r->base_header.sequence = c->GetPlaySequence();
 		r->server_number        = c->GetPlayServerID();
 
@@ -445,7 +438,7 @@ void WorldServer::ProcessUserToWorldCancelOfflineResponse(uint16_t opcode, const
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_ACTIVE_CHARACTER;
 				break;
 			case UserToWorldStatusOffilineTraderBuyer:
-				r->base_reply.success = false;
+				r->base_reply.success      = false;
 				r->base_reply.error_str_id = LS::ErrStr::ERROR_OFFLINE_TRADER;
 				break;
 			default:
