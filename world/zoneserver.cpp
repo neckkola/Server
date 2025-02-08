@@ -1811,7 +1811,7 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 			utwrs->response = UserToWorldStatusSuccess;
 
 			loginserverlist.SendPacket(&outpack);
-
+			break;
 		}
 
 		default: {

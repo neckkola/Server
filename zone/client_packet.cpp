@@ -17300,6 +17300,7 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 
 	database.LoadCharacterData(CharacterID(), &cl->GetPP(), &cl->GetEPP());
 	cl->CopyMob(*this);
+	database.GetInventory(cl);
 	cl->GetInv().SetGMInventory(true);
 	cl->SetPosition(GetX(), GetY(), GetZ());
 	cl->SetHeading(GetHeading());

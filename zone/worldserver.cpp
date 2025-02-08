@@ -4335,8 +4335,19 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				break;
 			}
 
-			AccountRepository::SetOfflineStatus(database, in->lsaccountid, false);
-			client->Depop();
+			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
+			//client->Depop();
+			//entity_list.RemoveClient(client);
+			//client->Disconnect();
+
+			auto outapp = new EQApplicationPacket();
+			client->CreateDespawnPacket(outapp, 0);
+			outapp->priority = 6;
+			entity_list.QueueClients(nullptr, outapp, false);
+			safe_delete(outapp);
+
+			entity_list.RemoveMob(client->CastToMob()->GetID());
+			entity_list.RemoveClient(client->GetID());
 
 			auto sp = new ServerPacket(ServerOP_UsertoWorldCancelOfflineResponse, pack->size);
 			auto out = reinterpret_cast<UsertoWorldResponse_Struct *>(sp->pBuffer);
