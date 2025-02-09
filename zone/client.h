@@ -240,7 +240,6 @@ public:
 	#include "client_packet.h"
 
 	Client(EQStreamInterface * ieqs);
-	Client();
 	~Client();
 
 	void ReconnectUCS();
@@ -2277,39 +2276,39 @@ public:
 	void ShowZoneShardMenu();
 	void Handle_OP_ChangePetName(const EQApplicationPacket *app);
 
-	Client* operator*=(Client& in) {
-		this->guild_id   = in.guild_id;
-		this->guildrank  = in.guildrank;
-		this->LFG        = in.LFG;
-		this->AFK        = in.AFK;
-		this->trader_id  = in.trader_id;
-		this->m_buyer_id = in.m_buyer_id;
-		this->SetBodyType(in.GetBodyType(), false);
-		this->race               = in.race;
-		this->class_             = in.class_;
-		this->size               = in.size;
-		this->deity              = in.deity;
-		this->texture            = in.texture;
-		this->m_inv              = std::move(in.m_inv);
-		this->m_ClientVersion    = in.m_ClientVersion;
-		this->m_ClientVersionBit = in.m_ClientVersionBit;
-		this->character_id       = in.character_id;
-
-		return this;
-	}
+	// Client* operator*=(Client& in) {
+	// 	this->guild_id   = in.guild_id;
+	// 	this->guildrank  = in.guildrank;
+	// 	this->LFG        = in.LFG;
+	// 	this->AFK        = in.AFK;
+	// 	this->trader_id  = in.trader_id;
+	// 	this->m_buyer_id = in.m_buyer_id;
+	// 	this->SetBodyType(in.GetBodyType(), false);
+	// 	this->race               = in.race;
+	// 	this->class_             = in.class_;
+	// 	this->size               = in.size;
+	// 	this->deity              = in.deity;
+	// 	this->texture            = in.texture;
+	// 	this->m_inv              = std::move(in.m_inv);
+	// 	this->m_ClientVersion    = in.m_ClientVersion;
+	// 	this->m_ClientVersionBit = in.m_ClientVersionBit;
+	// 	this->character_id       = in.character_id;
+	//
+	// 	return this;
+	// }
 
 	Mob* GetMob() {
 		return Mob::GetMob();
 	}
 
-	void CopyMob(Client& in) {
-		this->guild_id   = in.guild_id;
-		this->guildrank  = in.guildrank;
-		this->LFG        = in.LFG;
-		this->AFK        = in.AFK;
-		this->trader_id  = in.trader_id;
-		this->m_buyer_id = in.m_buyer_id;
-		this->SetBodyType(in.GetBodyType(), false);
+	void Clone(Client& in)
+	{
+		this->guild_id           = in.guild_id;
+		this->guildrank          = in.guildrank;
+		this->LFG                = in.LFG;
+		this->AFK                = in.AFK;
+		this->trader_id          = in.trader_id;
+		this->m_buyer_id         = in.m_buyer_id;
 		this->race               = in.race;
 		this->class_             = in.class_;
 		this->size               = in.size;
@@ -2319,14 +2318,27 @@ public:
 		this->m_ClientVersionBit = in.m_ClientVersionBit;
 		this->character_id       = in.character_id;
 		this->account_id         = in.account_id;
-		this->lsaccountid        = in.lsaccountid;
+		lsaccountid              = in.lsaccountid;
+		m_pp.platinum            = in.m_pp.platinum;
+		m_pp.gold                = in.m_pp.gold;
+		m_pp.silver              = in.m_pp.silver;
+		m_pp.copper              = in.m_pp.copper;
+
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
-		//this->m_inv              = in.m_inv;
+		this->SetBodyType(in.GetBodyType(), false);
 
-		//this->m_buyer_id = 44;
-		//auto lookup = in.m_inv.GetLookup();
+		auto out_inv = GetInv().GetPersonal();
+		auto in_inv = in.GetInv().GetPersonal();
 
-		Mob::CopyMob(*in.GetMob());
+		for (auto [slot, item] : in.m_inv.m_inv) {
+			m_inv.m_inv[slot] = item->Clone();
+		}
+
+		for (auto [slot, item] : in.m_inv.m_worn) {
+			m_inv.m_worn[slot] = item->Clone();
+		}
+
+		CloneMob(*in.GetMob());
 	}
 };
 

@@ -4336,10 +4336,8 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			}
 
 			AccountRepository::SetOfflineStatus(database, client->AccountID(), false);
-			//client->Depop();
-			//entity_list.RemoveClient(client);
-			//client->Disconnect();
 
+			client->TraderEndTrader();
 			auto outapp = new EQApplicationPacket();
 			client->CreateDespawnPacket(outapp, 0);
 			outapp->priority = 6;

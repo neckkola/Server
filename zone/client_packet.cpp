@@ -17292,6 +17292,11 @@ void Client::Handle_OP_EvolveItem(const EQApplicationPacket *app)
 
 void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 {
+	if (IsBuyer()) {
+		Message(Chat::Red, "Offline Buyer mode not yet supported.");
+		return;
+	}
+
 	SetOffline(true);
 	AccountRepository::SetOfflineStatus(database, AccountID(), true);
 
@@ -17299,14 +17304,13 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 	auto               cl   = new Client(eqsi);
 
 	database.LoadCharacterData(CharacterID(), &cl->GetPP(), &cl->GetEPP());
-	cl->CopyMob(*this);
-	database.GetInventory(cl);
+	//database.LoadCharacterCurrency(CharacterID(), &cl->GetPP());
+	cl->Clone(*this);
+	//database.GetInventory(cl);
 	cl->GetInv().SetGMInventory(true);
 	cl->SetPosition(GetX(), GetY(), GetZ());
 	cl->SetHeading(GetHeading());
 	cl->SetSpawned();
-	// cl->SetBuyerID(cl->CharacterID());
-	// cl->SetTraderID(CharacterID());
 	cl->SetTrader(true);
 	cl->SetBecomeNPC(false);
 	cl->SetOffline(true);
@@ -17316,8 +17320,7 @@ void Client::Handle_OP_Offline(const EQApplicationPacket *app)
 
 	auto outapp = new EQApplicationPacket();
 	cl->CreateSpawnPacket(outapp);
-	outapp->priority = 6;
+	//outapp->priority = 6;
 	entity_list.QueueClients(nullptr, outapp, false);
 	safe_delete(outapp);
-
 }

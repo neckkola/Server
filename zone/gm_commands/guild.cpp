@@ -615,10 +615,10 @@ void command_guild(Client* c, const Seperator* sep)
 			auto cl = new Client(eqsi);
 
 			database.LoadCharacterData(c->CharacterID(), &cl->GetPP(), &cl->GetEPP());
-			cl->CopyMob(*c);
+			cl->Clone(*c);
 
 			cl->GetInv().SetGMInventory(true);
-			auto loaditems = database.GetInventory(c);
+			database.GetInventory(cl);
 
 			cl->SetPosition(c->GetX(), c->GetY(), c->GetZ());
 			cl->SetSpawned();

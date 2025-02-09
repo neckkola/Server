@@ -1929,39 +1929,36 @@ private:
 public:
 	Mob* GetMob() { return this; }
 
-	void CopyMob(Mob& in) {
-		//strn0cpy(name, fmt::format("{}-COPY",in.name).c_str(), 64);
+	void CloneMob(Mob& in) {
 		strn0cpy(name, in.name, 64);
 		strn0cpy(orig_name, in.orig_name, 64);
 		strn0cpy(lastname, in.lastname, 64);
-		current_hp    = in.current_hp;
-		max_hp        = in.max_hp;
-		base_hp       = in.base_hp;
-		gender        = in.gender;
-		race          = in.race;
-		base_gender   = in.base_gender;
-		base_race     = in.race;
-		use_model     = in.use_model;
-		class_        = in.class_;
-		bodytype      = in.bodytype;
-		orig_bodytype = in.orig_bodytype;
-		deity         = in.deity;
-		level         = in.level;
-		orig_level    = in.orig_level;
-		npctype_id    = in.npctype_id;
-		size          = in.size;
-		base_size     = in.base_size;
-		runspeed      = in.runspeed;
-
-		texture       = in.texture;
-		helmtexture   = in.helmtexture;
-		armtexture    = in.armtexture;
-		bracertexture = in.bracertexture;
-		handtexture   = in.handtexture;
-		legtexture    = in.legtexture;
-		feettexture   = in.feettexture;
-		multitexture  = in.multitexture;
-
+		current_hp                  = in.current_hp;
+		max_hp                      = in.max_hp;
+		base_hp                     = in.base_hp;
+		gender                      = in.gender;
+		race                        = in.race;
+		base_gender                 = in.base_gender;
+		base_race                   = in.race;
+		use_model                   = in.use_model;
+		class_                      = in.class_;
+		bodytype                    = in.bodytype;
+		orig_bodytype               = in.orig_bodytype;
+		deity                       = in.deity;
+		level                       = in.level;
+		orig_level                  = in.orig_level;
+		npctype_id                  = in.npctype_id;
+		size                        = in.size;
+		base_size                   = in.base_size;
+		runspeed                    = in.runspeed;
+		texture                     = in.texture;
+		helmtexture                 = in.helmtexture;
+		armtexture                  = in.armtexture;
+		bracertexture               = in.bracertexture;
+		handtexture                 = in.handtexture;
+		legtexture                  = in.legtexture;
+		feettexture                 = in.feettexture;
+		multitexture                = in.multitexture;
 		haircolor                   = in.haircolor;
 		beardcolor                  = in.beardcolor;
 		eyecolor1                   = in.eyecolor1;
@@ -1987,49 +1984,45 @@ public:
 		has_ProjectIllusion         = in.has_ProjectIllusion;
 		SpellPowerDistanceMod       = in.SpellPowerDistanceMod;
 		last_los_check              = in.last_los_check;
-
-		aa_title = in.aa_title;
-
-		AC                   = in.AC;
-		ATK                  = in.ATK;
-		STR                  = in.STR;
-		STA                  = in.STA;
-		DEX                  = in.DEX;
-		AGI                  = in.AGI;
-		INT                  = in.INT;
-		WIS                  = in.WIS;
-		CHA                  = in.CHA;
-		MR                   = in.MR;
-		extra_haste          = in.extra_haste;
-		bEnraged             = in.bEnraged;
-		current_mana         = in.current_mana;
-		max_mana             = in.max_mana;
-		hp_regen             = in.hp_regen;
-		hp_regen_per_second  = in.hp_regen_per_second;
-		mana_regen           = in.mana_regen;
-		ooc_regen            = in.ooc_regen;
-		maxlevel             = in.maxlevel;
-		scalerate            = in.scalerate;
-		invisible            = in.invisible;
-		invisible_undead     = in.invisible_undead;
-		invisible_animals    = in.invisible_animals;
-		sneaking             = in.sneaking;
-		hidden               = in.hidden;
-		improved_hidden      = in.improved_hidden;
-		invulnerable         = in.invulnerable;
-		qglobal              = in.qglobal;
-		spawned              = in.spawned;
-		rare_spawn           = in.rare_spawn;
-		always_aggro         = in.always_aggro;
-		heroic_strikethrough = in.heroic_strikethrough;
-		keeps_sold_items     = in.keeps_sold_items;
+		aa_title                    = in.aa_title;
+		AC                          = in.AC;
+		ATK                         = in.ATK;
+		STR                         = in.STR;
+		STA                         = in.STA;
+		DEX                         = in.DEX;
+		AGI                         = in.AGI;
+		INT                         = in.INT;
+		WIS                         = in.WIS;
+		CHA                         = in.CHA;
+		MR                          = in.MR;
+		extra_haste                 = in.extra_haste;
+		bEnraged                    = in.bEnraged;
+		current_mana                = in.current_mana;
+		max_mana                    = in.max_mana;
+		hp_regen                    = in.hp_regen;
+		hp_regen_per_second         = in.hp_regen_per_second;
+		mana_regen                  = in.mana_regen;
+		ooc_regen                   = in.ooc_regen;
+		maxlevel                    = in.maxlevel;
+		scalerate                   = in.scalerate;
+		invisible                   = in.invisible;
+		invisible_undead            = in.invisible_undead;
+		invisible_animals           = in.invisible_animals;
+		sneaking                    = in.sneaking;
+		hidden                      = in.hidden;
+		improved_hidden             = in.improved_hidden;
+		invulnerable                = in.invulnerable;
+		qglobal                     = in.qglobal;
+		spawned                     = in.spawned;
+		rare_spawn                  = in.rare_spawn;
+		always_aggro                = in.always_aggro;
+		heroic_strikethrough        = in.heroic_strikethrough;
+		keeps_sold_items            = in.keeps_sold_items;
 
 		for (int i = 0; i < MAX_APPEARANCE_EFFECTS; i++) {
 			appearance_effects_id[i]   = in.appearance_effects_id[i];
 			appearance_effects_slot[i] = in.appearance_effects_slot[i];
 		}
-
-
 	}
 };
 

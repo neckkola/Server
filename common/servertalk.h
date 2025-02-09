@@ -1963,6 +1963,8 @@ struct BazaarPurchaseMessaging_Struct {
 	uint32           buyer_id;
 	uint32           item_quantity_available;
 	uint32           id;
+	uint32           trader_zone_id;
+	uint32           trader_zone_instance_id;
 };
 
 #pragma pack()

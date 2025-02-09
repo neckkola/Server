@@ -1750,10 +1750,10 @@ void ZoneServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p) {
 				return;
 			}
 
-			auto trader = client_list.FindCLEByCharacterID(in->trader_buy_struct.trader_id);
-			if (trader) {
-				zoneserver_list.SendPacket(trader->zone(), trader->instance(), pack);
-			}
+			//auto trader = client_list.FindCLEByCharacterID(in->trader_buy_struct.trader_id);
+			//if (trader) {
+			zoneserver_list.SendPacket(in->trader_zone_id, in->trader_zone_instance_id, pack);
+			//}
 
 			break;
 		}

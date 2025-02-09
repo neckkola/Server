@@ -2200,6 +2200,7 @@ void Database::ClearGuildOnlineStatus()
 void Database::ClearTraderDetails()
 {
 	TraderRepository::Truncate(*this);
+	AccountRepository::ClearAllOfflineStatus(*this);
 }
 
 void Database::ClearBuyerDetails()
