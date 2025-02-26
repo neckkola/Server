@@ -6871,6 +6871,18 @@ CREATE INDEX idx_instance_id ON data_buckets (instance_id);
 )",
 		.content_schema_update = false
 	},
+	ManifestEntry{
+		.version = 9307,
+		.description = "2025_add_multivalue_support_to_evolving_subtype.sql",
+		.check = "SHOW COLUMNS FROM `items_evolving_details` LIKE 'sub_type'",
+		.condition = "missing",
+		.match = "varchar(200)",
+		.sql = R"(
+ALTER TABLE `items_evolving_details`
+	CHANGE COLUMN `sub_type` `sub_type` VARCHAR(200) NULL DEFAULT '0' AFTER `type`;
+)",
+		.content_schema_update = true
+	},
 // -- template; copy/paste this when you need to create a new entry
 //	ManifestEntry{
 //		.version = 9228,
