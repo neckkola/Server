@@ -2422,17 +2422,18 @@ public:
 		m_pp.gm                  = in.m_pp.gm;
 
 		m_inv.SetInventoryVersion(in.m_ClientVersion);
-		this->SetBodyType(in.GetBodyType(), false);
-
-		auto out_inv = GetInv().GetPersonal();
-		auto in_inv = in.GetInv().GetPersonal();
+		SetBodyType(in.GetBodyType(), false);
 
 		for (auto [slot, item] : in.m_inv.m_inv) {
-			m_inv.m_inv[slot] = item->Clone();
+			if (item) {
+				m_inv.m_inv[slot] = item->Clone();
+			}
 		}
 
 		for (auto [slot, item] : in.m_inv.m_worn) {
-			m_inv.m_worn[slot] = item->Clone();
+			if (item) {
+				m_inv.m_worn[slot] = item->Clone();
+			}
 		}
 
 		CloneMob(*in.GetMob());
