@@ -3796,7 +3796,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			}
 
 			auto item_sn = Strings::ToUnsignedBigInt(in->trader_buy_struct.serial_number);
-			auto outapp  = std::make_unique<EQApplicationPacket>(OP_Trader, sizeof(TraderBuy_Struct));
+			auto outapp  = std::make_unique<EQApplicationPacket>(OP_Trader, static_cast<uint32_t>(sizeof(TraderBuy_Struct)));
 			auto data    = (TraderBuy_Struct *) outapp->pBuffer;
 
 			memcpy(data, &in->trader_buy_struct, sizeof(TraderBuy_Struct));
@@ -3856,7 +3856,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				case Barter_AddToBarterWindow: {
 					auto outapp = std::make_unique<EQApplicationPacket>(
 						OP_Barter,
-						sizeof(BuyerAddBuyertoBarterWindow_Struct)
+						static_cast<uint32_t>(sizeof(BuyerAddBuyertoBarterWindow_Struct))
 					);
 					auto emu    = (BuyerAddBuyertoBarterWindow_Struct *) outapp->pBuffer;
 
@@ -3873,7 +3873,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				case Barter_RemoveFromBarterWindow: {
 					auto outapp = std::make_unique<EQApplicationPacket>(
 						OP_Barter,
-						sizeof(BuyerRemoveBuyerFromBarterWindow_Struct)
+						static_cast<uint32_t>(sizeof(BuyerRemoveBuyerFromBarterWindow_Struct))
 					);
 					auto emu    = (BuyerRemoveBuyerFromBarterWindow_Struct *) outapp->pBuffer;
 
