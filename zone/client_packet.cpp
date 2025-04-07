@@ -15367,12 +15367,17 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			TraderStartTrader(app);
 			break;
 		}
-		case PriceUpdate:
-		case ItemMove: {
-			LogTrading("Trader Price Update");
-			TraderPriceUpdate(app);
+		case ItemMove:
+		case PriceUpdate:{
+			LogTrading("Trader item updated - removed, added or price change");
+			TraderUpdateItem(app);
 			break;
 		}
+		// case ItemMove: {
+		// 	LogTrading("Trader Price Update");
+		// 	TraderPriceUpdate(app);
+		// 	break;
+		// }
 		case EndTransaction: {
 			auto sis  = (Trader_ShowItems_Struct *) app->pBuffer;
 			Client *c = entity_list.GetClientByID(sis->entity_id);
@@ -15389,7 +15394,7 @@ void Client::Handle_OP_Trader(const EQApplicationPacket *app)
 			break;
 		}
 		default: {
-			LogError("Unknown size for OP_Trader: [{}]\n", app->size);
+			LogTrading("Unknown size for OP_Trader: [{}]\n", app->size);
 		}
 	}
 }
@@ -15400,29 +15405,27 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 	//
 	// Client has elected to buy an item from a Trader
 	//
-	auto in     = (TraderBuy_Struct *) app->pBuffer;
+	// if (RuleB(Bazaar, UseAlternateBazaarSearch) && in->trader_id >= TraderRepository::TRADER_CONVERT_ID) {
+	// 	auto sn = std::string(in->item_unique_id);
+	// 	auto trader = TraderRepository::GetTraderByInstanceAndSerialnumber(
+	// 		database,
+	// 		in->trader_id - TraderRepository::TRADER_CONVERT_ID,
+	// 		sn
+	// 	);
+	//
+	// 	if (!trader.trader_id) {
+	// 		LogTrading("Unable to convert trader id for {} and serial number {}.  Trader Buy aborted.",
+	// 			in->trader_id - TraderRepository::TRADER_CONVERT_ID,
+	// 			in->item_unique_id
+	// 		);
+	// 		return;
+	// 	}
 
-	if (RuleB(Bazaar, UseAlternateBazaarSearch) && in->trader_id >= TraderRepository::TRADER_CONVERT_ID) {
-		auto sn = std::string(in->serial_number);
-		auto trader = TraderRepository::GetTraderByInstanceAndSerialnumber(
-			database,
-			in->trader_id - TraderRepository::TRADER_CONVERT_ID,
-			sn
-		);
-
-		if (!trader.trader_id) {
-			LogTrading("Unable to convert trader id for {} and serial number {}.  Trader Buy aborted.",
-				in->trader_id - TraderRepository::TRADER_CONVERT_ID,
-				in->serial_number
-			);
-			return;
-		}
-
-		in->trader_id = trader.trader_id;
-		strn0cpy(in->seller_name, trader.trader_name.c_str(), sizeof(in->seller_name));
-	}
-
-	auto trader = entity_list.GetClientByID(in->trader_id);
+	auto in             = (TraderBuy_Struct *) app->pBuffer;
+	auto item_unique_id = std::string(in->item_unique_id);
+	auto trader_details = TraderRepository::GetTraderByItemUniqueNumber(database, item_unique_id);
+	auto trader         = entity_list.GetClientByID(in->trader_id);
+	strn0cpy(in->seller_name, trader_details.trader_name.c_str(), sizeof(in->seller_name));
 
 	switch (in->method) {
 		case BazaarByVendor: {
@@ -15432,9 +15435,9 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 						   in->trader_id,
 						   in->item_id,
 						   in->quantity,
-						   in->serial_number
+						   in->item_unique_id
 				);
-				BuyTraderItem(in, trader, app);
+				BuyTraderItem(app);
 			}
 			break;
 		}
@@ -15458,7 +15461,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 					   in->trader_id,
 					   in->item_id,
 					   in->quantity,
-					   in->serial_number
+					   in->item_unique_id
 			);
 			BuyTraderItemOutsideBazaar(in, app);
 			break;
@@ -15483,7 +15486,7 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 					   in->trader_id,
 					   in->item_id,
 					   in->quantity,
-					   in->serial_number
+					   in->item_unique_id
 			);
 			Message(
 				Chat::Yellow,
@@ -15493,6 +15496,9 @@ void Client::Handle_OP_TraderBuy(const EQApplicationPacket *app)
 			in->sub_action = Failed;
 			TradeRequestFailed(app);
 			break;
+		}
+		default: {
+
 		}
 	}
 }
@@ -15568,15 +15574,18 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 	switch (in->Code) {
 		case ClickTrader: {
 			LogTrading("Handle_OP_TraderShop case ClickTrader [{}]", in->Code);
-			auto outapp        = std::make_unique<EQApplicationPacket>(OP_TraderShop, sizeof(TraderClick_Struct));
+			auto outapp        = std::make_unique<EQApplicationPacket>(
+				OP_TraderShop,
+				static_cast<uint32>(sizeof(TraderClick_Struct))
+			);
 			auto data          = (TraderClick_Struct *) outapp->pBuffer;
-			auto trader_client = entity_list.GetClientByID(in->TraderID);
+			auto trader = entity_list.GetClientByID(in->TraderID);
 
-			if (trader_client) {
-				data->Approval = trader_client->WithCustomer(GetID());
+			if (trader) {
+				data->Approval = trader->WithCustomer(GetID());
 				LogTrading("Client::Handle_OP_TraderShop: Shop Request ([{}]) to ([{}]) with Approval: [{}]",
 						   GetCleanName(),
-						   trader_client->GetCleanName(),
+						   trader->GetCleanName(),
 						   data->Approval
 				);
 			}
@@ -15584,6 +15593,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 				LogTrading("Client::Handle_OP_TraderShop: entity_list.GetClientByID(tcs->traderid)"
 						   " returned a nullptr pointer"
 				);
+				auto outapp = new EQApplicationPacket(OP_ShopEndConfirm);
+				QueuePacket(outapp);
+				safe_delete(outapp);
 				return;
 			}
 
@@ -15593,8 +15605,9 @@ void Client::Handle_OP_TraderShop(const EQApplicationPacket *app)
 			QueuePacket(outapp.get());
 
 			if (data->Approval) {
-				BulkSendTraderInventory(trader_client->CharacterID());
-				trader_client->Trader_CustomerBrowsing(this);
+				ClearTraderMerchantList();
+				BulkSendTraderInventory(trader->CharacterID());
+				trader->Trader_CustomerBrowsing(this);
 				SetTraderID(in->TraderID);
 				LogTrading("Client::Handle_OP_TraderShop: Trader Inventory Sent to [{}] from [{}]",
 						   GetID(),

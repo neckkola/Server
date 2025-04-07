@@ -3794,7 +3794,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			}
 
 			//auto item_sn = Strings::ToUnsignedBigInt(in->trader_buy_struct.serial_number);
-			auto sn = std::string(in->trader_buy_struct.serial_number);
+			auto sn = std::string(in->trader_buy_struct.item_unique_id);
 			auto outapp  = std::make_unique<EQApplicationPacket>(OP_Trader, sizeof(TraderBuy_Struct));
 			auto data    = (TraderBuy_Struct *) outapp->pBuffer;
 
@@ -3829,7 +3829,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				RecordPlayerEventLogWithClient(trader_pc, PlayerEvent::TRADER_SELL, e);
 			}
 
-			trader_pc->RemoveItemBySerialNumber(sn, in->trader_buy_struct.quantity);
+			trader_pc->RemoveItemByItemUniqueId(sn, in->trader_buy_struct.quantity);
 			trader_pc->AddMoneyToPP(in->trader_buy_struct.price * in->trader_buy_struct.quantity, true);
 			trader_pc->QueuePacket(outapp.get());
 
