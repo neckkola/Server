@@ -3793,7 +3793,6 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 				}
 			}
 
-			//auto item_sn = Strings::ToUnsignedBigInt(in->trader_buy_struct.serial_number);
 			auto sn = std::string(in->trader_buy_struct.item_unique_id);
 			auto outapp  = std::make_unique<EQApplicationPacket>(OP_Trader, sizeof(TraderBuy_Struct));
 			auto data    = (TraderBuy_Struct *) outapp->pBuffer;
