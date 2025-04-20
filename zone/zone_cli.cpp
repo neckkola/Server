@@ -35,6 +35,7 @@ void ZoneCLI::CommandHandler(int argc, char **argv)
 	function_map["tests:npc-handins"]            = &ZoneCLI::TestNpcHandins;
 	function_map["tests:npc-handins-multiquest"] = &ZoneCLI::TestNpcHandinsMultiQuest;
 	function_map["tests:zone-state"]             = &ZoneCLI::TestZoneState;
+	function_map["tests:parcels"]                = &ZoneCLI::TestParcels;
 
 	EQEmuCommand::HandleMenu(function_map, cmd, argc, argv);
 }
@@ -49,3 +50,4 @@ void ZoneCLI::CommandHandler(int argc, char **argv)
 #include "cli/tests/npc_handins.cpp"
 #include "cli/tests/npc_handins_multiquest.cpp"
 #include "cli/tests/zone_state.cpp"
+#include "cli/tests/parcels.cpp"

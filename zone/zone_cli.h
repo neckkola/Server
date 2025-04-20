@@ -16,6 +16,7 @@ public:
 	static void TestNpcHandins(int argc, char **argv, argh::parser &cmd, std::string &description);
 	static void TestNpcHandinsMultiQuest(int argc, char **argv, argh::parser &cmd, std::string &description);
 	static void TestZoneState(int argc, char **argv, argh::parser &cmd, std::string &description);
+	static void TestParcels(int argc, char **argv, argh::parser &cmd, std::string &description);
 };
 
 #endif //EQEMU_ZONE_CLI_H
