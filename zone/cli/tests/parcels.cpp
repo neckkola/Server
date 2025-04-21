@@ -39,6 +39,12 @@ struct ParcelTestCase {
 	ParcelSendResults parcel_send_results;
 };
 
+struct ParcelRetrieve {
+	std::string                    description;
+	ParcelRetrieve_Struct          parcel_retrieve;
+	InventoryRepository::Inventory parcel_retrieve_results;
+};
+
 inline CharacterDataRepository::CharacterData SeedCharacterTable()
 {
 	const std::string charcter_name = "Parcel_Regression_Character";
@@ -97,15 +103,23 @@ inline void SeedCharacterInventoryTable(uint32 character_id)
 
 	std::vector<Inventory> inventory_data{
 			{ EQ::invslot::GENERAL_BEGIN, 35034, 1, 0, 0, 0, 0, 0, 0 }, // Trader Satchel
-			{ EQ::invbag::GENERAL_BAGS_BEGIN, 4171, 1, 85490, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 1, 8517, 50, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 2, 8517, 32767, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 3, 70208, 1, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 4, 14196, 5, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 5, 14196, 2, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 6, 8205, 0, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 7, 5106, 1, 0, 0, 0, 0, 0, 0 },
-			{ EQ::invbag::GENERAL_BAGS_BEGIN + 8, 34079, 1, 0, 0, 0, 0, 0, 0 },
+			{ EQ::invslot::GENERAL_BEGIN + 1, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 2, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 3, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 4, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 5, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 6, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 7, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 8, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invslot::GENERAL_BEGIN + 9, 34079, 1, 0, 0, 0, 0, 0, 0 },        // Fabled Backpack
+			{ EQ::invbag::GENERAL_BAGS_BEGIN, 4171, 1, 85490, 0, 0, 0, 0, 0 },     //Rubicite Greaves with an Augment
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 1, 8517, 50, 0, 0, 0, 0, 0, 0 },    //Class 6 Arrows (stackable)
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 2, 8517, 32767, 0, 0, 0, 0, 0, 0 }, //Class 6 Arrows (stackable)
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 3, 70208, 1, 0, 0, 0, 0, 0, 0 },    //Shroud of the Fallen Defender with charges -1
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 4, 14196, 3, 0, 0, 0, 0, 0, 0 },    //5 Dose Potion of Lesser Cohesion with 3 charges
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 5, 8205, 0, 0, 0, 0, 0, 0, 0 },     //Glowing Org with 0 charges
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 6, 5106, 1, 0, 0, 0, 0, 0, 0 },     //Shadowed Halberd (Giant)
+			{ EQ::invbag::GENERAL_BAGS_BEGIN + 7, 34079, 1, 0, 0, 0, 0, 0, 0 },    //Fabled Backpack
 		};
 
 	std::vector<InventoryRepository::Inventory> queue{};
@@ -135,7 +149,7 @@ inline void DeleteParcels(uint32 character_id)
 	CharacterParcelsRepository::DeleteWhere(database, fmt::format("`char_id` = {}", character_id));
 }
 
-void RunParcelTests(Client *c, std::vector<ParcelTestCase> &test_cases)
+void RunParcelSendTests(Client *c, std::vector<ParcelTestCase> &test_cases)
 {
 		for (auto const& p : test_cases) {
 		Parcel_Struct ps{};
@@ -148,7 +162,6 @@ void RunParcelTests(Client *c, std::vector<ParcelTestCase> &test_cases)
 
 		c->SetParcelEnabled(true);
 		c->DoParcelSend(&ps);
-		c->SaveCharacterData();
 
 		auto result = CharacterParcelsRepository::GetWhere(
 			database,
@@ -271,12 +284,83 @@ void RunParcelTests(Client *c, std::vector<ParcelTestCase> &test_cases)
 				RunTest(p.description, true, passed);
 				break;
 			}
+			case 2: {
+				passed = false;
+				if (c->GetCarriedMoney() == 4444) {
+					passed = true;
+				}
+
+				RunTest(p.description, true, passed);
+				break;
+			}
 		}
+	}
+
+	std::cout << "\n===========================================\n";
+	std::cout << "✅ All Parcels Send Tests Completed!\n";
+	std::cout << "===========================================\n";
+}
+
+void RunParcelRetrieveTests(Client *c, std::vector<ParcelRetrieve> &test_cases)
+{
+	bool passed = true;
+	for (auto const &r : test_cases) {
+		c->DoParcelRetrieve(r.parcel_retrieve);
+
+		if (r.parcel_retrieve_results.item_id == PARCEL_MONEY_ITEM_ID) {
+			if (c->GetCarriedMoney() != 5555) {
+				passed = false;
+			}
+			RunTest("Retrieve Parcel: 1p 1g 1s 1c", true, passed);
+			break;
+		}
+
+		auto inv = InventoryRepository::GetWhere(
+			database,
+			fmt::format(
+				"`character_id` = {} AND `slot_id` = {}",
+				r.parcel_retrieve_results.character_id,
+				r.parcel_retrieve_results.slot_id
+			)
+		);
+
+		if (inv.empty()) {
+			passed = false;
+		}
+
+		for (auto const &i : inv) {
+			if (r.parcel_retrieve_results.item_id != i.item_id) {
+				passed = false;
+				RunTest("Inventory: Item ID mismatch", r.parcel_retrieve_results.item_id, i.item_id);
+				break;
+			}
+			if (r.parcel_retrieve_results.charges != i.charges) {
+				passed = false;
+				RunTest("Inventory: Charges mismatch", r.parcel_retrieve_results.charges, i.charges);
+				break;
+			}
+			if (r.parcel_retrieve_results.guid != i.guid) {
+				passed = false;
+				RunTest("Inventory: GUID mismatch", r.parcel_retrieve_results.guid, i.guid);
+				break;
+			}
+			if (r.parcel_retrieve_results.augment_one != i.augment_one ||
+				r.parcel_retrieve_results.augment_two != i.augment_two ||
+				r.parcel_retrieve_results.augment_three != i.augment_three ||
+				r.parcel_retrieve_results.augment_four != i.augment_four ||
+				r.parcel_retrieve_results.augment_five != i.augment_five ||
+				r.parcel_retrieve_results.augment_six != i.augment_six) {
+				passed = false;
+				RunTest("Inventory: Augments mismatch", true, false);
+				break;
+				}
+		}
+		RunTest(r.description, true, passed);
 	}
 
 
 	std::cout << "\n===========================================\n";
-	std::cout << "✅ All Parcels Tests Completed!\n";
+	std::cout << "✅ All Parcels Retrieve Tests Completed!\n";
 	std::cout << "===========================================\n";
 }
 void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string &description)
@@ -318,6 +402,8 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 	c->SetClientVersionBit(EQ::versions::ConvertClientVersionToClientVersionBit(c->ClientVersion()));
 	c->GetInv().SetInventoryVersion(EQ::versions::MobVersion::RoF2);
 	c->SetName(character.name.c_str());
+	c->AddMoneyToPP(4, 4, 4, 4);
+
 	database.LoadCharacterData(c->CharacterID(), &c->GetPP(), &c->GetEPP());
 	database.GetInventory(c);
 
@@ -331,16 +417,16 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 
 	auto date = time(nullptr);
 
-	std::vector<ParcelTestCase> test_cases = {
+	std::vector<ParcelTestCase> test_cases_send = {
 		{
-			.description = "Send Parcel: 23 Class 6 Arrows from Inventory Slot 4011",
+			.description = "Send Parcel: 23 - Class 6 Arrows from Inventory Slot 4011",
 			.parcel_send = {
 				.npc_id     = merchant->GetID(),
-				.item_slot  = 4011,
+				.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN + 1,
 				.quantity   = 23,
 				.money_flag = 0,
 				.send_to    = std::string(c->GetName()),
-				.note       = "Send Parcel: 23 Class 6 Arrows from Inventory Slot 4011"
+				.note       = "Send Parcel: 23 - Class 6 Arrows from Inventory Slot 4011"
 			},
 			.parcel_send_results = {
 				.db_parcels  = {
@@ -355,14 +441,14 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 					.slot_id = 1,
 					.quantity = 23,
 					.from_name = std::string(c->GetName()),
-					.note = std::string("Send Parcel: 23 Class 6 Arrows from Inventory Slot 4011"),
+					.note = std::string("Send Parcel: 23 - Class 6 Arrows from Inventory Slot 4011"),
 					.sent_date = date
 				},
 				.db_inventory = {
 					.action = 1,
 					.inventory = {
 						.character_id = c->CharacterID(),
-						.slot_id = 4011,
+						.slot_id = EQ::invbag::GENERAL_BAGS_BEGIN + 1,
 						.item_id = 8517,
 						.charges = 27,
 						.augment_one = 0,
@@ -371,20 +457,20 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 						.augment_four = 0,
 						.augment_five = 0,
 						.augment_six = 0,
-						.guid = 5
+						.guid = 14
 					}
 				}
 			}
 		},
 			{
-				.description         = "Send Parcel: 1 Shroud of bla bla from Inventory Slot 4013",
+				.description         = "Send Parcel: 1 - Shroud of the Fallen Defender from Inventory Slot 4013",
 				.parcel_send         = {
 					.npc_id     = merchant->GetID(),
-					.item_slot  = 4013,
+					.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN + 3,
 					.quantity   = 1,
 					.money_flag = 0,
 					.send_to    = std::string(c->GetName()),
-					.note       = "Send Parcel: 1 Shroud of bla bla from Inventory Slot 4013" },
+					.note       = "Send Parcel: 1 - Shroud of the Fallen Defender from Inventory Slot 4013" },
 					.parcel_send_results = {
 					.db_parcels   = {
 						.char_id    = c->CharacterID(),
@@ -398,14 +484,14 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 						.slot_id    = 2,
 						.quantity   = 1,
 						.from_name  = std::string(c->GetName()),
-						.note       = std::string("Send Parcel: 1 Shroud of bla bla from Inventory Slot 4013"),
+						.note       = std::string("Send Parcel: 1 - Shroud of the Fallen Defender from Inventory Slot 4013"),
 						.sent_date = date
 					},
 					.db_inventory = {
 						.action = 0,
 						.inventory = {
 							.character_id  = c->CharacterID(),
-							.slot_id       = 4013,
+							.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 3,
 							.item_id       = 70208,
 							.charges       = 1,
 							.augment_one   = 0,
@@ -414,20 +500,21 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 							.augment_four  = 0,
 							.augment_five  = 0,
 							.augment_six   = 0,
-							.guid          = 7
+							.guid          = 16
 						}
 					}
 				}
 			},
 				{
-					.description         = "Send Parcel: 1 5 Dose Potion with 5 charges from Inventory Slot 4014",
+					.description         = "Send Parcel: 1 - 5 Dose Potion with 3 charges from Inventory Slot 4014",
 					.parcel_send         = {
 						.npc_id     = merchant->GetID(),
-						.item_slot  = 4014,
-						.quantity   = 5,
+						.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN + 4,
+						.quantity   = 1,
 						.money_flag = 0,
 						.send_to    = std::string(c->GetName()),
-						.note       = "Send Parcel: 1 5 Dose Potion with 5 charges from Inventory Slot 4014" },
+						.note       = "Send Parcel: 1 - 5 Dose Potion with 3 charges from Inventory Slot 4014"
+					},
 						.parcel_send_results = {
 						.db_parcels   = {
 							.char_id    = c->CharacterID(),
@@ -439,42 +526,43 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 							.aug_slot_5 = 0,
 							.aug_slot_6 = 0,
 							.slot_id    = 3,
-							.quantity   = 5,
+							.quantity   = 3,
 							.from_name  = std::string(c->GetName()),
-							.note       = std::string("Send Parcel: 1 5 Dose Potion with 5 charges from Inventory Slot 4014"),
+							.note       = std::string("Send Parcel: 1 - 5 Dose Potion with 3 charges from Inventory Slot 4014"),
 							.sent_date = date
 						},
 						.db_inventory = {
 							.action = 0,
 							.inventory = {
 								.character_id  = c->CharacterID(),
-								.slot_id       = 4014,
+								.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 4,
 								.item_id       = 14196,
-								.charges       = 5,
+								.charges       = 3,
 								.augment_one   = 0,
 								.augment_two   = 0,
 								.augment_three = 0,
 								.augment_four  = 0,
 								.augment_five  = 0,
 								.augment_six   = 0,
-								.guid          = 8
+								.guid          = 17
 							}
 						}
 						}
 				},
 			{
-				.description         = "Send Parcel: 1 5 Dose Potion with 2 charges from Inventory Slot 4015",
+				.description         = "Send Parcel: 1 - Glowing Orb with 0 charges from Inventory Slot 4015",
 				.parcel_send         = {
 					.npc_id     = merchant->GetID(),
-					.item_slot  = 4015,
-					.quantity   = 2,
+					.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN + 5,
+					.quantity   = 1,
 					.money_flag = 0,
 					.send_to    = std::string(c->GetName()),
-					.note       = "Send Parcel: 1 5 Dose Potion with 2 charges from Inventory Slot 4015" },
+					.note       = "Send Parcel: 1 - Glowing Orb with 0 charges from Inventory Slot 4015"
+				},
 					.parcel_send_results = {
 					.db_parcels   = {
 						.char_id    = c->CharacterID(),
-						.item_id    = 14196,
+						.item_id    = 8205,
 						.aug_slot_1 = 0,
 						.aug_slot_2 = 0,
 						.aug_slot_3 = 0,
@@ -482,38 +570,38 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 						.aug_slot_5 = 0,
 						.aug_slot_6 = 0,
 						.slot_id    = 4,
-						.quantity   = 2,
+						.quantity   = 0,
 						.from_name  = std::string(c->GetName()),
-						.note       = std::string("Send Parcel: 1 5 Dose Potion with 2 charges from Inventory Slot 4015"),
+						.note       = std::string("Send Parcel: 1 - Glowing Orb with 0 charges from Inventory Slot 4015"),
 						.sent_date = date
 					},
 					.db_inventory = {
 						.action = 0,
 						.inventory = {
 							.character_id  = c->CharacterID(),
-							.slot_id       = 4015,
-							.item_id       = 14196,
-							.charges       = 2,
+							.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 5,
+							.item_id       = 8205,
+							.charges       = 0,
 							.augment_one   = 0,
 							.augment_two   = 0,
 							.augment_three = 0,
 							.augment_four  = 0,
 							.augment_five  = 0,
 							.augment_six   = 0,
-							.guid          = 8
+							.guid          = 18
 						}
 					}
 					}
 			},
 			{
-				.description         = "Send Parcel: 32767 Class 6 Arrows from Inventory Slot 4012",
+				.description         = "Send Parcel: 32767 - Class 6 Arrows from Inventory Slot 4012",
 				.parcel_send         = {
 					.npc_id     = merchant->GetID(),
-					.item_slot  = 4012,
+					.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN + 2,
 					.quantity   = 32767,
 					.money_flag = 0,
 					.send_to    = std::string(c->GetName()),
-					.note       = "Send Parcel: 32767 Class 6 Arrows from Inventory Slot 4012" },
+					.note       = "Send Parcel: 32767 - Class 6 Arrows from Inventory Slot 4012" },
 					.parcel_send_results = {
 					.db_parcels   = {
 						.char_id    = c->CharacterID(),
@@ -527,14 +615,14 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 						.slot_id    = 5,
 						.quantity   = 32767,
 						.from_name  = std::string(c->GetName()),
-						.note       = std::string("Send Parcel: 32767 Class 6 Arrows from Inventory Slot 4012"),
+						.note       = std::string("Send Parcel: 32767 - Class 6 Arrows from Inventory Slot 4012"),
 						.sent_date = date
 					},
 					.db_inventory = {
 						.action = 0,
 						.inventory = {
 							.character_id  = c->CharacterID(),
-							.slot_id       = 4012,
+							.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 2,
 							.item_id       = 8517,
 							.charges       = 32767,
 							.augment_one   = 0,
@@ -543,20 +631,20 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 							.augment_four  = 0,
 							.augment_five  = 0,
 							.augment_six   = 0,
-							.guid          = 6
+							.guid          = 15
 						}
 					}
 					}
 			},
 			{
-				.description         = "Send Parcel: 1 Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010",
+				.description         = "Send Parcel: 1 - Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010",
 				.parcel_send         = {
 					.npc_id     = merchant->GetID(),
-					.item_slot  = 4010,
+					.item_slot  = EQ::invbag::GENERAL_BAGS_BEGIN,
 					.quantity   = 4171,
 					.money_flag = 0,
 					.send_to    = std::string(c->GetName()),
-					.note       = "Send Parcel: 1 Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010" },
+					.note       = "Send Parcel: 1 - Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010" },
 					.parcel_send_results = {
 					.db_parcels   = {
 						.char_id    = c->CharacterID(),
@@ -570,14 +658,14 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 						.slot_id    = 6,
 						.quantity   = 1,
 						.from_name  = std::string(c->GetName()),
-						.note       = std::string("Send Parcel: 1 Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010"),
+						.note       = std::string("Send Parcel: 1 - Rubicite Greaves with an Augment of 85490 from Inventory Slot 4010"),
 						.sent_date = date
 					},
 					.db_inventory = {
 						.action = 0,
 						.inventory = {
 							.character_id  = c->CharacterID(),
-							.slot_id       = 4010,
+							.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN ,
 							.item_id       = 4171,
 							.charges       = 1,
 							.augment_one   = 85490,
@@ -586,12 +674,208 @@ void ZoneCLI::TestParcels(int argc, char **argv, argh::parser &cmd, std::string 
 							.augment_four  = 0,
 							.augment_five  = 0,
 							.augment_six   = 0,
-							.guid          = 3
+							.guid          = 12
+						}
+					}
+					}
+			},
+			{
+				.description         = "Send Parcel: 1p 1g 1s 1c",
+				.parcel_send         = {
+					.npc_id     = merchant->GetID(),
+					.item_slot  = 0xFFFFFFFF,
+					.quantity   = 1111,
+					.money_flag = 1,
+					.send_to    = std::string(c->GetName()),
+					.note       = "Send Parcel: 1p 1g 1s 1c" },
+					.parcel_send_results = {
+					.db_parcels   = {
+						.char_id    = c->CharacterID(),
+						.item_id    = PARCEL_MONEY_ITEM_ID,
+						.aug_slot_1 = 0,
+						.aug_slot_2 = 0,
+						.aug_slot_3 = 0,
+						.aug_slot_4 = 0,
+						.aug_slot_5 = 0,
+						.aug_slot_6 = 0,
+						.slot_id    = 7,
+						.quantity   = 1111,
+						.from_name  = std::string(c->GetName()),
+						.note       = std::string("Send Parcel: 1p 1g 1s 1c"),
+						.sent_date = date
+					},
+					.db_inventory = {
+						.action = 2,
+						.inventory = {
+							.character_id  = c->CharacterID(),
+							.slot_id       = 0,
+							.item_id       = PARCEL_MONEY_ITEM_ID,
+							.charges       = 1111,
+							.augment_one   = 0,
+							.augment_two   = 0,
+							.augment_three = 0,
+							.augment_four  = 0,
+							.augment_five  = 0,
+							.augment_six   = 0,
+							.guid          = 0
 						}
 					}
 					}
 			}
 	};
 
-	RunParcelTests(c, test_cases);
+	std::vector<ParcelRetrieve> test_cases_retrieve = {
+		{
+			.description = "Retrieve Parcel: 1 Rubicite Greaves with augment 85490 placed in inventory slot 4010",
+			.parcel_retrieve = {
+				.merchant_entity_id = merchant->GetID(),
+				.player_entity_id = c->GetID(),
+				.parcel_slot_id = 6,
+				.parcel_item_id = 4171
+			},
+			.parcel_retrieve_results = {
+				.character_id  = c->CharacterID(),
+				.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN,
+				.item_id       = 4171,
+				.charges       = 1,
+				.augment_one   = 85490,
+				.augment_two   = 0,
+				.augment_three = 0,
+				.augment_four  = 0,
+				.augment_five  = 0,
+				.augment_six   = 0,
+				.guid          = 22
+			}
+		},
+{
+	.description = "Retrieve Parcel: 32767 - Class 6 Arrows placed in inventory slot 4012",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 5,
+		.parcel_item_id = 8517
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 2,
+		.item_id       = 8517,
+		.charges       = 32767,
+		.augment_one   = 0,
+		.augment_two   = 0,
+		.augment_three = 0,
+		.augment_four  = 0,
+		.augment_five  = 0,
+		.augment_six   = 0,
+		.guid          = 24
+	}
+},
+{
+	.description = "Retrieve Parcel: 23 - Class 6 Arrows placed in inventory slot 4011",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 1,
+		.parcel_item_id = 8517
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 1,
+		.item_id       = 8517,
+		.charges       = 50,
+		.augment_one   = 0,
+		.augment_two   = 0,
+		.augment_three = 0,
+		.augment_four  = 0,
+		.augment_five  = 0,
+		.augment_six   = 0,
+		.guid          = 14
+	}
+},
+{
+	.description = "Retrieve Parcel: 1 - Shroud of the Fallen Defender in inventory slot 4013",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 2,
+		.parcel_item_id = 70208
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 3,
+		.item_id       = 70208,
+		.charges       = 1,
+		.augment_one   = 0,
+		.augment_two   = 0,
+		.augment_three = 0,
+		.augment_four  = 0,
+		.augment_five  = 0,
+		.augment_six   = 0,
+		.guid          = 26
+	}
+},
+{
+	.description = "Retrieve Parcel: 1 - 5 Dose Potion of Lesser Cohesion with 3 charges in inventory slot 4014",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 3,
+		.parcel_item_id = 14196
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 4,
+		.item_id       = 14196,
+		.charges       = 3,
+		.augment_one   = 0,
+		.augment_two   = 0,
+		.augment_three = 0,
+		.augment_four  = 0,
+		.augment_five  = 0,
+		.augment_six   = 0,
+		.guid          = 27
+	}
+},
+{
+	.description = "Retrieve Parcel: 1 - Glowing Orb with 0 charges in inventory slot 4015",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 4,
+		.parcel_item_id = 8205
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN + 5,
+		.item_id       = 8205,
+		.charges       = 0,
+		.augment_one   = 0,
+		.augment_two   = 0,
+		.augment_three = 0,
+		.augment_four  = 0,
+		.augment_five  = 0,
+		.augment_six   = 0,
+		.guid          = 28
+	}
+	},
+{
+	.description = "Retrieve Parcel: 1p 1g 1s 1c",
+	.parcel_retrieve = {
+		.merchant_entity_id = merchant->GetID(),
+		.player_entity_id = c->GetID(),
+		.parcel_slot_id = 7,
+		.parcel_item_id = PARCEL_MONEY_ITEM_ID
+	},
+	.parcel_retrieve_results = {
+		.character_id  = c->CharacterID(),
+		.slot_id       = EQ::invbag::GENERAL_BAGS_BEGIN,
+		.item_id       = PARCEL_MONEY_ITEM_ID,
+		.charges       = 1111,
+	}
+}
+
+	};
+
+	RunParcelSendTests(c, test_cases_send);
+	c->LoadParcels();
+	RunParcelRetrieveTests(c, test_cases_retrieve);
 }
