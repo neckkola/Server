@@ -1553,6 +1553,7 @@ public:
 	inline const EQ::versions::ClientVersion ClientVersion() const { return m_ClientVersion; }
 	inline const uint32 ClientVersionBit() const { return m_ClientVersionBit; }
 	inline void SetClientVersion(EQ::versions::ClientVersion client_version) { m_ClientVersion = client_version; }
+	inline void SetClientVersionBit(uint32 client_version_bit) { m_ClientVersionBit = client_version_bit; }
 
 	/** Adventure Stuff **/
 	void SendAdventureError(const char *error);
