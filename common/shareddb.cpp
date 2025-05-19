@@ -318,7 +318,7 @@ bool SharedDatabase::UpdateInventorySlot(uint32 char_id, const EQ::ItemInstance*
 	e.custom_data         = inst->GetCustomDataString();
 	e.ornament_icon       = inst->GetOrnamentationIcon();
 	e.ornament_idfile     = inst->GetOrnamentationIDFile();
-	e.ornament_hero_model = inst->GetOrnamentHeroModel();
+	e.ornament_hero_model = inst->GetOrnamentRawHeroModel();
 	e.guid                = inst->GetSerialNumber();
 
 	const int replaced = InventoryRepository::ReplaceOne(*this, e);
@@ -368,7 +368,7 @@ bool SharedDatabase::UpdateSharedBankSlot(uint32 char_id, const EQ::ItemInstance
 	e.custom_data         = inst->GetCustomDataString();
 	e.ornament_icon       = inst->GetOrnamentationIcon();
 	e.ornament_idfile     = inst->GetOrnamentationIDFile();
-	e.ornament_hero_model = inst->GetOrnamentHeroModel();
+	e.ornament_hero_model = inst->GetOrnamentRawHeroModel();
 	e.guid                = inst->GetSerialNumber();
 
 	const int replaced = SharedbankRepository::ReplaceOne(*this, e);
