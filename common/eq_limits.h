@@ -43,6 +43,7 @@ namespace EQ
 			int16 CharacterCreationLimit;
 			size_t SayLinkBodySize;
 			uint32 BazaarTraderLimit;
+			std::string SayLinkCommandToken;
 			
 			LookupEntry(const LookupEntry *lookup_entry) { }
 			LookupEntry(
@@ -51,14 +52,16 @@ namespace EQ
 				uint32 ExpansionsMask,
 				int16 CharacterCreationLimit,
 				size_t SayLinkBodySize,
-				uint32 BazaarTraderLimit
+				uint32 BazaarTraderLimit,
+				std::string SayLinkCommandToken
 			) :
 				Expansion(Expansion),
 				ExpansionBit(ExpansionBit),
 				ExpansionsMask(ExpansionsMask),
 				CharacterCreationLimit(CharacterCreationLimit),
 				SayLinkBodySize(SayLinkBodySize),
-				BazaarTraderLimit(BazaarTraderLimit)
+				BazaarTraderLimit(BazaarTraderLimit),
+				SayLinkCommandToken(SayLinkCommandToken)
 			{ }
 		};
 
@@ -243,8 +246,9 @@ namespace EQ
 
 namespace ClientUnknown
 {
-	const int16 IINVALID = -1;
-	const int16 INULL = 0;
+	const int16       IINVALID     = -1;
+	const int16       INULL        = 0;
+	const std::string EMPTY_STRING = "";
 
 	namespace constants {
 		const EQ::expansions::Expansion EXPANSION = EQ::expansions::Expansion::EverQuest;
@@ -257,8 +261,9 @@ namespace ClientUnknown
 
 namespace Client62
 {
-	const int16 IINVALID = -1;
-	const int16 INULL = 0;
+	const int16       IINVALID     = -1;
+	const int16       INULL        = 0;
+	const std::string EMPTY_STRING = "";
 
 	namespace constants {
 		const EQ::expansions::Expansion EXPANSION = EQ::expansions::Expansion::EverQuest;

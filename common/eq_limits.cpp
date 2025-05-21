@@ -48,7 +48,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		ClientUnknown::constants::EXPANSIONS_MASK,
 		ClientUnknown::INULL,
 		ClientUnknown::INULL,
-		ClientUnknown::INULL
+		ClientUnknown::INULL,
+		ClientUnknown::EMPTY_STRING
 	),
 	/*[ClientVersion::Client62] =*/
 	EQ::constants::LookupEntry(
@@ -57,7 +58,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		Client62::constants::EXPANSIONS_MASK,
 		Client62::INULL,
 		Client62::INULL,
-		Client62::INULL
+		Client62::INULL,
+		Client62::EMPTY_STRING
 	),
 	/*[ClientVersion::Titanium] =*/
 	EQ::constants::LookupEntry(
@@ -66,7 +68,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		Titanium::constants::EXPANSIONS_MASK,
 		Titanium::constants::CHARACTER_CREATION_LIMIT,
 		Titanium::constants::SAY_LINK_BODY_SIZE,
-		Titanium::INULL
+		Titanium::INULL,
+		Titanium::EMPTY_STRING
 	),
 	/*[ClientVersion::SoF] =*/
 	EQ::constants::LookupEntry(
@@ -75,7 +78,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		SoF::constants::EXPANSIONS_MASK,
 		SoF::constants::CHARACTER_CREATION_LIMIT,
 		SoF::constants::SAY_LINK_BODY_SIZE,
-		SoF::INULL
+		SoF::INULL,
+		SoF::EMPTY_STRING
 	),
 	/*[ClientVersion::SoD] =*/
 	EQ::constants::LookupEntry(
@@ -84,7 +88,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		SoD::constants::EXPANSIONS_MASK,
 		SoD::constants::CHARACTER_CREATION_LIMIT,
 		SoD::constants::SAY_LINK_BODY_SIZE,
-		SoD::INULL
+		SoD::INULL,
+		SoD::EMPTY_STRING
 	),
 	/*[ClientVersion::UF] =*/
 	EQ::constants::LookupEntry(
@@ -93,7 +98,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		UF::constants::EXPANSIONS_MASK,
 		UF::constants::CHARACTER_CREATION_LIMIT,
 		UF::constants::SAY_LINK_BODY_SIZE,
-		UF::INULL
+		UF::INULL,
+		UF::EMPTY_STRING
 	),
 	/*[ClientVersion::RoF] =*/
 	EQ::constants::LookupEntry(
@@ -102,7 +108,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF::constants::EXPANSIONS_MASK,
 		RoF::constants::CHARACTER_CREATION_LIMIT,
 		RoF::constants::SAY_LINK_BODY_SIZE,
-		RoF::INULL
+		RoF::INULL,
+		RoF::EMPTY_STRING
 	),
 	/*[ClientVersion::RoF2] =*/
 	EQ::constants::LookupEntry(
@@ -111,7 +118,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF2::constants::EXPANSIONS_MASK,
 		RoF2::constants::CHARACTER_CREATION_LIMIT,
 		RoF2::constants::SAY_LINK_BODY_SIZE,
-		RoF2::constants::MAX_BAZAAR_TRADERS
+		RoF2::constants::MAX_BAZAAR_TRADERS,
+		RoF2::constants::SAY_LINK_COMMAND_TOKEN
 	),
 	/*[ClientVersion::laurion] =*/
 	EQ::constants::LookupEntry(
@@ -120,7 +128,8 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		Laurion::constants::EXPANSIONS_MASK,
 		Laurion::constants::CHARACTER_CREATION_LIMIT,
 		Laurion::constants::SAY_LINK_BODY_SIZE,
-		Laurion::INULL
+		Laurion::INULL,
+		Laurion::constants::SAY_LINK_COMMAND_TOKEN
 	)
 };
 

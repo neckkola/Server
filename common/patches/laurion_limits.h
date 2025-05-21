@@ -26,8 +26,9 @@
 
 namespace Laurion
 {
-	const int16 IINVALID = -1;
-	const int16 INULL = 0;
+	const int16       IINVALID     = -1;
+	const int16       INULL        = 0;
+	const std::string EMPTY_STRING = "";
 
 	namespace inventory {
 		inline EQ::versions::ClientVersion GetInventoryRef() { return EQ::versions::ClientVersion::Laurion; }
@@ -288,14 +289,17 @@ namespace Laurion
 	namespace constants {
 		inline EQ::versions::ClientVersion GetConstantsRef() { return EQ::versions::ClientVersion::Laurion; }
 
-		const EQ::expansions::Expansion EXPANSION = EQ::expansions::Expansion::LS;
-		const uint32 EXPANSION_BIT = EQ::expansions::bitLS;
-		const uint32 EXPANSIONS_MASK = EQ::expansions::maskLS;
+		const EQ::expansions::Expansion EXPANSION       = EQ::expansions::Expansion::LS;
+		const uint32                    EXPANSION_BIT   = EQ::expansions::bitLS;
+		const uint32                    EXPANSIONS_MASK = EQ::expansions::maskLS;
 
-		const size_t CHARACTER_CREATION_LIMIT = 12;
+		const size_t CHARACTER_CREATION_LIMIT           = 12;
 
-		const size_t SAY_LINK_BODY_SIZE = 56;
-		const uint32 MAX_GUILD_ID = 50000;
+		const size_t      SAY_LINK_BODY_SIZE            = 56;
+		const uint32      MAX_GUILD_ID                  = 50000;
+		const uint32      MAX_BAZAAR_TRADERS            = 600;
+		const std::string SAY_LINK_COMMAND_TOKEN        = "$";
+
 
 	} /*constants*/
 

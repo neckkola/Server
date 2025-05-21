@@ -27,8 +27,9 @@
 
 namespace SoF
 {
-	const int16 IINVALID = -1;
-	const int16 INULL = 0;
+	const int16       IINVALID     = -1;
+	const int16       INULL        = 0;
+	const std::string EMPTY_STRING = "";
 
 	namespace inventory {
 		inline EQ::versions::ClientVersion GetInventoryRef() { return EQ::versions::ClientVersion::SoF; }
