@@ -91,7 +91,7 @@ void command_set(Client *c, const Seperator *sep)
 		Cmd{.cmd = "god_mode", .u = "god_mode [on|off]", .fn = SetGodMode, .a = {"#godmode"}},
 		Cmd{.cmd = "haste", .u = "haste [Percentage]", .fn = SetHaste, .a = {"#haste"}},
 		Cmd{.cmd = "hide_me", .u = "hide_me [on|off]", .fn = SetHideMe, .a = {"#hideme"}},
-		Cmd{.cmd = "hero_model", .u = "hero_model [Hero Model] [Slot] (Slot is optional)", .fn = SetHeroModel, .a = {"#heromodel"}},
+		Cmd{.cmd = "hero_model", .u = "hero_model [Hero Model] [Slot] (Slot is optional)", .fn = SetHeroModel, .a = {"$heromodel"}},
 		Cmd{.cmd = "hp", .u = "hp [Amount]", .fn = SetHP, .a = {"#sethp"}},
 		Cmd{.cmd = "hp_full", .u = "hp_full", .fn = SetHPFull, .a = {"#heal"}},
 		Cmd{.cmd = "invulnerable", .u = "invulnerable", .fn = SetInvulnerable, .a = {"#invul"}},

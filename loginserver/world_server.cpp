@@ -692,7 +692,7 @@ void WorldServer::SerializeForClientServerList(SerializeBuffer &out, bool use_lo
 		out.WriteString(m_remote_ip_address);
 	}
 
-	if (version == cv_larion) {
+	if (version == cv_laurion) {
 		out.WriteUInt32(9000);
 	}
 
@@ -707,7 +707,7 @@ void WorldServer::SerializeForClientServerList(SerializeBuffer &out, bool use_lo
 			out.WriteInt32(LS::ServerTypeFlags::Standard);
 			break;
 	}
-	if (version == cv_larion) {
+	if (version == cv_laurion) {
 		auto server_id = m_server_id;
 		//if this is 0, the client will not show the server in the list
 		out.WriteUInt32(1);
@@ -737,7 +737,7 @@ void WorldServer::SerializeForClientServerList(SerializeBuffer &out, bool use_lo
 	out.WriteUInt32(GetPlayersOnline());
 }
 
-void WorldServer::SerializeForClientServerListLarion(class SerializeBuffer& out, bool use_local_ip) const {
+void WorldServer::SerializeForClientServerListlaurion(class SerializeBuffer& out, bool use_local_ip) const {
 	if (use_local_ip) {
 		out.WriteString(GetLocalIP());
 	}
@@ -784,8 +784,8 @@ void WorldServer::SerializeForClientServerListLarion(class SerializeBuffer& out,
 
 // void WorldServer::SerializeForClientServerList(SerializeBuffer& out, bool use_local_ip, LSClientVersion version) const
 // {
-// 	if (version == cv_larion) {
-// 		SerializeForClientServerListLarion(out, use_local_ip);
+// 	if (version == cv_laurion) {
+// 		SerializeForClientServerListlaurion(out, use_local_ip);
 // 	}
 // 	else {
 // 		SerializeForClientServerListLegacy(out, use_local_ip);

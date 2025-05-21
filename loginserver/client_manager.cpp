@@ -57,7 +57,7 @@ void CheckSoDOpcodeFile(const std::string &path)
 	}
 }
 
-void CheckLarionOpcodeFile(const std::string &path)
+void ChecklaurionOpcodeFile(const std::string &path)
 {
 	if (File::Exists(path)) {
 		return;
@@ -160,40 +160,39 @@ ClientManager::ClientManager()
 		}
 	);
 
-	int larion_port = server.config.GetVariableInt("client_configuration", "larion_port", 15900);
+	int laurion_port = server.config.GetVariableInt("client_configuration", "laurion_port", 15900);
+	EQStreamManagerInterfaceOptions laurion_opts(laurion_port, false, false);
 
-	EQStreamManagerInterfaceOptions larion_opts(larion_port, false, false);
-
-	m_larion_stream = new EQ::Net::EQStreamManager(larion_opts);
-	m_larion_ops    = new RegularOpcodeManager;
+	m_laurion_stream = new EQ::Net::EQStreamManager(laurion_opts);
+	m_laurion_ops    = new RegularOpcodeManager;
 
 	opcodes_path = fmt::format(
 		"{}/{}",
 		path.GetOpcodePath(),
-		"login_opcodes_larion.conf"
+		"login_opcodes_laurion.conf"
 	);
 
-	CheckLarionOpcodeFile(opcodes_path);
+	ChecklaurionOpcodeFile(opcodes_path);
 
-	if (!m_larion_ops->LoadOpcodes(opcodes_path.c_str())) {
+	if (!m_laurion_ops->LoadOpcodes(opcodes_path.c_str())) {
 		LogError(
-			"ClientManager fatal error: couldn't load opcodes for Larion file [{}]",
-			server.config.GetVariableString("client_configuration", "larion_opcodes", "login_opcodes.conf")
+			"ClientManager fatal error: couldn't load opcodes for laurion file [{}]",
+			server.config.GetVariableString("client_configuration", "laurion_opcodes", "login_opcodes.conf")
 		);
 
 		run_server = false;
 	}
 
-	m_larion_stream->OnNewConnection(
+	m_laurion_stream->OnNewConnection(
 		[this](std::shared_ptr<EQ::Net::EQStream> stream) {
 			LogInfo(
-				"New Larion client connection from [{}:{}]",
+				"New laurion client connection from [{}:{}]",
 				long2ip(stream->GetRemoteIP()),
 				stream->GetRemotePort()
 			);
 
-			stream->SetOpcodeManager(&m_larion_ops);
-			Client *c = new Client(stream, cv_larion);
+			stream->SetOpcodeManager(&m_laurion_ops);
+			Client *c = new Client(stream, cv_laurion);
 			m_clients.push_back(c);
 		}
 	);
@@ -205,6 +204,8 @@ ClientManager::~ClientManager()
 	delete m_titanium_ops;
 	delete m_sod_stream;
 	delete m_sod_ops;
+	delete m_laurion_stream;
+	delete m_laurion_ops;
 }
 
 void ClientManager::Process()

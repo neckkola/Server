@@ -113,7 +113,7 @@ static const EQ::constants::LookupEntry constants_static_lookup_entries[EQ::vers
 		RoF2::constants::SAY_LINK_BODY_SIZE,
 		RoF2::constants::MAX_BAZAAR_TRADERS
 	),
-	/*[ClientVersion::Larion] =*/
+	/*[ClientVersion::laurion] =*/
 	EQ::constants::LookupEntry(
 		Laurion::constants::EXPANSION,
 		Laurion::constants::EXPANSION_BIT,

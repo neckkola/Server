@@ -126,9 +126,9 @@ void LoginServer::ProcessUsertoWorldReq(uint16_t opcode, EQ::Net::Packet &p)
 	const WorldConfig *Config = WorldConfig::get();
 	LogNetcode("Received ServerPacket from LS OpCode {:#04x}", opcode);
 
-	UsertoWorldRequest *utwr = (UsertoWorldRequest *) p.Data();
-	uint32             id    = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
-	int16                     status = database.GetAccountStatus(id);
+	UsertoWorldRequest *utwr   = (UsertoWorldRequest *) p.Data();
+	uint32              id     = database.GetAccountIDFromLSID(utwr->login, utwr->lsaccountid);
+	int16               status = database.GetAccountStatus(id);
 
 	LogDebug(
 		"id [{}] status [{}] account_id [{}] world_id [{}] from_id [{}] to_id [{}] ip [{}]",

@@ -255,7 +255,7 @@ namespace Laurion
 			ItemPacketTrade = 0x67,
 			//looks like they added something at 0x68 that didn't exist before and shifted everything after it up by 1
 			ItemPacketUnknown068 = 0x68, //Not sure but it seems to deal with the cursor somehow.
-			ItemPacketCharInventory = 0x6A, //Rof 0x69 -> Larion 0x6a (requires translation)
+			ItemPacketCharInventory = 0x6A, //Rof 0x69 -> laurion 0x6a (requires translation)
 			ItemPacketLimbo = 0x6B, //0x6A -> 0x6B
 			ItemPacketWorldContainer = 0x6C,
 			ItemPacketTributeItem = 0x6D,
