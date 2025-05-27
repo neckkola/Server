@@ -15,7 +15,7 @@
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
-
+#include <cereal/cereal.hpp>
 class BaseCharacterDataRepository {
 public:
 	struct CharacterData {
@@ -115,8 +115,8 @@ public:
 		uint8_t     lfg;
 		std::string mailkey;
 		uint8_t     xtargets;
-		uint8_t     ingame;
 		uint32_t    first_login;
+		uint8_t     ingame;
 		uint32_t    e_aa_effects;
 		uint32_t    e_percent_to_aa;
 		uint32_t    e_expended_aa_spent;
@@ -125,6 +125,120 @@ public:
 		uint32_t    e_last_invsnapshot;
 		time_t      deleted_at;
 		uint8_t     illusion_block;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(id),
+				CEREAL_NVP(account_id),
+				CEREAL_NVP(name),
+				CEREAL_NVP(last_name),
+				CEREAL_NVP(title),
+				CEREAL_NVP(suffix),
+				CEREAL_NVP(zone_id),
+				CEREAL_NVP(zone_instance),
+				CEREAL_NVP(y),
+				CEREAL_NVP(x),
+				CEREAL_NVP(z),
+				CEREAL_NVP(heading),
+				CEREAL_NVP(gender),
+				CEREAL_NVP(race),
+				CEREAL_NVP(class_),
+				CEREAL_NVP(level),
+				CEREAL_NVP(deity),
+				CEREAL_NVP(birthday),
+				CEREAL_NVP(last_login),
+				CEREAL_NVP(time_played),
+				CEREAL_NVP(level2),
+				CEREAL_NVP(anon),
+				CEREAL_NVP(gm),
+				CEREAL_NVP(face),
+				CEREAL_NVP(hair_color),
+				CEREAL_NVP(hair_style),
+				CEREAL_NVP(beard),
+				CEREAL_NVP(beard_color),
+				CEREAL_NVP(eye_color_1),
+				CEREAL_NVP(eye_color_2),
+				CEREAL_NVP(drakkin_heritage),
+				CEREAL_NVP(drakkin_tattoo),
+				CEREAL_NVP(drakkin_details),
+				CEREAL_NVP(ability_time_seconds),
+				CEREAL_NVP(ability_number),
+				CEREAL_NVP(ability_time_minutes),
+				CEREAL_NVP(ability_time_hours),
+				CEREAL_NVP(exp),
+				CEREAL_NVP(exp_enabled),
+				CEREAL_NVP(aa_points_spent),
+				CEREAL_NVP(aa_exp),
+				CEREAL_NVP(aa_points),
+				CEREAL_NVP(group_leadership_exp),
+				CEREAL_NVP(raid_leadership_exp),
+				CEREAL_NVP(group_leadership_points),
+				CEREAL_NVP(raid_leadership_points),
+				CEREAL_NVP(points),
+				CEREAL_NVP(cur_hp),
+				CEREAL_NVP(mana),
+				CEREAL_NVP(endurance),
+				CEREAL_NVP(intoxication),
+				CEREAL_NVP(str),
+				CEREAL_NVP(sta),
+				CEREAL_NVP(cha),
+				CEREAL_NVP(dex),
+				CEREAL_NVP(int_),
+				CEREAL_NVP(agi),
+				CEREAL_NVP(wis),
+				CEREAL_NVP(extra_haste),
+				CEREAL_NVP(zone_change_count),
+				CEREAL_NVP(toxicity),
+				CEREAL_NVP(hunger_level),
+				CEREAL_NVP(thirst_level),
+				CEREAL_NVP(ability_up),
+				CEREAL_NVP(ldon_points_guk),
+				CEREAL_NVP(ldon_points_mir),
+				CEREAL_NVP(ldon_points_mmc),
+				CEREAL_NVP(ldon_points_ruj),
+				CEREAL_NVP(ldon_points_tak),
+				CEREAL_NVP(ldon_points_available),
+				CEREAL_NVP(tribute_time_remaining),
+				CEREAL_NVP(career_tribute_points),
+				CEREAL_NVP(tribute_points),
+				CEREAL_NVP(tribute_active),
+				CEREAL_NVP(pvp_status),
+				CEREAL_NVP(pvp_kills),
+				CEREAL_NVP(pvp_deaths),
+				CEREAL_NVP(pvp_current_points),
+				CEREAL_NVP(pvp_career_points),
+				CEREAL_NVP(pvp_best_kill_streak),
+				CEREAL_NVP(pvp_worst_death_streak),
+				CEREAL_NVP(pvp_current_kill_streak),
+				CEREAL_NVP(pvp2),
+				CEREAL_NVP(pvp_type),
+				CEREAL_NVP(show_helm),
+				CEREAL_NVP(group_auto_consent),
+				CEREAL_NVP(raid_auto_consent),
+				CEREAL_NVP(guild_auto_consent),
+				CEREAL_NVP(leadership_exp_on),
+				CEREAL_NVP(RestTimer),
+				CEREAL_NVP(air_remaining),
+				CEREAL_NVP(autosplit_enabled),
+				CEREAL_NVP(lfp),
+				CEREAL_NVP(lfg),
+				CEREAL_NVP(mailkey),
+				CEREAL_NVP(xtargets),
+				CEREAL_NVP(first_login),
+				CEREAL_NVP(ingame),
+				CEREAL_NVP(e_aa_effects),
+				CEREAL_NVP(e_percent_to_aa),
+				CEREAL_NVP(e_expended_aa_spent),
+				CEREAL_NVP(aa_points_spent_old),
+				CEREAL_NVP(aa_points_old),
+				CEREAL_NVP(e_last_invsnapshot),
+				CEREAL_NVP(deleted_at),
+				CEREAL_NVP(illusion_block)
+			);
+		}
 	};
 
 	static std::string PrimaryKey()
@@ -231,8 +345,8 @@ public:
 			"lfg",
 			"mailkey",
 			"xtargets",
-			"ingame",
 			"first_login",
+			"ingame",
 			"e_aa_effects",
 			"e_percent_to_aa",
 			"e_expended_aa_spent",
@@ -343,8 +457,8 @@ public:
 			"lfg",
 			"mailkey",
 			"xtargets",
-			"ingame",
 			"first_login",
+			"ingame",
 			"e_aa_effects",
 			"e_percent_to_aa",
 			"e_expended_aa_spent",
@@ -489,8 +603,8 @@ public:
 		e.lfg                     = 0;
 		e.mailkey                 = "";
 		e.xtargets                = 5;
-		e.ingame                  = 0;
 		e.first_login             = 0;
+		e.ingame                  = 0;
 		e.e_aa_effects            = 0;
 		e.e_percent_to_aa         = 0;
 		e.e_expended_aa_spent     = 0;
@@ -534,6 +648,7 @@ public:
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
 			CharacterData e{};
+			
 
 			e.id                      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.account_id              = row[1] ? static_cast<int32_t>(atoi(row[1])) : 0;
@@ -631,8 +746,8 @@ public:
 			e.lfg                     = row[93] ? static_cast<uint8_t>(strtoul(row[93], nullptr, 10)) : 0;
 			e.mailkey                 = row[94] ? row[94] : "";
 			e.xtargets                = row[95] ? static_cast<uint8_t>(strtoul(row[95], nullptr, 10)) : 5;
-			e.ingame                  = row[96] ? static_cast<uint8_t>(strtoul(row[96], nullptr, 10)) : 0;
-			e.first_login             = row[97] ? static_cast<uint32_t>(strtoul(row[97], nullptr, 10)) : 0;
+			e.first_login             = row[96] ? static_cast<uint32_t>(strtoul(row[96], nullptr, 10)) : 0;
+			e.ingame                  = row[97] ? static_cast<uint8_t>(strtoul(row[97], nullptr, 10)) : 0;
 			e.e_aa_effects            = row[98] ? static_cast<uint32_t>(strtoul(row[98], nullptr, 10)) : 0;
 			e.e_percent_to_aa         = row[99] ? static_cast<uint32_t>(strtoul(row[99], nullptr, 10)) : 0;
 			e.e_expended_aa_spent     = row[100] ? static_cast<uint32_t>(strtoul(row[100], nullptr, 10)) : 0;
@@ -769,8 +884,8 @@ public:
 		v.push_back(columns[93] + " = " + std::to_string(e.lfg));
 		v.push_back(columns[94] + " = '" + Strings::Escape(e.mailkey) + "'");
 		v.push_back(columns[95] + " = " + std::to_string(e.xtargets));
-		v.push_back(columns[96] + " = " + std::to_string(e.ingame));
-		v.push_back(columns[97] + " = " + std::to_string(e.first_login));
+		v.push_back(columns[96] + " = " + std::to_string(e.first_login));
+		v.push_back(columns[97] + " = " + std::to_string(e.ingame));
 		v.push_back(columns[98] + " = " + std::to_string(e.e_aa_effects));
 		v.push_back(columns[99] + " = " + std::to_string(e.e_percent_to_aa));
 		v.push_back(columns[100] + " = " + std::to_string(e.e_expended_aa_spent));
@@ -896,8 +1011,8 @@ public:
 		v.push_back(std::to_string(e.lfg));
 		v.push_back("'" + Strings::Escape(e.mailkey) + "'");
 		v.push_back(std::to_string(e.xtargets));
-		v.push_back(std::to_string(e.ingame));
 		v.push_back(std::to_string(e.first_login));
+		v.push_back(std::to_string(e.ingame));
 		v.push_back(std::to_string(e.e_aa_effects));
 		v.push_back(std::to_string(e.e_percent_to_aa));
 		v.push_back(std::to_string(e.e_expended_aa_spent));
@@ -1031,8 +1146,8 @@ public:
 			v.push_back(std::to_string(e.lfg));
 			v.push_back("'" + Strings::Escape(e.mailkey) + "'");
 			v.push_back(std::to_string(e.xtargets));
-			v.push_back(std::to_string(e.ingame));
 			v.push_back(std::to_string(e.first_login));
+			v.push_back(std::to_string(e.ingame));
 			v.push_back(std::to_string(e.e_aa_effects));
 			v.push_back(std::to_string(e.e_percent_to_aa));
 			v.push_back(std::to_string(e.e_expended_aa_spent));
@@ -1073,6 +1188,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			CharacterData e{};
+			
 
 			e.id                      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.account_id              = row[1] ? static_cast<int32_t>(atoi(row[1])) : 0;
@@ -1170,8 +1286,8 @@ public:
 			e.lfg                     = row[93] ? static_cast<uint8_t>(strtoul(row[93], nullptr, 10)) : 0;
 			e.mailkey                 = row[94] ? row[94] : "";
 			e.xtargets                = row[95] ? static_cast<uint8_t>(strtoul(row[95], nullptr, 10)) : 5;
-			e.ingame                  = row[96] ? static_cast<uint8_t>(strtoul(row[96], nullptr, 10)) : 0;
-			e.first_login             = row[97] ? static_cast<uint32_t>(strtoul(row[97], nullptr, 10)) : 0;
+			e.first_login             = row[96] ? static_cast<uint32_t>(strtoul(row[96], nullptr, 10)) : 0;
+			e.ingame                  = row[97] ? static_cast<uint8_t>(strtoul(row[97], nullptr, 10)) : 0;
 			e.e_aa_effects            = row[98] ? static_cast<uint32_t>(strtoul(row[98], nullptr, 10)) : 0;
 			e.e_percent_to_aa         = row[99] ? static_cast<uint32_t>(strtoul(row[99], nullptr, 10)) : 0;
 			e.e_expended_aa_spent     = row[100] ? static_cast<uint32_t>(strtoul(row[100], nullptr, 10)) : 0;
@@ -1203,6 +1319,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			CharacterData e{};
+			
 
 			e.id                      = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.account_id              = row[1] ? static_cast<int32_t>(atoi(row[1])) : 0;
@@ -1300,8 +1417,8 @@ public:
 			e.lfg                     = row[93] ? static_cast<uint8_t>(strtoul(row[93], nullptr, 10)) : 0;
 			e.mailkey                 = row[94] ? row[94] : "";
 			e.xtargets                = row[95] ? static_cast<uint8_t>(strtoul(row[95], nullptr, 10)) : 5;
-			e.ingame                  = row[96] ? static_cast<uint8_t>(strtoul(row[96], nullptr, 10)) : 0;
-			e.first_login             = row[97] ? static_cast<uint32_t>(strtoul(row[97], nullptr, 10)) : 0;
+			e.first_login             = row[96] ? static_cast<uint32_t>(strtoul(row[96], nullptr, 10)) : 0;
+			e.ingame                  = row[97] ? static_cast<uint8_t>(strtoul(row[97], nullptr, 10)) : 0;
 			e.e_aa_effects            = row[98] ? static_cast<uint32_t>(strtoul(row[98], nullptr, 10)) : 0;
 			e.e_percent_to_aa         = row[99] ? static_cast<uint32_t>(strtoul(row[99], nullptr, 10)) : 0;
 			e.e_expended_aa_spent     = row[100] ? static_cast<uint32_t>(strtoul(row[100], nullptr, 10)) : 0;
@@ -1480,8 +1597,8 @@ public:
 		v.push_back(std::to_string(e.lfg));
 		v.push_back("'" + Strings::Escape(e.mailkey) + "'");
 		v.push_back(std::to_string(e.xtargets));
-		v.push_back(std::to_string(e.ingame));
 		v.push_back(std::to_string(e.first_login));
+		v.push_back(std::to_string(e.ingame));
 		v.push_back(std::to_string(e.e_aa_effects));
 		v.push_back(std::to_string(e.e_percent_to_aa));
 		v.push_back(std::to_string(e.e_expended_aa_spent));
@@ -1608,8 +1725,8 @@ public:
 			v.push_back(std::to_string(e.lfg));
 			v.push_back("'" + Strings::Escape(e.mailkey) + "'");
 			v.push_back(std::to_string(e.xtargets));
-			v.push_back(std::to_string(e.ingame));
 			v.push_back(std::to_string(e.first_login));
+			v.push_back(std::to_string(e.ingame));
 			v.push_back(std::to_string(e.e_aa_effects));
 			v.push_back(std::to_string(e.e_percent_to_aa));
 			v.push_back(std::to_string(e.e_expended_aa_spent));

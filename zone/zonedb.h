@@ -14,6 +14,9 @@
 #include "../common/races.h"
 #include "../common/repositories/npc_faction_entries_repository.h"
 
+#include "../common/repositories/character_currency_repository.h"
+#include "../common/repositories/character_data_repository.h"
+#include "../common/repositories/character_leadership_abilities_repository.h"
 #include "bot_database.h"
 
 class Client;
@@ -336,6 +339,28 @@ struct CharacterCorpseEntry
 	uint32 drakkin_tattoo;
 	uint32 drakkin_details;
 	std::vector<CharacterCorpseItemEntry> items;
+};
+
+struct CharacterDataCache {
+	CharacterCurrencyRepository::CharacterCurrency                                    character_currency;
+	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities> character_leadership_abilities;
+	CharacterDataRepository::CharacterData                                            character_data;
+	bool character_currency_loaded{ false };
+	bool character_leadership_abilities_loaded{ false };
+	bool character_data_loaded{ false };
+
+	template<class Archive>
+		void serialize(Archive &ar)
+	{
+		ar(
+			CEREAL_NVP(character_currency),
+			CEREAL_NVP(character_leadership_abilities),
+			CEREAL_NVP(character_data),
+			CEREAL_NVP(character_currency_loaded),
+			CEREAL_NVP(character_leadership_abilities_loaded),
+			CEREAL_NVP(character_data_loaded)
+		);
+	}
 };
 
 namespace BeastlordPetData {
@@ -673,6 +698,7 @@ protected:
 
 extern ZoneDatabase database;
 extern ZoneDatabase content_db;
+//extern std::unordered_map<uint32, CharacterDataCache> character_data_cache;
 
 #endif /*ZONEDB_H_*/
 

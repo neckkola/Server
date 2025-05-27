@@ -36,7 +36,7 @@ public:
 	bool operator!=(const MySQLRequestRow& rhs);
 	MySQLRequestRow operator*();
 	char* operator[](int index);
-
+	unsigned long* GetColumnLengths() const { return mysql_fetch_lengths(m_Result); }
 };
 
 

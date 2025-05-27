@@ -15,13 +15,24 @@
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
-
+#include <cereal/cereal.hpp>
 class BaseCharacterLeadershipAbilitiesRepository {
 public:
 	struct CharacterLeadershipAbilities {
 		uint32_t id;
 		uint16_t slot;
 		uint16_t rank_;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(id),
+				CEREAL_NVP(slot),
+				CEREAL_NVP(rank_)
+			);
+		}
 	};
 
 	static std::string PrimaryKey()
@@ -122,6 +133,7 @@ public:
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
 			CharacterLeadershipAbilities e{};
+			
 
 			e.id    = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.slot  = row[1] ? static_cast<uint16_t>(strtoul(row[1], nullptr, 10)) : 0;
@@ -250,6 +262,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			CharacterLeadershipAbilities e{};
+			
 
 			e.id    = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.slot  = row[1] ? static_cast<uint16_t>(strtoul(row[1], nullptr, 10)) : 0;
@@ -277,6 +290,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			CharacterLeadershipAbilities e{};
+			
 
 			e.id    = row[0] ? static_cast<uint32_t>(strtoul(row[0], nullptr, 10)) : 0;
 			e.slot  = row[1] ? static_cast<uint16_t>(strtoul(row[1], nullptr, 10)) : 0;

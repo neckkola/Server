@@ -15,7 +15,7 @@
 #include "../../database.h"
 #include "../../strings.h"
 #include <ctime>
-
+#include <cereal/cereal.hpp>
 class BaseCharacterCurrencyRepository {
 public:
 	struct CharacterCurrency {
@@ -36,6 +36,31 @@ public:
 		uint32_t career_radiant_crystals;
 		uint32_t ebon_crystals;
 		uint32_t career_ebon_crystals;
+
+		// cereal
+		template<class Archive>
+		void serialize(Archive &ar)
+		{
+			ar(
+				CEREAL_NVP(id),
+				CEREAL_NVP(platinum),
+				CEREAL_NVP(gold),
+				CEREAL_NVP(silver),
+				CEREAL_NVP(copper),
+				CEREAL_NVP(platinum_bank),
+				CEREAL_NVP(gold_bank),
+				CEREAL_NVP(silver_bank),
+				CEREAL_NVP(copper_bank),
+				CEREAL_NVP(platinum_cursor),
+				CEREAL_NVP(gold_cursor),
+				CEREAL_NVP(silver_cursor),
+				CEREAL_NVP(copper_cursor),
+				CEREAL_NVP(radiant_crystals),
+				CEREAL_NVP(career_radiant_crystals),
+				CEREAL_NVP(ebon_crystals),
+				CEREAL_NVP(career_ebon_crystals)
+			);
+		}
 	};
 
 	static std::string PrimaryKey()

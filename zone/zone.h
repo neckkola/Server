@@ -254,6 +254,8 @@ public:
 
 	std::map<std::string, std::string> m_zone_variables;
 
+	std::unordered_map<uint32, CharacterDataCache> character_data_cache{};
+
 	time_t weather_timer;
 	Timer  spawn2_timer;
 	Timer  hot_reload_timer;
@@ -340,6 +342,8 @@ public:
 	void UpdateQGlobal(uint32 qid, QGlobal newGlobal);
 	void weatherSend(Client *client = nullptr);
 	void ClearSpawnTimers();
+	void LoadCharacterCache();
+	void SaveCharacterCache(uint32 character_id);
 
 	bool IsQuestHotReloadQueued() const;
 	void SetQuestHotReloadQueued(bool in_quest_hot_reload_queued);

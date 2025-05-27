@@ -1366,22 +1366,34 @@ void Client::Handle_Connect_OP_ZoneEntry(const EQApplicationPacket *app)
 	// set to full support in case they're a gm with items in disabled expansion slots...but, have their gm flag off...
 	// item loss will occur when they use the 'empty' slots, if this is not done
 	m_inv.SetGMInventory(true);
+	auto start = std::chrono::high_resolution_clock::now();
+
 	loaditems = database.GetInventory(this); /* Load Character Inventory */
 	database.LoadCharacterBandolier(cid, &m_pp); /* Load Character Bandolier */
 	database.LoadCharacterBindPoint(cid, &m_pp); /* Load Character Bind */
 	database.LoadCharacterMaterialColor(cid, &m_pp); /* Load Character Material */
 	database.LoadCharacterPotionBelt(cid, &m_pp); /* Load Character Potion Belt */
+
 	database.LoadCharacterCurrency(cid, &m_pp); /* Load Character Currency into PP */
 	database.LoadCharacterData(cid, &m_pp, &m_epp); /* Load Character Data from DB into PP as well as E_PP */
+
 	database.LoadCharacterSkills(cid, &m_pp); /* Load Character Skills */
 	database.LoadCharacterInspectMessage(cid, &m_inspect_message); /* Load Character Inspect Message */
 	database.LoadCharacterSpellBook(cid, &m_pp); /* Load Character Spell Book */
 	database.LoadCharacterMemmedSpells(cid, &m_pp);  /* Load Character Memorized Spells */
 	database.LoadCharacterLanguages(cid, &m_pp); /* Load Character Languages */
+
 	database.LoadCharacterLeadershipAbilities(cid, &m_pp); /* Load Character Leadership AA's */
+
 	database.LoadCharacterTribute(this); /* Load CharacterTribute */
 	database.LoadCharacterEXPModifier(this); /* Load Character EXP Modifier */
 	database.LoadCharacterTitleSets(this); /* Load Character Title Sets */
+
+	auto end   = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double> load_time = end - start;
+	LogInfo("Load Character took {} seconds", load_time.count());
+
+	zone->SaveCharacterCache(CharacterID());
 
 	// this pattern is strange
 	// this is remnants of the old way of doing things

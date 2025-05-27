@@ -115,6 +115,7 @@ public:
 		auto row = results.begin();
 		if (results.RowCount() == 1) {
 			{{TABLE_NAME_STRUCT}} e{};
+			{{GET_LENGTHS}}
 
 {{FIND_ONE_ENTRIES}}
 			return e;
@@ -234,6 +235,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			{{TABLE_NAME_STRUCT}} e{};
+			{{GET_LENGTHS}}
 
 {{ALL_ENTRIES}}
 
@@ -259,6 +261,7 @@ public:
 
 		for (auto row = results.begin(); row != results.end(); ++row) {
 			{{TABLE_NAME_STRUCT}} e{};
+			{{GET_LENGTHS}}
 
 {{ALL_ENTRIES}}
 

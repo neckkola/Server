@@ -57,6 +57,7 @@
 #include <ctime>
 #include <iostream>
 #include <fmt/format.h>
+#include "../common/repositories/zone_memory_repository.h"
 
 extern Zone* zone;
 
@@ -461,11 +462,30 @@ void ZoneDatabase::UpdateBuyLine(uint32 CharID, uint32 BuySlot, uint32 Quantity)
 
 #define StructDist(in, f1, f2) (uint32(&in->f2)-uint32(&in->f1))
 
-bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* pp, ExtendedProfile_Struct* m_epp){
-	const auto& e = CharacterDataRepository::FindOne(database, character_id);
+bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* pp, ExtendedProfile_Struct* m_epp) {
+	auto e = CharacterDataRepository::NewEntity();
+
+	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_data_loaded) {
+		e = zone->character_data_cache.at(character_id).character_data;
+	}
+	else {
+		e = CharacterDataRepository::FindOne(*this, character_id);
+	}
+
 	if (!e.id) {
 		return false;
 	}
+
+	if (zone->character_data_cache.contains(character_id)) {
+		zone->character_data_cache.at(character_id).character_data = e;
+	}
+	else {
+		CharacterDataCache cache{};
+		zone->character_data_cache.try_emplace(character_id, cache);
+		zone->character_data_cache.at(character_id).character_data = e;
+	}
+
+	zone->character_data_cache.at(character_id).character_data_loaded = true;
 
 	strcpy(pp->name, e.name.c_str());
 	strcpy(pp->last_name, e.last_name.c_str());
@@ -657,13 +677,25 @@ bool ZoneDatabase::LoadCharacterLanguages(uint32 character_id, PlayerProfile_Str
 
 bool ZoneDatabase::LoadCharacterLeadershipAbilities(uint32 character_id, PlayerProfile_Struct* pp)
 {
-	const auto& l = CharacterLeadershipAbilitiesRepository::GetWhere(
-		database,
-		fmt::format(
-			"`id` = {}",
-			character_id
-		)
-	);
+	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities> l{};
+
+	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_leadership_abilities_loaded) {
+		l = zone->character_data_cache.at(character_id).character_leadership_abilities;
+	}
+	else {
+		l = CharacterLeadershipAbilitiesRepository::GetWhere(database, fmt::format("`id` = {}", character_id));
+	}
+
+	if (zone->character_data_cache.contains(character_id)) {
+		zone->character_data_cache.at(character_id).character_leadership_abilities = l;
+	}
+	else {
+		CharacterDataCache cache{};
+		zone->character_data_cache.try_emplace(character_id, cache);
+		zone->character_data_cache.at(character_id).character_leadership_abilities = l;
+	}
+
+	zone->character_data_cache.at(character_id).character_leadership_abilities_loaded = true;
 
 	for (const auto& e : l) {
 		pp->leader_abilities.ranks[e.slot] = e.rank_;
@@ -729,10 +761,29 @@ bool ZoneDatabase::LoadCharacterSkills(uint32 character_id, PlayerProfile_Struct
 
 bool ZoneDatabase::LoadCharacterCurrency(uint32 character_id, PlayerProfile_Struct* pp)
 {
-	const auto& e = CharacterCurrencyRepository::FindOne(*this, character_id);
+	auto e = CharacterCurrencyRepository::NewEntity();
+
+	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_currency_loaded) {
+		e = zone->character_data_cache.at(character_id).character_currency;
+	}
+	else {
+		e = CharacterCurrencyRepository::FindOne(*this, character_id);
+	}
+
 	if (!e.id) {
 		return false;
 	}
+
+	if (zone->character_data_cache.contains(character_id)) {
+		zone->character_data_cache.at(character_id).character_currency = e;
+	}
+	else {
+		CharacterDataCache cache{};
+		zone->character_data_cache.try_emplace(character_id, cache);
+		zone->character_data_cache.at(character_id).character_currency = e;
+	}
+
+	zone->character_data_cache.at(character_id).character_currency_loaded = true;
 
 	pp->platinum            = e.platinum;
 	pp->platinum_bank       = e.platinum_bank;

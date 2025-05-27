@@ -114,7 +114,10 @@ if ($requested_table_to_generate ne "all") {
 
 my @cereal_enabled_tables = (
     "data_buckets",
-    "player_event_logs"
+    "player_event_logs",
+    "character_currency",
+    "character_leadership_abilities",
+    "character_data"
 );
 
 my $generated_base_repository_files = "";
@@ -226,6 +229,7 @@ foreach my $table_to_generate (@tables) {
     my $index                      = 0;
     my %table_data                 = ();
     my %table_primary_key          = ();
+    my $get_lengths                = "";
     $ex->execute($database_name, $table_to_generate);
 
     while (my @row                = $ex->fetchrow_array()) {
@@ -360,6 +364,11 @@ foreach my $table_to_generate (@tables) {
             $all_entries      .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? strtod(row[%s], nullptr) : %s;\n", $column_name_formatted, $index, $index, $default_value);
             $find_one_entries .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? strtod(row[%s], nullptr) : %s;\n", $column_name_formatted, $index, $index, $default_value);
         }
+        elsif ($data_type =~ /blob/) {
+            $get_lengths       = sprintf("auto lengths = row.GetColumnLengths();");
+            $all_entries      .= sprintf("\t\t\te.%-${longest_column_length}s = std::string(row[%s], lengths[%s]);\n", $column_name_formatted, $index, $index);
+            $find_one_entries .= sprintf("\t\t\te.%-${longest_column_length}s = std::string(row[%s], lengths[%s]);\n", $column_name_formatted, $index, $index);
+        }
         else {
             $all_entries      .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? row[%s] : %s;\n", $column_name_formatted, $index, $index, $default_value);
             $find_one_entries .= sprintf("\t\t\te.%-${longest_column_length}s = row[%s] ? row[%s] : %s;\n", $column_name_formatted, $index, $index, $default_value);
@@ -480,6 +489,7 @@ foreach my $table_to_generate (@tables) {
     $new_base_repository =~ s/\{\{ALL_ENTRIES}}/$all_entries/g;
     $new_base_repository =~ s/\{\{GENERATED_DATE}}/$generated_date/g;
     $new_base_repository =~ s/\{\{ADDITIONAL_INCLUDES}}\n/$additional_includes/g;
+    $new_base_repository =~ s/\{\{GET_LENGTHS}}/$get_lengths/g;
 
     # Extended repository
     my $new_repository = $repository_template;

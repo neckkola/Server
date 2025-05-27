@@ -74,6 +74,8 @@
 
 #include <time.h>
 
+#include "../common/repositories/zone_memory_repository.h"
+
 #ifdef _WINDOWS
 #define snprintf	_snprintf
 #define strncasecmp	_strnicmp
@@ -1107,6 +1109,9 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 	mMovementManager = &MobMovementManager::Get();
 
 	SetQuestHotReloadQueued(false);
+
+	// Load character_data_cache
+	LoadCharacterCache();
 }
 
 Zone::~Zone() {
@@ -3305,3 +3310,50 @@ void Zone::ReloadMaps()
 }
 
 #include "zone_loot.cpp"
+
+void Zone::LoadCharacterCache()
+{
+	character_data_cache.clear();
+	auto data = ZoneMemoryRepository::All(database);
+
+	for (auto &[character_id, blob] : data) {
+		CharacterDataCache cache;
+
+		EQ::Util::MemoryStreamReader ss(blob.data(), blob.length());
+		{
+			try {
+				cereal::BinaryInputArchive   archive(ss);
+				archive(cache);
+			}
+			catch (const std::exception& ex) {
+				LogError("Unable to load character cache for character_id [{}]: {}", character_id, ex.what());
+				continue;
+			}
+		}
+
+		character_data_cache[character_id].character_currency             = cache.character_currency;
+		character_data_cache[character_id].character_data                 = cache.character_data;
+		character_data_cache[character_id].character_leadership_abilities = cache.character_leadership_abilities;
+	}
+}
+
+void Zone::SaveCharacterCache(uint32 character_id)
+{
+	std::stringstream           ss{};
+	{
+		try {
+			cereal::BinaryOutputArchive ar(ss);
+			ar(character_data_cache[character_id]);
+		}
+		catch (const std::exception& ex) {
+			LogError("Unable to save character cache for character_id [{}]: {}", character_id, ex.what());
+			return;
+		}
+	}
+
+	ZoneMemoryRepository::ZoneMemory n{};
+	n.character_id = character_id;
+	n.currency     = ss.str();
+
+	ZoneMemoryRepository::ReplaceOne(database, n);
+}
