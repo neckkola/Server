@@ -258,12 +258,13 @@ public:
 	std::map<std::string, std::string> m_zone_variables;
 
 	std::unordered_map<uint32, CharacterDataCache> character_data_cache{};
-	using variant = std::variant<
+	using CacheVariant = std::variant<
 		CharacterCurrencyRepository::CharacterCurrency,
 		CharacterDataRepository::CharacterData,
 		std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
 	>;
-	std::unordered_map<uint32, CharacterCacheNew<variant>> character_cache{};
+	std::unordered_map<uint32, CharacterCacheNew<CacheVariant>> character_cache{};
+	std::unordered_map<uint32, std::vector<CharacterCacheNew<CacheVariant>>> character_cache2{};
 
 	time_t weather_timer;
 	Timer  spawn2_timer;
@@ -351,26 +352,37 @@ public:
 	void UpdateQGlobal(uint32 qid, QGlobal newGlobal);
 	void weatherSend(Client *client = nullptr);
 	void ClearSpawnTimers();
+
+	//Character Cache Functions
 	void LoadCharacterCache();
 	void SaveCharacterCache(uint32 character_id);
-	void ProcessCharacterCacheVariant(
-		uint32 character_id,
-		const std::variant<
-			CharacterCurrencyRepository::CharacterCurrency,
-			CharacterDataRepository::CharacterData,
-			std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
-		> &v
-	);
-	std::variant<
-	CharacterCurrencyRepository::CharacterCurrency,
-	CharacterDataRepository::CharacterData,
-	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
-	> GetDataFromCharacterCacheVariant(uint32 character_id
-	// 	const std::variant<CharacterCurrencyRepository::CharacterCurrency,
-	// 	CharacterDataRepository::CharacterData,
-	// 	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
-	// 	> &v
-	);
+	void ProcessCharacterCacheVariant(uint32 character_id, const std::variant<CacheVariant> &v);
+	CacheVariant GetDataFromCharacterCacheVariant(uint32 character_id);
+
+	template<typename T>
+	void InsertIntoCache(uint32_t character_id, const T& value,
+		std::unordered_map<uint32_t, std::vector<CharacterCacheNew<CacheVariant>>>& cache) {
+
+		auto &result = cache[character_id].emplace_back(CharacterCacheNew<CacheVariant>{value});
+		result.is_loaded = true;
+	}
+
+	template<typename T> T GetData(uint32_t character_id)
+	{
+		T e{};
+		if (character_cache2.contains(character_id)) {
+			const auto &vec = character_cache2[character_id];
+
+			for (const auto &entry: vec) {
+				const auto &var = entry.data;
+				if (std::holds_alternative<T>(var) && entry.is_loaded) {
+					return std::get<T>(var);
+				}
+			}
+		}
+
+		return e;
+	}
 
 	bool IsQuestHotReloadQueued() const;
 	void SetQuestHotReloadQueued(bool in_quest_hot_reload_queued);

@@ -463,29 +463,17 @@ void ZoneDatabase::UpdateBuyLine(uint32 CharID, uint32 BuySlot, uint32 Quantity)
 #define StructDist(in, f1, f2) (uint32(&in->f2)-uint32(&in->f1))
 
 bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* pp, ExtendedProfile_Struct* m_epp) {
-	auto e = CharacterDataRepository::NewEntity();
 
-	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_data_loaded) {
-		e = zone->character_data_cache.at(character_id).character_data;
-	}
-	else {
+	auto e = zone->GetData<CharacterDataRepository::CharacterData>(character_id);
+
+	if (!e.id) {
 		e = CharacterDataRepository::FindOne(*this, character_id);
+		zone->InsertIntoCache(character_id, e, zone->character_cache2);
 	}
 
 	if (!e.id) {
 		return false;
 	}
-
-	if (zone->character_data_cache.contains(character_id)) {
-		zone->character_data_cache.at(character_id).character_data = e;
-	}
-	else {
-		CharacterDataCache cache{};
-		zone->character_data_cache.try_emplace(character_id, cache);
-		zone->character_data_cache.at(character_id).character_data = e;
-	}
-
-	zone->character_data_cache.at(character_id).character_data_loaded = true;
 
 	strcpy(pp->name, e.name.c_str());
 	strcpy(pp->last_name, e.last_name.c_str());
@@ -677,28 +665,19 @@ bool ZoneDatabase::LoadCharacterLanguages(uint32 character_id, PlayerProfile_Str
 
 bool ZoneDatabase::LoadCharacterLeadershipAbilities(uint32 character_id, PlayerProfile_Struct* pp)
 {
-	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities> l{};
+	auto e = zone->GetData<std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>>(character_id);
 
-	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_leadership_abilities_loaded) {
-		l = zone->character_data_cache.at(character_id).character_leadership_abilities;
-	}
-	else {
-		l = CharacterLeadershipAbilitiesRepository::GetWhere(database, fmt::format("`id` = {}", character_id));
+	if (e.empty()) {
+		e = CharacterLeadershipAbilitiesRepository::GetWhere(database, fmt::format("`id` = {}", character_id));
+		zone->InsertIntoCache(character_id, e, zone->character_cache2);
 	}
 
-	if (zone->character_data_cache.contains(character_id)) {
-		zone->character_data_cache.at(character_id).character_leadership_abilities = l;
-	}
-	else {
-		CharacterDataCache cache{};
-		zone->character_data_cache.try_emplace(character_id, cache);
-		zone->character_data_cache.at(character_id).character_leadership_abilities = l;
+	if (e.empty()) {
+		return false;
 	}
 
-	zone->character_data_cache.at(character_id).character_leadership_abilities_loaded = true;
-
-	for (const auto& e : l) {
-		pp->leader_abilities.ranks[e.slot] = e.rank_;
+	for (const auto& l : e) {
+		pp->leader_abilities.ranks[l.slot] = l.rank_;
 	}
 
 	return true;
@@ -761,31 +740,16 @@ bool ZoneDatabase::LoadCharacterSkills(uint32 character_id, PlayerProfile_Struct
 
 bool ZoneDatabase::LoadCharacterCurrency(uint32 character_id, PlayerProfile_Struct* pp)
 {
-	auto e = CharacterCurrencyRepository::NewEntity();
-	auto r = zone->GetDataFromCharacterCacheVariant(character_id);
-	if (zone->character_cache.contains(character_id) && zone->character_cache.at(character_id).is_loaded) {
-		//e = std::get<0>(zone->character_cache.at(character_id).data);
-		e = *std::get_if<CharacterCurrencyRepository::CharacterCurrency>(&r);
-	}
-	else {
-		e = CharacterCurrencyRepository::FindOne(*this, character_id);
-	}
+	auto e = zone->GetData<CharacterCurrencyRepository::CharacterCurrency>(character_id);
 
-	// if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_currency_loaded) {
-	// 	e = zone->character_data_cache.at(character_id).character_currency;
-	// }
-	// else {
-	// 	e = CharacterCurrencyRepository::FindOne(*this, character_id);
-	// }
+	if (!e.id) {
+		e = CharacterCurrencyRepository::FindOne(*this, character_id);
+		zone->InsertIntoCache(character_id, e, zone->character_cache2);
+	}
 
 	if (!e.id) {
 		return false;
 	}
-
-	zone->character_cache.at(character_id).data.emplace<CharacterCurrencyRepository::CharacterCurrency>(e);
-
-	//needs to be fixed
-	zone->character_cache.at(character_id).is_loaded = true;
 
 	pp->platinum            = e.platinum;
 	pp->platinum_bank       = e.platinum_bank;

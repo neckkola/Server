@@ -341,11 +341,6 @@ struct CharacterCorpseEntry
 	std::vector<CharacterCorpseItemEntry> items;
 };
 
-template<typename T>
-concept AcceptedVariants = std::same_as<T, CharacterCurrencyRepository::CharacterCurrency> ||
-	std::same_as<T, CharacterDataRepository::CharacterData> ||
-	std::same_as<T,	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>>;
-
 template<typename T1>
 struct CharacterCacheNew {
 	T1     data;
