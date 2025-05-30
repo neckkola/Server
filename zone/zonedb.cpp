@@ -762,28 +762,30 @@ bool ZoneDatabase::LoadCharacterSkills(uint32 character_id, PlayerProfile_Struct
 bool ZoneDatabase::LoadCharacterCurrency(uint32 character_id, PlayerProfile_Struct* pp)
 {
 	auto e = CharacterCurrencyRepository::NewEntity();
-
-	if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_currency_loaded) {
-		e = zone->character_data_cache.at(character_id).character_currency;
+	auto r = zone->GetDataFromCharacterCacheVariant(character_id);
+	if (zone->character_cache.contains(character_id) && zone->character_cache.at(character_id).is_loaded) {
+		//e = std::get<0>(zone->character_cache.at(character_id).data);
+		e = *std::get_if<CharacterCurrencyRepository::CharacterCurrency>(&r);
 	}
 	else {
 		e = CharacterCurrencyRepository::FindOne(*this, character_id);
 	}
 
+	// if (zone->character_data_cache.contains(character_id) && zone->character_data_cache.at(character_id).character_currency_loaded) {
+	// 	e = zone->character_data_cache.at(character_id).character_currency;
+	// }
+	// else {
+	// 	e = CharacterCurrencyRepository::FindOne(*this, character_id);
+	// }
+
 	if (!e.id) {
 		return false;
 	}
 
-	if (zone->character_data_cache.contains(character_id)) {
-		zone->character_data_cache.at(character_id).character_currency = e;
-	}
-	else {
-		CharacterDataCache cache{};
-		zone->character_data_cache.try_emplace(character_id, cache);
-		zone->character_data_cache.at(character_id).character_currency = e;
-	}
+	zone->character_cache.at(character_id).data.emplace<CharacterCurrencyRepository::CharacterCurrency>(e);
 
-	zone->character_data_cache.at(character_id).character_currency_loaded = true;
+	//needs to be fixed
+	zone->character_cache.at(character_id).is_loaded = true;
 
 	pp->platinum            = e.platinum;
 	pp->platinum_bank       = e.platinum_bank;

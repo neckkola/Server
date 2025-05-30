@@ -71,7 +71,11 @@
 #include "../common/repositories/graveyard_repository.h"
 #include "../common/repositories/trader_repository.h"
 #include "../common/repositories/buyer_repository.h"
+#include <cereal/archives/binary.hpp>
+#include <cereal/types/variant.hpp>
+#include <cereal/types/unordered_map.hpp>
 
+#include <variant>
 #include <time.h>
 
 #include "../common/repositories/zone_memory_repository.h"
@@ -3313,27 +3317,85 @@ void Zone::ReloadMaps()
 
 void Zone::LoadCharacterCache()
 {
-	character_data_cache.clear();
-	auto data = ZoneMemoryRepository::All(database);
+	// using variant = std::variant<CharacterCurrencyRepository::CharacterCurrency, CharacterDataRepository::CharacterData>;
+	//
+	// std::vector<tester<variant>> c;
+	// c.reserve(2);
+	// tester<variant> c1{};
+	// c1.data = CharacterCurrencyRepository::CharacterCurrency{5};
+	// tester<variant> c2{};
+	// //CharacterDataRepository::CharacterData c2{};
+	// c2.data = CharacterDataRepository::CharacterData{10};
+	// c.push_back(c1);
+	// c.push_back(c2);
+	//
+	// tester<CharacterCurrencyRepository::CharacterCurrency> t1{};
+	// t1.data.copper=4;
+	// std::stringstream           ss{};
+	// {
+	// 	try {
+	// 		cereal::BinaryOutputArchive ar(ss);
+	// 		ar(c);
+	// 	}
+	// 	catch (const std::exception& ex) {
+	// 		//LogError("Unable to save character cache for character_id [{}]: {}", character_id, ex.what());
+	// 		return;
+	// 	}
+	// }
+	//
+	// std::vector<tester<variant>> cc2;
+	// cereal::BinaryInputArchive                     archive(ss);
+	// {archive(cc2);}
+	//
+	// for (auto& t : cc2) {
+	// 	std::visit([&](auto&& v) {
+	// 		using T = std::decay_t<decltype(v)>;
+	// 		if constexpr (std::is_same_v<T, CharacterCurrencyRepository::CharacterCurrency>) {
+	// 			character_data_cache[43].character_currency.copper             = v.id;
+	// 			std::cout << "Currency: copper = " << v.copper << "\n";
+	// 		}
+	// 		else if constexpr (std::is_same_v<T, CharacterDataRepository::CharacterData>) {
+	// 			character_data_cache[43].character_data.level                 = v.id;
+	// 			std::cout << "Data: level = " << v.level << "\n";
+	// 		}
+	// 	}, t.data);
+	//
+	// 	std::visit([&]<AccpetedVariants T>(const T& val) {
+	// 		if constexpr (std::same_as<T, CharacterCurrencyRepository::CharacterCurrency>) {
+	// 			character_data_cache[43].character_currency.silver             = val.id;
+	// 			std::cout << "Currency: copper = " << val.copper << "\n";
+	// 		}
+	// 		else if constexpr (std::same_as<T, CharacterDataRepository::CharacterData>) {
+	// 			character_data_cache[43].character_data.level2                 = val.id;
+	// 			std::cout << "Data: level = " << val.level << "\n";
+	// 		}
+	// 	}, t.data);
+	//
+	// 	ProcessVariant(t.data);
+	// }
 
-	for (auto &[character_id, blob] : data) {
-		CharacterDataCache cache;
+	character_cache.clear();
+	auto results = ZoneMemoryRepository::All(database);
+	character_cache.reserve(results.size());
+
+	for (auto [character_id, blob]: results) {
+		CharacterCacheNew<variant> cache_entry;
 
 		EQ::Util::MemoryStreamReader ss(blob.data(), blob.length());
 		{
 			try {
-				cereal::BinaryInputArchive   archive(ss);
-				archive(cache);
-			}
-			catch (const std::exception& ex) {
-				LogError("Unable to load character cache for character_id [{}]: {}", character_id, ex.what());
+				cereal::BinaryInputArchive archive(ss);
+				archive(cache_entry);
+			} catch (const std::exception &ex) {
+				LogError("Unable to load character cache for character_id [{}] :{}", character_id, ex.what());
 				continue;
 			}
 		}
 
-		character_data_cache[character_id].character_currency             = cache.character_currency;
-		character_data_cache[character_id].character_data                 = cache.character_data;
-		character_data_cache[character_id].character_leadership_abilities = cache.character_leadership_abilities;
+		auto [it, success] = character_cache.try_emplace(character_id, cache_entry);
+		if (!success) {
+			character_cache[character_id] = cache_entry;
+		}
 	}
 }
 
@@ -3343,7 +3405,7 @@ void Zone::SaveCharacterCache(uint32 character_id)
 	{
 		try {
 			cereal::BinaryOutputArchive ar(ss);
-			ar(character_data_cache[character_id]);
+			ar(character_cache[character_id]);
 		}
 		catch (const std::exception& ex) {
 			LogError("Unable to save character cache for character_id [{}]: {}", character_id, ex.what());
@@ -3356,4 +3418,65 @@ void Zone::SaveCharacterCache(uint32 character_id)
 	n.currency     = ss.str();
 
 	ZoneMemoryRepository::ReplaceOne(database, n);
+
+	//std::unordered_map<uint32, CharacterCacheNew<variant>> cache;
+	//CharacterCacheNew<variant> cache_entry;
+	//// EQ::Util::MemoryStreamReader ss(blob.data(), blob.length())
+	////std::stringstream ss(blob.data(), blob.length());
+	//{
+	//	try {
+	//		cereal::BinaryInputArchive archive(ss);
+	//		archive(cache_entry);
+	//	} catch (const std::exception &ex) {
+	//		LogError("Unable to load character cache for character_id [{}] :{}", character_id, ex.what());
+	//		//continue;
+	//	}
+	//}
+
+	//character_cache.try_emplace(character_id, cache_entry);
+
+	//for (auto &[key, variant_data]: cache) {
+	//	ProcessCharacterCacheVariant(key, variant_data.data);
+	//}
+
+
+}
+
+void Zone::ProcessCharacterCacheVariant(uint32 character_id,
+	const std::variant<CharacterCurrencyRepository::CharacterCurrency,
+	CharacterDataRepository::CharacterData,
+	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+	> &v)
+{
+	std::visit(
+		[&]<typename T>(const T &val) {
+			if constexpr (std::same_as<T, CharacterCurrencyRepository::CharacterCurrency>) {
+				character_data_cache[character_id].character_currency = val;
+			}
+			else if constexpr (std::same_as<T, CharacterDataRepository::CharacterData>) {
+				character_data_cache[character_id].character_data = val;
+			}
+			else if constexpr (std::same_as<T, CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>) {
+				character_data_cache[character_id].character_leadership_abilities = val;
+			}
+		}, v
+	);
+}
+
+std::variant<
+	CharacterCurrencyRepository::CharacterCurrency,
+	CharacterDataRepository::CharacterData,
+	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+ > Zone::GetDataFromCharacterCacheVariant(uint32 character_id)
+// 	const std::variant<CharacterCurrencyRepository::CharacterCurrency,
+// 	CharacterDataRepository::CharacterData,
+// 	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+// 	> &v)
+{
+	// return std::visit(
+	// 	[](const auto& val) -> decltype(auto) {
+	// 		return val;
+	// 	}, character_cache[character_id].data
+	// );
+	return character_cache[character_id].data;
 }

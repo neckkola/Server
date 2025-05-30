@@ -18,38 +18,41 @@
 #ifndef ZONE_H
 #define ZONE_H
 
+#include <variant>
+
+
+#include "../common/discord/discord.h"
 #include "../common/eqtime.h"
 #include "../common/linked_list.h"
-#include "../common/rulesys.h"
-#include "../common/types.h"
 #include "../common/random.h"
-#include "../common/strings.h"
-#include "zonedb.h"
-#include "../common/zone_store.h"
-#include "../common/repositories/grid_repository.h"
+#include "../common/repositories/base_data_repository.h"
+#include "../common/repositories/dynamic_zone_templates_repository.h"
+#include "../common/repositories/faction_association_repository.h"
 #include "../common/repositories/grid_entries_repository.h"
+#include "../common/repositories/grid_repository.h"
+#include "../common/repositories/lootdrop_entries_repository.h"
+#include "../common/repositories/lootdrop_repository.h"
+#include "../common/repositories/loottable_entries_repository.h"
+#include "../common/repositories/loottable_repository.h"
+#include "../common/repositories/npc_faction_entries_repository.h"
+#include "../common/repositories/npc_faction_repository.h"
+#include "../common/repositories/player_titlesets_repository.h"
+#include "../common/repositories/skill_caps_repository.h"
+#include "../common/repositories/spawn2_disabled_repository.h"
 #include "../common/repositories/zone_points_repository.h"
+#include "../common/repositories/zone_state_spawns_repository.h"
+#include "../common/rulesys.h"
+#include "../common/strings.h"
+#include "../common/types.h"
+#include "../common/zone_store.h"
+#include "aa_ability.h"
+#include "global_loot_manager.h"
+#include "pathfinder_interface.h"
 #include "qglobals.h"
+#include "queryserv.h"
 #include "spawn2.h"
 #include "spawngroup.h"
-#include "aa_ability.h"
-#include "pathfinder_interface.h"
-#include "global_loot_manager.h"
-#include "queryserv.h"
-#include "../common/discord/discord.h"
-#include "../common/repositories/dynamic_zone_templates_repository.h"
-#include "../common/repositories/npc_faction_repository.h"
-#include "../common/repositories/npc_faction_entries_repository.h"
-#include "../common/repositories/faction_association_repository.h"
-#include "../common/repositories/loottable_repository.h"
-#include "../common/repositories/loottable_entries_repository.h"
-#include "../common/repositories/lootdrop_repository.h"
-#include "../common/repositories/lootdrop_entries_repository.h"
-#include "../common/repositories/base_data_repository.h"
-#include "../common/repositories/skill_caps_repository.h"
-#include "../common/repositories/zone_state_spawns_repository.h"
-#include "../common/repositories/spawn2_disabled_repository.h"
-#include "../common/repositories/player_titlesets_repository.h"
+#include "zonedb.h"
 
 struct EXPModifier
 {
@@ -255,6 +258,12 @@ public:
 	std::map<std::string, std::string> m_zone_variables;
 
 	std::unordered_map<uint32, CharacterDataCache> character_data_cache{};
+	using variant = std::variant<
+		CharacterCurrencyRepository::CharacterCurrency,
+		CharacterDataRepository::CharacterData,
+		std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+	>;
+	std::unordered_map<uint32, CharacterCacheNew<variant>> character_cache{};
 
 	time_t weather_timer;
 	Timer  spawn2_timer;
@@ -344,6 +353,24 @@ public:
 	void ClearSpawnTimers();
 	void LoadCharacterCache();
 	void SaveCharacterCache(uint32 character_id);
+	void ProcessCharacterCacheVariant(
+		uint32 character_id,
+		const std::variant<
+			CharacterCurrencyRepository::CharacterCurrency,
+			CharacterDataRepository::CharacterData,
+			std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+		> &v
+	);
+	std::variant<
+	CharacterCurrencyRepository::CharacterCurrency,
+	CharacterDataRepository::CharacterData,
+	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+	> GetDataFromCharacterCacheVariant(uint32 character_id
+	// 	const std::variant<CharacterCurrencyRepository::CharacterCurrency,
+	// 	CharacterDataRepository::CharacterData,
+	// 	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+	// 	> &v
+	);
 
 	bool IsQuestHotReloadQueued() const;
 	void SetQuestHotReloadQueued(bool in_quest_hot_reload_queued);

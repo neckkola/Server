@@ -341,6 +341,31 @@ struct CharacterCorpseEntry
 	std::vector<CharacterCorpseItemEntry> items;
 };
 
+template<typename T>
+concept AcceptedVariants = std::same_as<T, CharacterCurrencyRepository::CharacterCurrency> ||
+	std::same_as<T, CharacterDataRepository::CharacterData> ||
+	std::same_as<T,	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>>;
+
+template<typename T1>
+struct CharacterCacheNew {
+	T1     data;
+	bool   is_loaded       = false;
+	time_t last_loaded     = 0;
+	bool   immediate_write = false;
+
+	template<class Archive>
+	void serialize(Archive &archive)
+	{
+		archive(
+			CEREAL_NVP(data),
+			CEREAL_NVP(is_loaded),
+			CEREAL_NVP(last_loaded),
+			CEREAL_NVP(immediate_write)
+		);
+	}
+
+};
+
 struct CharacterDataCache {
 	CharacterCurrencyRepository::CharacterCurrency                                    character_currency;
 	std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities> character_leadership_abilities;
