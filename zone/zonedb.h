@@ -17,6 +17,7 @@
 #include "../common/repositories/character_currency_repository.h"
 #include "../common/repositories/character_data_repository.h"
 #include "../common/repositories/character_leadership_abilities_repository.h"
+#include "../common/repositories/zone_memory_repository.h"
 #include "bot_database.h"
 
 class Client;
@@ -339,26 +340,6 @@ struct CharacterCorpseEntry
 	uint32 drakkin_tattoo;
 	uint32 drakkin_details;
 	std::vector<CharacterCorpseItemEntry> items;
-};
-
-template<typename T1>
-struct CharacterCacheNew {
-	T1     data;
-	bool   is_loaded       = false;
-	time_t last_loaded     = 0;
-	bool   immediate_write = false;
-
-	template<class Archive>
-	void serialize(Archive &archive)
-	{
-		archive(
-			CEREAL_NVP(data),
-			CEREAL_NVP(is_loaded),
-			CEREAL_NVP(last_loaded),
-			CEREAL_NVP(immediate_write)
-		);
-	}
-
 };
 
 struct CharacterDataCache {
@@ -718,7 +699,6 @@ protected:
 
 extern ZoneDatabase database;
 extern ZoneDatabase content_db;
-//extern std::unordered_map<uint32, CharacterDataCache> character_data_cache;
 
 #endif /*ZONEDB_H_*/
 

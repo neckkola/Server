@@ -468,7 +468,7 @@ bool ZoneDatabase::LoadCharacterData(uint32 character_id, PlayerProfile_Struct* 
 
 	if (!e.id) {
 		e = CharacterDataRepository::FindOne(*this, character_id);
-		zone->InsertIntoCache(character_id, e, zone->character_cache2);
+		zone->InsertIntoCache(character_id, e);
 	}
 
 	if (!e.id) {
@@ -669,7 +669,7 @@ bool ZoneDatabase::LoadCharacterLeadershipAbilities(uint32 character_id, PlayerP
 
 	if (e.empty()) {
 		e = CharacterLeadershipAbilitiesRepository::GetWhere(database, fmt::format("`id` = {}", character_id));
-		zone->InsertIntoCache(character_id, e, zone->character_cache2);
+		zone->InsertIntoCache(character_id, e);
 	}
 
 	if (e.empty()) {
@@ -744,7 +744,7 @@ bool ZoneDatabase::LoadCharacterCurrency(uint32 character_id, PlayerProfile_Stru
 
 	if (!e.id) {
 		e = CharacterCurrencyRepository::FindOne(*this, character_id);
-		zone->InsertIntoCache(character_id, e, zone->character_cache2);
+		zone->InsertIntoCache(character_id, e);
 	}
 
 	if (!e.id) {
@@ -1056,14 +1056,12 @@ bool ZoneDatabase::SaveCharacterLeadershipAbilities(uint32 character_id, PlayerP
 		}
 	}
 
+	zone->UpdateCache(character_id, v);
 	return CharacterLeadershipAbilitiesRepository::ReplaceMany(*this, v);
 }
 
-bool ZoneDatabase::SaveCharacterData(
-	Client* c,
-	PlayerProfile_Struct* pp,
-	ExtendedProfile_Struct* m_epp
-) {
+bool ZoneDatabase::SaveCharacterData(Client *c, PlayerProfile_Struct *pp, ExtendedProfile_Struct *m_epp)
+{
 	if (!c) {
 		return false;
 	}
@@ -1073,13 +1071,9 @@ bool ZoneDatabase::SaveCharacterData(
 		return false;
 	}
 
-	clock_t t = std::clock(); /* Function timer start */
+	BenchTimer timer;
 
-	auto e = CharacterDataRepository::FindOne(database, c->CharacterID());
-	if (!e.id) {
-		return false;
-	}
-
+	auto e                    = CharacterDataRepository::NewEntity();
 	e.id                      = c->CharacterID();
 	e.account_id              = c->AccountID();
 	e.name                    = pp->name;
@@ -1178,6 +1172,7 @@ bool ZoneDatabase::SaveCharacterData(
 	e.mailkey                 = c->GetMailKeyFull();
 	e.illusion_block          = c->GetIllusionBlock();
 
+	zone->UpdateCache(c->CharacterID(), e);
 	const int replaced = CharacterDataRepository::ReplaceOne(database, e);
 
 	if (!replaced) {
@@ -1185,11 +1180,8 @@ bool ZoneDatabase::SaveCharacterData(
 		return false;
 	}
 
-	LogDebug(
-		"ZoneDatabase::SaveCharacterData [{}], done Took [{}] seconds",
-		c->CharacterID(),
-		((float)(std::clock() - t)) / CLOCKS_PER_SEC
-	);
+	LogDebug("ZoneDatabase::SaveCharacterData [{}], done Took [{}] seconds", c->CharacterID(), timer.elapsed());
+
 	return true;
 }
 
@@ -1198,29 +1190,26 @@ bool ZoneDatabase::SaveCharacterCurrency(uint32 character_id, PlayerProfile_Stru
 	ZeroPlayerProfileCurrency(pp);
 
 	auto e = CharacterCurrencyRepository::NewEntity();
+	e.id                      = character_id;
+	e.platinum                = static_cast<uint32_t>(pp->platinum);
+	e.gold                    = static_cast<uint32_t>(pp->gold);
+	e.silver                  = static_cast<uint32_t>(pp->silver);
+	e.copper                  = static_cast<uint32_t>(pp->copper);
+	e.platinum_bank           = static_cast<uint32_t>(pp->platinum_bank);
+	e.gold_bank               = static_cast<uint32_t>(pp->gold_bank);
+	e.silver_bank             = static_cast<uint32_t>(pp->silver_bank);
+	e.copper_bank             = static_cast<uint32_t>(pp->copper_bank);
+	e.platinum_cursor         = static_cast<uint32_t>(pp->platinum_cursor);
+	e.gold_cursor             = static_cast<uint32_t>(pp->gold_cursor);
+	e.silver_cursor           = static_cast<uint32_t>(pp->silver_cursor);
+	e.copper_cursor           = static_cast<uint32_t>(pp->copper_cursor);
+	e.radiant_crystals        = pp->currentRadCrystals;
+	e.career_radiant_crystals = pp->careerRadCrystals;
+	e.ebon_crystals           = pp->currentEbonCrystals;
+	e.career_ebon_crystals    = pp->careerEbonCrystals;
 
-	return CharacterCurrencyRepository::ReplaceOne(
-		*this,
-		CharacterCurrencyRepository::CharacterCurrency{
-			.id                      = character_id,
-			.platinum                = static_cast<uint32_t>(pp->platinum),
-			.gold                    = static_cast<uint32_t>(pp->gold),
-			.silver                  = static_cast<uint32_t>(pp->silver),
-			.copper                  = static_cast<uint32_t>(pp->copper),
-			.platinum_bank           = static_cast<uint32_t>(pp->platinum_bank),
-			.gold_bank               = static_cast<uint32_t>(pp->gold_bank),
-			.silver_bank             = static_cast<uint32_t>(pp->silver_bank),
-			.copper_bank             = static_cast<uint32_t>(pp->copper_bank),
-			.platinum_cursor         = static_cast<uint32_t>(pp->platinum_cursor),
-			.gold_cursor             = static_cast<uint32_t>(pp->gold_cursor),
-			.silver_cursor           = static_cast<uint32_t>(pp->silver_cursor),
-			.copper_cursor           = static_cast<uint32_t>(pp->copper_cursor),
-			.radiant_crystals        = pp->currentRadCrystals,
-			.career_radiant_crystals = pp->careerRadCrystals,
-			.ebon_crystals           = pp->currentEbonCrystals,
-			.career_ebon_crystals    = pp->careerEbonCrystals
-		}
-	);
+	zone->UpdateCache(character_id, e);
+	return CharacterCurrencyRepository::ReplaceOne(*this, e);
 }
 
 bool ZoneDatabase::SaveCharacterMemorizedSpell(uint32 character_id, uint32 spell_id, uint32 slot_id){

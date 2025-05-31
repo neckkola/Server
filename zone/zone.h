@@ -257,15 +257,6 @@ public:
 
 	std::map<std::string, std::string> m_zone_variables;
 
-	std::unordered_map<uint32, CharacterDataCache> character_data_cache{};
-	using CacheVariant = std::variant<
-		CharacterCurrencyRepository::CharacterCurrency,
-		CharacterDataRepository::CharacterData,
-		std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
-	>;
-	std::unordered_map<uint32, CharacterCacheNew<CacheVariant>> character_cache{};
-	std::unordered_map<uint32, std::vector<CharacterCacheNew<CacheVariant>>> character_cache2{};
-
 	time_t weather_timer;
 	Timer  spawn2_timer;
 	Timer  hot_reload_timer;
@@ -354,24 +345,106 @@ public:
 	void ClearSpawnTimers();
 
 	//Character Cache Functions
+	using CacheVariant = std::variant<
+		CharacterCurrencyRepository::CharacterCurrency,
+		CharacterDataRepository::CharacterData,
+		std::vector<CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>
+	>;
+
 	void LoadCharacterCache();
-	void SaveCharacterCache(uint32 character_id);
+	static void SaveCharacterCache(uint32 character_id);
 	void ProcessCharacterCacheVariant(uint32 character_id, const std::variant<CacheVariant> &v);
 	CacheVariant GetDataFromCharacterCacheVariant(uint32 character_id);
 
 	template<typename T>
-	void InsertIntoCache(uint32_t character_id, const T& value,
-		std::unordered_map<uint32_t, std::vector<CharacterCacheNew<CacheVariant>>>& cache) {
+	struct CharacterCacheNew {
+		T                               data;
+		bool                            is_loaded       = false;
+		time_t                          last_loaded     = 0;
+		bool                            immediate_write = false;
+		std::function<void(uint32 id)>  db_update_function;
 
-		auto &result = cache[character_id].emplace_back(CharacterCacheNew<CacheVariant>{value});
+		CharacterCacheNew() : data() {}
+
+		template<typename U>
+		CharacterCacheNew(const U& val) : data(val)
+		{
+			std::visit(
+				[&]<typename T0>(T0&& inner_val) {
+				using ActualType = std::decay_t<T0>;
+
+				if constexpr (std::same_as<ActualType, CharacterCurrencyRepository::CharacterCurrency> ||
+							  std::same_as<ActualType, CharacterDataRepository::CharacterData> ||
+							  std::same_as<ActualType, CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>) {
+
+					immediate_write = true;
+					db_update_function = [&](uint32 character_id) { SaveCharacterCache(character_id); };
+				}
+			}, data); // visit the actual variant
+
+			// if constexpr (std::is_same_v<T, CharacterCurrencyRepository::CharacterCurrency>) {
+			// 	immediate_write = true;
+			// 	db_update_function = [&](Database *db) { return ZoneMemoryRepository::ReplaceOne(db, data); };
+			// }
+			// else if constexpr (std::is_same_v<T, CharacterDataRepository::CharacterData>) {
+			// 	immediate_write = true;
+			// 	db_update_function = [&](Database *db) { return ZoneMemoryRepository::ReplaceOne(db, data); };
+			// }
+			// else if constexpr (std::is_same_v<T, CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>) {
+			// 	immediate_write = true;
+			// 	db_update_function = [&](Database *db) { return ZoneMemoryRepository::ReplaceOne(db, data); };
+			// }
+		}
+
+		template<class Archive>
+		void serialize(Archive &archive)
+		{
+			archive(
+				CEREAL_NVP(data),
+				CEREAL_NVP(is_loaded),
+				CEREAL_NVP(last_loaded),
+				CEREAL_NVP(immediate_write)
+			);
+		}
+
+	};
+
+	std::unordered_map<uint32, std::vector<CharacterCacheNew<CacheVariant>>> character_cache{};
+
+	template<typename T>
+	void InsertIntoCache(uint32_t character_id, const T& value) {
+		auto &result = character_cache[character_id].emplace_back(CharacterCacheNew<CacheVariant>{value});
 		result.is_loaded = true;
+	}
+
+	template<typename T>
+	void UpdateCache(uint32_t character_id, T& value)
+	{
+		if (character_cache.contains(character_id)) {
+			auto &vec = character_cache[character_id];
+
+			for (auto &entry: vec) {
+				auto &var = entry.data;
+				if (std::holds_alternative<T>(var)) {
+					auto& ref = std::get<T>(var);
+					ref = value;
+					if (entry.immediate_write) {
+						entry.db_update_function(character_id);
+					}
+					return;
+				}
+			}
+		}
+		else {
+			LogError("UpdateCache: Character Cache does not contain character_id: {}", character_id);
+		}
 	}
 
 	template<typename T> T GetData(uint32_t character_id)
 	{
 		T e{};
-		if (character_cache2.contains(character_id)) {
-			const auto &vec = character_cache2[character_id];
+		if (character_cache.contains(character_id)) {
+			const auto &vec = character_cache[character_id];
 
 			for (const auto &entry: vec) {
 				const auto &var = entry.data;

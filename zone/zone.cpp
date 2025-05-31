@@ -1115,7 +1115,7 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 
 	SetQuestHotReloadQueued(false);
 
-	// Load character_data_cache
+	// Load character_cache
 	LoadCharacterCache();
 }
 
@@ -3316,9 +3316,9 @@ void Zone::ReloadMaps()
 
 void Zone::LoadCharacterCache()
 {
-	character_cache2.clear();
+	character_cache.clear();
 	auto results = ZoneMemoryRepository::All(database);
-	character_cache2.reserve(results.size());
+	character_cache.reserve(results.size());
 
 	for (auto [character_id, blob]: results) {
 		std::vector<CharacterCacheNew<CacheVariant>> cache_entry;
@@ -3334,9 +3334,9 @@ void Zone::LoadCharacterCache()
 			}
 		}
 
-		auto [it, success] = character_cache2.try_emplace(character_id, cache_entry);
+		auto [it, success] = character_cache.try_emplace(character_id, cache_entry);
 		if (!success) {
-			character_cache2[character_id] = cache_entry;
+			character_cache[character_id] = cache_entry;
 		}
 	}
 }
@@ -3347,7 +3347,7 @@ void Zone::SaveCharacterCache(uint32 character_id)
 	{
 		try {
 			cereal::BinaryOutputArchive ar(ss);
-			ar(character_cache2[character_id]);
+			ar(zone->character_cache[character_id]);
 		}
 		catch (const std::exception& ex) {
 			LogError("Unable to save character cache for character_id [{}]: {}", character_id, ex.what());
@@ -3364,22 +3364,17 @@ void Zone::SaveCharacterCache(uint32 character_id)
 
 void Zone::ProcessCharacterCacheVariant(uint32 character_id, const std::variant<CacheVariant> &v)
 {
-	std::visit(
-		[&]<typename T>(const T &val) {
-			if constexpr (std::same_as<T, CharacterCurrencyRepository::CharacterCurrency>) {
-				character_data_cache[character_id].character_currency = val;
-			}
-			else if constexpr (std::same_as<T, CharacterDataRepository::CharacterData>) {
-				character_data_cache[character_id].character_data = val;
-			}
-			else if constexpr (std::same_as<T, CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>) {
-				character_data_cache[character_id].character_leadership_abilities = val;
-			}
-		}, v
-	);
-}
-
-Zone::CacheVariant Zone::GetDataFromCharacterCacheVariant(uint32 character_id)
-{
-	return character_cache[character_id].data;
+	// std::visit(
+	// 	[&]<typename T>(const T &val) {
+	// 		if constexpr (std::same_as<T, CharacterCurrencyRepository::CharacterCurrency>) {
+	// 			character_data_cache[character_id].character_currency = val;
+	// 		}
+	// 		else if constexpr (std::same_as<T, CharacterDataRepository::CharacterData>) {
+	// 			character_data_cache[character_id].character_data = val;
+	// 		}
+	// 		else if constexpr (std::same_as<T, CharacterLeadershipAbilitiesRepository::CharacterLeadershipAbilities>) {
+	// 			character_data_cache[character_id].character_leadership_abilities = val;
+	// 		}
+	// 	}, v
+	// );
 }
