@@ -365,9 +365,7 @@ public:
 		std::function<void(uint32 id)>  db_update_function;
 
 		CharacterCacheNew() : data() {}
-
-		template<typename U>
-		CharacterCacheNew(const U& val) : data(val)
+		CharacterCacheNew(const T& val) : data(val)
 		{
 			std::visit(
 				[&]<typename T0>(T0&& inner_val) {
