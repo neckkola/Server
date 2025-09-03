@@ -7190,10 +7190,9 @@ CHANGE COLUMN `field223` `spell_subclass` int(11) NULL DEFAULT 0 AFTER `spell_cl
 CHANGE COLUMN `field232` `no_remove` int(11) NOT NULL DEFAULT 0 AFTER `min_range`;
 )",
 		.content_schema_update = true
-	}
-
+	},
 	ManifestEntry{
-		.version = 9327,
+		.version = 9329,
 		.description = "2025_03_27_implement_item_unique_unique_id.sql",
 		.check = "SHOW COLUMNS FROM `inventory` LIKE 'item_unique_id'",
 		.condition = "empty",
@@ -7254,7 +7253,7 @@ ALTER TABLE `sharedbank`
 		.content_schema_update = false
 	},
 	ManifestEntry{
-		.version = 9328,
+		.version = 9330,
 		.description = "2025_01_27_offline_account_status.sql",
 		.check       = "SHOW COLUMNS FROM `account` LIKE 'offline'",
 		.condition   = "empty",
